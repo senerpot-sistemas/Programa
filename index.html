@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SENERPOT — Sistema Integral</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <style>
+    :root {
+      --primary:       #009E60;
+      --primary-dark:  #00593E;
+      --primary-light: #E8F5EE;
+      --bg:            #F0F4F8;
+      --surface:       #FFFFFF;
+      --text:          #1E293B;
+      --text-muted:    #64748B;
+      --border:        #E2E8F0;
+      --shadow:        0 1px 3px rgba(0,0,0,0.08);
+      --shadow-md:     0 4px 14px rgba(0,0,0,0.10);
+      --radius:        10px;
+      --sidebar-w:     224px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── APP SHELL ── */
+    .app { display: flex; height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--primary-dark);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      transition: width 0.22s ease;
+      overflow: hidden;
+    }
+    .sidebar.collapsed { width: 0; }
+
+    .sidebar-brand {
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      cursor: pointer;
+    }
+    .brand-name {
+      font-size: 21px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .brand-name span { font-weight: 400; opacity: 0.7; }
+    .brand-sub {
+      font-size: 10px;
+      color: rgba(255,255,255,0.45);
+      margin-top: 3px;
+      white-space: nowrap;
+    }
+
+    .sidebar-nav { flex: 1; padding: 10px 0; overflow-y: auto; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 18px;
+      color: rgba(255,255,255,0.70);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.15s;
+      white-space: nowrap;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-item i { font-size: 18px; flex-shrink: 0; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: var(--primary); color: #fff; }
+
+    .nav-badge {
+      margin-left: auto;
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.9);
+    }
+    .nav-badge.nuevo { background: #F59E0B; color: #fff; }
+
+    .sidebar-footer {
+      padding: 14px 18px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-avatar {
+      width: 32px; height: 32px;
+      background: var(--primary);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .user-info-text { white-space: nowrap; }
+    .user-name  { font-size: 13px; color: rgba(255,255,255,0.85); }
+    .user-role  { font-size: 10px; color: rgba(255,255,255,0.45); }
+
+    /* ── MAIN ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      height: 56px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .btn-menu {
+      background: none; border: none;
+      font-size: 20px; cursor: pointer;
+      color: var(--text-muted);
+      display: flex; align-items: center; padding: 4px;
+    }
+    .page-title { font-size: 16px; font-weight: 500; }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+    .topbar-date { font-size: 13px; color: var(--text-muted); }
+
+    /* ── CONTENT ── */
+    .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+    /* ── VIEWS ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── HOME SCREEN ── */
+    .home-header { margin-bottom: 24px; }
+    .home-header h2 { font-size: 22px; font-weight: 500; }
+    .home-header p  { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .module-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--accent, var(--primary));
+      cursor: pointer;
+      transition: box-shadow 0.18s, transform 0.18s;
+    }
+    .module-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .module-icon { font-size: 26px; color: var(--accent, var(--primary)); margin-bottom: 12px; }
+    .module-name { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+    .module-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+    .module-footer {
+      margin-top: 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .status-badge {
+      font-size: 11px; font-weight: 500;
+      padding: 2px 9px; border-radius: 20px;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+    .status-badge.nuevo { background: #FEF3C7; color: #92400E; }
+
+    .module-arrow { font-size: 15px; color: var(--text-muted); }
+
+    /* ── PLACEHOLDER DE MÓDULOS ── */
+    .module-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 400px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .module-placeholder i   { font-size: 52px; margin-bottom: 18px; display: block; }
+    .module-placeholder h3  { font-size: 20px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+    .module-placeholder p   { font-size: 14px; line-height: 1.6; max-width: 320px; }
+
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 24px;
+      padding: 9px 18px;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border: none; border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px; font-weight: 500;
+    }
+    .btn-back:hover { background: #cce8dc; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 960px) {
+      .modules-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+      .sidebar {
+        position: fixed; top: 0; left: 0;
+        height: 100vh; z-index: 200;
+      }
+      .sidebar.collapsed { width: 0; }
+      .modules-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .content { padding: 14px; }
+      .topbar-date { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <div class="sidebar" id="sidebar">
+
+    <div class="sidebar-brand" onclick="navegarA('home')">
+      <div class="brand-name">SENER<span>POT</span></div>
+      <div class="brand-sub">Sistema Integral v1.0</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" id="nav-home" onclick="navegarA('home')">
+        <i class="ti ti-home"></i> Inicio
+      </button>
+      <button class="nav-item" id="nav-panel" onclick="navegarA('panel')">
+        <i class="ti ti-layout-dashboard"></i> Panel
+      </button>
+      <button class="nav-item" id="nav-ofertas" onclick="navegarA('ofertas')">
+        <i class="ti ti-file-description"></i> Ofertas
+      </button>
+      <button class="nav-item" id="nav-proyectos" onclick="navegarA('proyectos')">
+        <i class="ti ti-briefcase"></i> Proyectos
+        <span class="nav-badge nuevo">Nuevo</span>
+      </button>
+      <button class="nav-item" id="nav-contabilidad" onclick="navegarA('contabilidad')">
+        <i class="ti ti-calculator"></i> Contabilidad
+      </button>
+      <button class="nav-item" id="nav-almacen" onclick="navegarA('almacen')">
+        <i class="ti ti-package"></i> Almacén
+        <span class="nav-badge nuevo">Nuevo</span>
+      </button>
+      <button class="nav-item" id="nav-reportes" onclick="navegarA('reportes')">
+        <i class="ti ti-chart-bar"></i> Reportes
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-avatar">A</div>
+      <div class="user-info-text">
+        <div class="user-name">Administrador</div>
+        <div class="user-role">SENERPOT</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <button class="btn-menu" onclick="toggleSidebar()" aria-label="Abrir menú">
+        <i class="ti ti-menu-2"></i>
+      </button>
+      <div class="page-title" id="page-title">Inicio</div>
+      <div class="topbar-right">
+        <span class="topbar-date" id="fecha-hoy"></span>
+      </div>
+    </div>
+
+    <!-- CONTENIDO -->
+    <div class="content">
+
+      <!-- ── INICIO ── -->
+      <div id="view-home" class="view active">
+        <div class="home-header">
+          <h2>Bienvenido al sistema</h2>
+          <p>Selecciona un módulo para comenzar</p>
+        </div>
+        <div class="modules-grid">
+
+          <div class="module-card" style="--accent:#1D9E75" onclick="navegarA('panel')">
+            <div class="module-icon"><i class="ti ti-layout-dashboard"></i></div>
+            <div class="module-name">Panel</div>
+            <div class="module-desc">KPIs, cartera pendiente y resumen del mes</div>
+            <div class="module-footer">
+              <span class="status-badge">Dashboard</span>
+              <i class="ti ti-arrow-right module-arrow"></i>
+            </div>
+          </div>
+
+          <div class="module-card" style="--accent:#639922" onclick="navegarA('ofertas')">
+            <div class="module-icon"><i class="ti ti-file-description"></i></div>
+            <div class="module-name">Ofertas</div>
+            <div class="module-desc">Crear y gestionar propuestas comerciales</div>
+            <div class="module-footer">
+              <span class="status-badge">Activo</span>
+              <i class="ti ti-arrow-right module-arrow"></i>
+            </div>
+          </div>
+
+          <div class="module-card" style="--accent:#185FA5" onclick="navegarA('proyectos')">
+            <div class="module-icon"><i class="ti ti-briefcase"></i></div>
+            <div class="module-name">Proyectos</div>
+            <div class="module-desc">Órdenes de trabajo y seguimiento de servicios</div>
+            <div class="module-footer">
+              <span class="status-badge nuevo">Nuevo</span>
+              <i class="ti ti-arrow-right module-arrow"></i>
+            </div>
+          </div>
+
+          <div class="module-card" style="--accent:#BA7517" onclick="navegarA('contabilidad')">
+            <div class="module-icon"><i class="ti ti-calculator"></i></div>
+            <div class="module-name">Contabilidad</div>
+            <div class="module-desc">Documentos, cartera y soportes contables</div>
+            <div class="module-footer">
+              <span class="status-badge">Activo</span>
+              <i class="ti ti-arrow-right module-arrow"></i>
+            </div>
+          </div>
+
+          <div class="module-card" style="--accent:#534AB7" onclick="navegarA('almacen')">
+            <div class="module-icon"><i class="ti ti-package"></i></div>
+            <div class="module-name">Almacén</div>
+            <div class="module-desc">Catálogo de materiales, precios y proveedores</div>
+            <div class="module-footer">
+              <span class="status-badge nuevo">Nuevo</span>
+              <i class="ti ti-arrow-right module-arrow"></i>
+            </div>
+          </div>
+
+          <div class="module-card" style="--accent:#993C1D" onclick="navegarA('reportes')">
+            <div class="module-icon"><i class="ti ti-chart-bar"></i></div>
+            <div class="module-name">Reportes</div>
+            <div class="module-desc">Análisis financiero y reportes de gestión</div>
+            <div class="module-footer">
+              <span class="status-badge">Activo</span>
+              <i class="ti ti-arrow-right module-arrow"></i>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── PANEL ── -->
+      <div id="view-panel" class="view">
+        <div class="module-placeholder">
+          <i class="ti ti-layout-dashboard" style="color:#1D9E75"></i>
+          <h3>Panel</h3>
+          <p>Dashboard con KPIs en tiempo real. Se construye en la siguiente sesión.</p>
+          <button class="btn-back" onclick="navegarA('home')">
+            <i class="ti ti-arrow-left"></i> Volver al inicio
+          </button>
+        </div>
+      </div>
+
+      <!-- ── OFERTAS ── -->
+      <div id="view-ofertas" class="view">
+        <div class="module-placeholder">
+          <i class="ti ti-file-description" style="color:#639922"></i>
+          <h3>Ofertas</h3>
+          <p>Módulo de generación de propuestas. Integrando App 1.</p>
+          <button class="btn-back" onclick="navegarA('home')">
+            <i class="ti ti-arrow-left"></i> Volver al inicio
+          </button>
+        </div>
+      </div>
+
+      <!-- ── PROYECTOS ── -->
+      <div id="view-proyectos" class="view">
+        <div class="module-placeholder">
+          <i class="ti ti-briefcase" style="color:#185FA5"></i>
+          <h3>Proyectos</h3>
+          <p>Gestión de órdenes de servicio. Módulo nuevo en construcción.</p>
+          <button class="btn-back" onclick="navegarA('home')">
+            <i class="ti ti-arrow-left"></i> Volver al inicio
+          </button>
+        </div>
+      </div>
+
+      <!-- ── CONTABILIDAD ── -->
+      <div id="view-contabilidad" class="view">
+        <div class="module-placeholder">
+          <i class="ti ti-calculator" style="color:#BA7517"></i>
+          <h3>Contabilidad</h3>
+          <p>ERP contable completo. Integrando App 2 (SENERPOT ERP).</p>
+          <button class="btn-back" onclick="navegarA('home')">
+            <i class="ti ti-arrow-left"></i> Volver al inicio
+          </button>
+        </div>
+      </div>
+
+      <!-- ── ALMACÉN ── -->
+      <div id="view-almacen" class="view">
+        <div class="module-placeholder">
+          <i class="ti ti-package" style="color:#534AB7"></i>
+          <h3>Almacén</h3>
+          <p>Catálogo de materiales y precios históricos. Módulo nuevo en construcción.</p>
+          <button class="btn-back" onclick="navegarA('home')">
+            <i class="ti ti-arrow-left"></i> Volver al inicio
+          </button>
+        </div>
+      </div>
+
+      <!-- ── REPORTES ── -->
+      <div id="view-reportes" class="view">
+        <div class="module-placeholder">
+          <i class="ti ti-chart-bar" style="color:#993C1D"></i>
+          <h3>Reportes</h3>
+          <p>Análisis financiero y reportes NIIF. Integrando reportes de App 2.</p>
+          <button class="btn-back" onclick="navegarA('home')">
+            <i class="ti ti-arrow-left"></i> Volver al inicio
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── CONFIG (completar al desplegar GAS) ──────────────────
+  const CONFIG = {
+    apiUrl:  '',          // URL del backend Google Apps Script
+    empresa: 'SENERPOT',
+    version: '1.0'
+  };
+
+  // ── TÍTULOS DE MÓDULOS ───────────────────────────────────
+  const TITULOS = {
+    home:          'Inicio',
+    panel:         'Panel',
+    ofertas:       'Ofertas',
+    proyectos:     'Proyectos',
+    contabilidad:  'Contabilidad',
+    almacen:       'Almacén',
+    reportes:      'Reportes'
+  };
+
+  // ── NAVEGACIÓN ───────────────────────────────────────────
+  function navegarA(modulo) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+
+    const vista = document.getElementById('view-' + modulo);
+    const navBtn = document.getElementById('nav-' + modulo);
+
+    if (vista)  vista.classList.add('active');
+    if (navBtn) navBtn.classList.add('active');
+
+    document.getElementById('page-title').textContent = TITULOS[modulo] || modulo;
+
+    // En móvil cerrar sidebar al navegar
+    if (window.innerWidth <= 600) {
+      document.getElementById('sidebar').classList.add('collapsed');
+    }
+  }
+
+  // ── SIDEBAR ──────────────────────────────────────────────
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+  }
+
+  // ── FECHA ─────────────────────────────────────────────────
+  function mostrarFecha() {
+    const d = new Date();
+    const m = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    document.getElementById('fecha-hoy').textContent =
+      `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  // ── LLAMADA AL BACKEND (base para todos los módulos) ─────
+  async function llamarAPI(accion, params = {}) {
+    if (!CONFIG.apiUrl) {
+      console.warn('API URL no configurada en CONFIG.apiUrl');
+      return null;
+    }
+    const res = await fetch(CONFIG.apiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: accion, params })
+    });
+    return res.json();
+  }
+
+  // ── INIT ─────────────────────────────────────────────────
+  window.onload = function() {
+    mostrarFecha();
+  };
+</script>
+
+</body>
+</html>
