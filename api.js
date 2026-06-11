@@ -1,7 +1,7 @@
 /**
  * SENERPOT — api.js
  * Capa de comunicación con el backend (Google Apps Script).
- * Reemplaza todos los google.script.run.withSuccessHandler()
+ * Usa GET con parámetros en la URL — más compatible con GAS desde dominios externos.
  *
  * USO:
  *   const datos = await API.call('obtenerDatos');
@@ -24,11 +24,11 @@ const API = {
     }
 
     try {
-      const res  = await fetch(url, {
-        method:   'POST',
-        redirect: 'follow',
-        body:     JSON.stringify({ action, params })
-      });
+      // GET con parámetros en URL — evita problemas de CORS con GAS
+      const paramsStr = encodeURIComponent(JSON.stringify(params));
+      const fullUrl   = `${url}?action=${encodeURIComponent(action)}&params=${paramsStr}`;
+
+      const res  = await fetch(fullUrl, { redirect: 'follow' });
       const json = await res.json();
 
       if (!json.ok) throw new Error(json.error || 'Error en el servidor');
@@ -46,13 +46,12 @@ const API = {
 // ─────────────────────────────────────────────
 const UI = {
 
-  // Toast de notificación
   toast(msg, tipo = 'ok') {
     let el = document.getElementById('toast-global');
     if (!el) {
       el = document.createElement('div');
       el.id = 'toast-global';
-      el.style.cssText = 'position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transition:opacity .3s;max-width:340px;';
+      el.style.cssText = 'position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:9999;opacity:0;transition:opacity .3s;max-width:340px;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
       document.body.appendChild(el);
     }
     const colores = {
@@ -67,22 +66,17 @@ const UI = {
     el.innerText         = msg;
     el.style.opacity     = '1';
     clearTimeout(el._t);
-    el._t = setTimeout(() => el.style.opacity = '0', 3000);
+    el._t = setTimeout(() => el.style.opacity = '0', 3500);
   },
 
-  // Mostrar spinner en un botón
   spin(btn, on) {
     if (!btn) return;
     if (on) { btn._txt = btn.innerHTML; btn.disabled = true; btn.innerHTML = '⏳ Procesando...'; }
-    else { btn.disabled = false; btn.innerHTML = btn._txt || 'Listo'; }
+    else    { btn.disabled = false; btn.innerHTML = btn._txt || 'Listo'; }
   },
 
-  // Confirmar acción destructiva
-  confirmar(msg) {
-    return window.confirm(msg);
-  },
+  confirmar(msg) { return window.confirm(msg); },
 
-  // Formato de moneda colombiana
   moneda(n) {
     return '$ ' + Number(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }
