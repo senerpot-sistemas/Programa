@@ -131,7 +131,8 @@ const OFERTAS = {
     selItems.innerHTML  = '<option value="">Kit de precios...</option>';
     if (!this.DB.kits) return;
     this.DB.kits.forEach(k => {
-      const nombre = k.NOMBRE || k.Nombre;
+      let nombre = k.NOMBRE || k.Nombre || '';
+      if (nombre.length > 60) nombre = nombre.slice(0, 57) + '...';
       const tipo   = String(k.TIPO || k.Tipo).toUpperCase();
       const data   = k.DATA_JSON || k.Data_Json;
       if (!data) return;
@@ -148,7 +149,9 @@ const OFERTAS = {
     this.DB.items.forEach(i => {
       const opt = document.createElement('option');
       opt.value = JSON.stringify(i);
-      opt.text  = (i.CODIGO ? i.CODIGO + ' — ' : '') + (i.DESCRIPCION_SERVICIO || i.DESCRIPCION || '');
+      let texto = (i.CODIGO ? i.CODIGO + ' — ' : '') + (i.DESCRIPCION_SERVICIO || i.DESCRIPCION || '');
+      if (texto.length > 75) texto = texto.slice(0, 72) + '...';
+      opt.text = texto;
       sel.add(opt);
     });
   },
