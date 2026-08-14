@@ -258,9 +258,9 @@
     .span-full { grid-column:span 3; }
 
     /* Field groups */
-    .field-group { display:flex; flex-direction:column; }
+    .field-group { display:flex; flex-direction:column; min-width:0; }
     .field-group label { font-size:11px; font-weight:700; color:var(--primary-dark); text-transform:uppercase; margin-bottom:4px; }
-    .field-group input,.field-group select,.field-group textarea { padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px; font-family:inherit; resize:vertical; }
+    .field-group input,.field-group select,.field-group textarea { padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px; font-family:inherit; resize:vertical; min-width:0; max-width:100%; box-sizing:border-box; overflow:hidden; text-overflow:ellipsis; }
     .field-group input:focus,.field-group select:focus,.field-group textarea:focus { border-color:var(--primary); outline:none; }
 
     /* Tables */
@@ -293,7 +293,7 @@
 
     /* Catalog add row */
     .cat-add-row { display:flex; gap:10px; align-items:center; margin:8px 0 6px; background:#e8f5e9; padding:8px 10px; border-radius:6px; border:1px solid #c8e6c9; }
-    .cat-add-row select { flex:1; padding:7px; border:1px solid #ccc; border-radius:4px; font-size:13px; }
+    .cat-add-row select { flex:1; min-width:0; max-width:100%; padding:7px; border:1px solid #ccc; border-radius:4px; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
     /* Module toolbar */
     .module-toolbar { display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
@@ -304,9 +304,9 @@
     .mem-select option { color:#333; }
 
     /* Input with inline button */
-    .input-with-btn { display:flex; gap:5px; }
-    .input-with-btn select { flex:1; }
-    .input-with-btn button { background:var(--primary); color:white; border:none; padding:0 10px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:700; white-space:nowrap; }
+    .input-with-btn { display:flex; gap:5px; min-width:0; }
+    .input-with-btn select,.input-with-btn input { flex:1; min-width:0; max-width:100%; }
+    .input-with-btn button { background:var(--primary); color:white; border:none; padding:0 10px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:700; white-space:nowrap; flex-shrink:0; }
 
     /* Offer header */
     .offer-header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; border-bottom:3px solid var(--primary); padding-bottom:10px; }
