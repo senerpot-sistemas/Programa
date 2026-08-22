@@ -557,10 +557,10 @@
              kpi-label, kpi-val, chart-card) para mantener coherencia visual. -->
         <div id="of-dash" style="margin-bottom:20px;">
           <div class="kpi-grid-4" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;">
-            <div class="kpi-card" style="border-top-color:#3B82F6"><div class="kpi-label">Oportunidades</div><div class="kpi-val" id="of-dash-oportunidades">0</div></div>
-            <div class="kpi-card" style="border-top-color:#009E60"><div class="kpi-label">Presentadas</div><div class="kpi-val" id="of-dash-presentadas">0</div></div>
-            <div class="kpi-card" style="border-top-color:#F59E0B"><div class="kpi-label">Pipeline total</div><div class="kpi-val" id="of-dash-pipeline">$ 0</div></div>
-            <div class="kpi-card" style="border-top-color:#8B5CF6"><div class="kpi-label">Forecast ponderado</div><div class="kpi-val" id="of-dash-forecast">$ 0</div></div>
+            <div class="kpi-card" style="border-top-color:#3B82F6"><div class="kpi-label">Oportunidades (pendientes)</div><div class="kpi-val" id="of-dash-oportunidades">0</div></div>
+            <div class="kpi-card" style="border-top-color:#009E60"><div class="kpi-label">Aprobadas</div><div class="kpi-val" id="of-dash-aprobadas">0</div></div>
+            <div class="kpi-card" style="border-top-color:#F59E0B"><div class="kpi-label">Pipeline abierto</div><div class="kpi-val" id="of-dash-pipeline">$ 0</div></div>
+            <div class="kpi-card" style="border-top-color:#8B5CF6"><div class="kpi-label">Valor ganado</div><div class="kpi-val" id="of-dash-ganado">$ 0</div></div>
           </div>
           <div class="chart-card"><div class="kpi-label" style="margin-bottom:10px;">Embudo de ofertas</div><div style="height:200px;"><canvas id="of-dash-chart"></canvas></div></div>
         </div>
@@ -683,7 +683,7 @@
           </div>
           <div class="table-scroll">
           <table class="data-tbl" id="of-tbl-hist">
-            <thead><tr><th>N° Oferta</th><th>Fecha</th><th>Cliente</th><th>Total</th><th style="width:90px">Estado</th><th style="width:80px"></th></tr></thead>
+            <thead><tr><th>N° Oferta</th><th>Fecha</th><th>Cliente</th><th>Total</th><th style="width:90px">Estado</th><th style="width:140px"></th></tr></thead>
             <tbody id="of-tbody-hist"></tbody>
           </table>
           </div>

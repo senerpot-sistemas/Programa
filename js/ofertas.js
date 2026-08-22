@@ -9,12 +9,6 @@ const OFERTAS = {
 
   DB: { clientes: [], items: [], kits: [], activos: [], historial: [] },
 
-  // Pesos de forecast: el código de BD_OFERTAS solo tiene 2 estados reales
-  // (BORRADOR/GENERADA — ver reporte de Fase 4), no un campo de
-  // probabilidad de cierre. Estos porcentajes son un supuesto de
-  // ponderación comercial razonable, no un valor leído de ningún lado;
-  // ajústalos aquí si el criterio de negocio cambia.
-  PESOS_FORECAST: { BORRADOR: 0.30, GENERADA: 0.70 },
   _chartEmbudo: null,
 
   // ──────────────────────────────────────────
@@ -68,41 +62,35 @@ const OFERTAS = {
     return parseFloat(String(str || '0').replace(/[^0-9]/g, '')) || 0;
   },
 
+  // Semántica revisada (Fase 4.1): BORRADOR es trabajo a medias que nunca
+  // se le mostró al cliente — no cuenta como actividad comercial, se
+  // excluye del dashboard por completo. GENERADA es la única etapa
+  // "abierta" real (se presentó, el cliente no ha decidido). APROBADA y
+  // RECHAZADA son los dos desenlaces posibles, registrados por el botón
+  // de decisión en el historial — ya no hay que adivinar una probabilidad
+  // de cierre con pesos inventados: hay una señal real de ganada/perdida.
   renderDashboardOfertas() {
     const hist = this.DB.historial || [];
 
-    // Oportunidades = estado inicial (BORRADOR): la oferta existe pero
-    // todavía no se le entregó nada al cliente.
-    const oportunidades = hist.filter(h => h.ESTADO === 'BORRADOR');
-    // Presentadas = ya se generó el documento y se le mostró al cliente
-    // (GENERADA es exactamente el estado que procesarOfertaFull escribe
-    // en el momento en que abre el Google Doc para el cliente).
-    const presentadas = hist.filter(h => h.ESTADO === 'GENERADA');
+    const oportunidades = hist.filter(h => h.ESTADO === 'GENERADA');
+    const aprobadas     = hist.filter(h => h.ESTADO === 'APROBADA');
+    const rechazadas    = hist.filter(h => h.ESTADO === 'RECHAZADA');
 
-    // Pipeline total = suma cruda de todo lo que no está cerrado — como
-    // el código no tiene un estado de "ganada"/"perdida", TODO lo que hay
-    // en BD_OFERTAS cuenta como pipeline abierto hoy.
-    const pipelineTotal = hist.reduce((sum, h) => sum + this.parseTotalOferta(h.TOTAL), 0);
-
-    // Forecast ponderado = pipeline multiplicado por PESOS_FORECAST según
-    // la etapa de cada oferta (ver comentario junto a PESOS_FORECAST).
-    const forecast = hist.reduce((sum, h) => {
-      const peso = this.PESOS_FORECAST[h.ESTADO] ?? 0;
-      return sum + this.parseTotalOferta(h.TOTAL) * peso;
-    }, 0);
+    const pipelineAbierto = oportunidades.reduce((sum, h) => sum + this.parseTotalOferta(h.TOTAL), 0);
+    const valorGanado     = aprobadas.reduce((sum, h) => sum + this.parseTotalOferta(h.TOTAL), 0);
 
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('of-dash-oportunidades', oportunidades.length);
-    set('of-dash-presentadas',   presentadas.length);
-    set('of-dash-pipeline',      UI.moneda(pipelineTotal));
-    set('of-dash-forecast',      UI.moneda(forecast));
+    set('of-dash-aprobadas',     aprobadas.length);
+    set('of-dash-pipeline',      UI.moneda(pipelineAbierto));
+    set('of-dash-ganado',        UI.moneda(valorGanado));
 
-    this.renderChartEmbudo(oportunidades.length, presentadas.length);
+    this.renderChartEmbudo(oportunidades.length, aprobadas.length, rechazadas.length);
   },
 
   // Embudo de ventas con Chart.js (misma librería que PANEL, sin plugins
-  // adicionales) — barras horizontales descendentes emulan el embudo.
-  renderChartEmbudo(nOportunidades, nPresentadas) {
+  // adicionales) — barras horizontales muestran las 3 etapas reales.
+  renderChartEmbudo(nOportunidades, nAprobadas, nRechazadas) {
     if (typeof Chart === 'undefined') return;
     const ctx = document.getElementById('of-dash-chart');
     if (!ctx) return;
@@ -112,10 +100,10 @@ const OFERTAS = {
     this._chartEmbudo = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ['Oportunidades (Borrador)', 'Presentadas (Generada)'],
+        labels: ['Oportunidades (pendientes)', 'Aprobadas', 'Rechazadas'],
         datasets: [{
-          label: 'Ofertas', data: [nOportunidades, nPresentadas],
-          backgroundColor: ['#3B82F6', '#009E60'], borderRadius: 4
+          label: 'Ofertas', data: [nOportunidades, nAprobadas, nRechazadas],
+          backgroundColor: ['#3B82F6', '#009E60', '#D32F2F'], borderRadius: 4
         }]
       },
       options: {
@@ -127,6 +115,22 @@ const OFERTAS = {
         }
       }
     });
+  },
+
+  // ──────────────────────────────────────────
+  //  DECISIÓN DEL CLIENTE (Aprobar / Rechazar)
+  // ──────────────────────────────────────────
+  async actualizarEstadoOfertaUI(id, nuevoEstado) {
+    const verbo = nuevoEstado === 'APROBADA' ? 'aprobar' : 'rechazar';
+    if (!UI.confirmar(`¿Marcar la oferta ${id} como ${verbo === 'aprobar' ? 'APROBADA' : 'RECHAZADA'}?`)) return;
+    try {
+      const res = await API.call('actualizarEstadoOferta', { id, estado: nuevoEstado });
+      if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      Store.upsert(this.DB.historial, res.data);
+      this.renderTablaHistorial();
+      this.renderDashboardOfertas();
+      UI.toast('Oferta ' + id + ' marcada como ' + nuevoEstado.toLowerCase(), 'ok');
+    } catch(e) { UI.toast(e.message, 'err'); }
   },
 
   // ──────────────────────────────────────────
@@ -193,18 +197,21 @@ const OFERTAS = {
     const tbody = document.getElementById('of-tbody-hist');
     tbody.innerHTML = '';
     const hist = [...(this.DB.historial || [])].reverse();
+    const badgeClass = { BORRADOR: 'badge-gray', GENERADA: 'badge-blue', APROBADA: 'badge-green', RECHAZADA: 'badge-red' };
     hist.forEach(h => {
-      const badgeClass = h.ESTADO === 'GENERADA' ? 'badge-green' : 'badge-orange';
       const tr = document.createElement('tr');
+      const botonesDecision = h.ESTADO === 'GENERADA' ? `
+          <button class="btn-icon" style="color:#009E60" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','APROBADA')" title="Aprobar"><i class="ti ti-check"></i></button>
+          <button class="btn-icon" style="color:#D32F2F" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','RECHAZADA')" title="Rechazar"><i class="ti ti-x"></i></button>` : '';
       tr.innerHTML = `
         <td>${h.ID_OFERTA}</td>
         <td>${h.FECHA}</td>
         <td>${h.CLIENTE}</td>
         <td>${h.TOTAL}</td>
-        <td><span class="badge ${badgeClass}">${h.ESTADO}</span></td>
-        <td>
+        <td><span class="badge ${badgeClass[h.ESTADO] || 'badge-gray'}">${h.ESTADO}</span></td>
+        <td style="white-space:nowrap;">
           <button class="btn-icon btn-icon-edit" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CARGAR')" title="Editar"><i class="ti ti-edit"></i></button>
-          <button class="btn-icon" style="color:#1976D2" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CLONAR')" title="Clonar"><i class="ti ti-copy"></i></button>
+          <button class="btn-icon" style="color:#1976D2" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CLONAR')" title="Clonar"><i class="ti ti-copy"></i></button>${botonesDecision}
         </td>`;
       tbody.appendChild(tr);
     });
