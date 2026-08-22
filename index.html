@@ -681,12 +681,38 @@
         <div id="ov-historial" class="subview">
           <div class="module-toolbar">
             <input type="text" class="search-bar" placeholder="Buscar por cliente o N° oferta..." onkeyup="OFERTAS.filtrar('of-tbl-hist',this.value)">
+            <button class="btn-secondary-sm" onclick="OFERTAS.modalOfertaManual()">+ Agregar histórica</button>
           </div>
           <div class="table-scroll">
           <table class="data-tbl" id="of-tbl-hist">
-            <thead><tr><th>N° Oferta</th><th>Fecha</th><th>Cliente</th><th>Total</th><th style="width:90px">Estado</th><th style="width:140px"></th></tr></thead>
+            <thead><tr><th>N° Oferta</th><th>Fecha</th><th>Cliente</th><th>Total</th><th style="width:90px">Estado</th><th style="width:170px"></th></tr></thead>
             <tbody id="of-tbody-hist"></tbody>
           </table>
+          </div>
+        </div>
+
+        <!-- Modal: Oferta histórica manual -->
+        <div id="of-modal-hist" class="modal-overlay">
+          <div class="modal-box">
+            <div class="modal-header">
+              <span>Agregar Oferta Histórica</span>
+              <button class="modal-close" onclick="OFERTAS.cerrarModal('of-modal-hist')">×</button>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Para ofertas hechas fuera del sistema — solo registra el resumen para las estadísticas, no genera documento.</p>
+            <div class="field-group mb10"><label>N° Oferta *</label><input type="text" id="of-h-id" placeholder="Ej: OF-24-087"></div>
+            <div class="field-group mb10"><label>Fecha</label><input type="date" id="of-h-fecha"></div>
+            <div class="field-group mb10"><label>Cliente *</label><input type="text" id="of-h-cliente" list="of-dl-hist-cli" placeholder="Nombre del cliente"><datalist id="of-dl-hist-cli"></datalist></div>
+            <div class="field-group mb10"><label>Total</label><input type="number" id="of-h-total" placeholder="0"></div>
+            <div class="field-group mb15">
+              <label>Estado</label>
+              <select id="of-h-estado">
+                <option value="GENERADA">Generada (presentada, pendiente)</option>
+                <option value="APROBADA">Aprobada</option>
+                <option value="RECHAZADA">Rechazada</option>
+                <option value="BORRADOR">Borrador</option>
+              </select>
+            </div>
+            <button class="btn-generate" onclick="OFERTAS.guardarOfertaManualForm()">Guardar</button>
           </div>
         </div>
 

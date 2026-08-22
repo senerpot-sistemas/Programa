@@ -233,9 +233,69 @@ const OFERTAS = {
         <td style="white-space:nowrap;">
           <button class="btn-icon btn-icon-edit" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CARGAR')" title="Editar"><i class="ti ti-edit"></i></button>
           <button class="btn-icon" style="color:#1976D2" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CLONAR')" title="Clonar"><i class="ti ti-copy"></i></button>${botonesDecision}
+          <button class="btn-icon btn-icon-del" onclick="OFERTAS.eliminarOfertaUI('${h.ID_OFERTA}')" title="Eliminar"><i class="ti ti-trash"></i></button>
         </td>`;
       tbody.appendChild(tr);
     });
+  },
+
+  // Borra un registro de historial por error de escritura/duplicado, para
+  // que no siga inflando los conteos del dashboard. Búsqueda por ID en el
+  // servidor (no por posición) — ver eliminarOferta en Oferta.gs.
+  async eliminarOfertaUI(id) {
+    if (!UI.confirmar(`¿Eliminar la oferta ${id}? Esta acción no se puede deshacer.`)) return;
+    try {
+      const res = await API.call('eliminarOferta', { id });
+      if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      this.DB.historial = this.DB.historial.filter(h => String(h.ID_OFERTA) !== String(id));
+      this.renderTablaHistorial();
+      this.renderDashboardOfertas();
+      UI.toast('Oferta ' + id + ' eliminada', 'ok');
+    } catch(e) { UI.toast(e.message, 'err'); }
+  },
+
+  // ──────────────────────────────────────────
+  //  OFERTA HISTÓRICA MANUAL (hecha fuera del sistema)
+  // ──────────────────────────────────────────
+  modalOfertaManual() {
+    ['of-h-id','of-h-fecha','of-h-cliente','of-h-total'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const estadoSel = document.getElementById('of-h-estado');
+    if (estadoSel) estadoSel.value = 'GENERADA';
+    // Sugerir clientes ya existentes, pero sin exigir que coincida — una
+    // oferta histórica puede ser de un cliente que nunca se registró aquí.
+    const dl = document.getElementById('of-dl-hist-cli');
+    if (dl) {
+      dl.innerHTML = '';
+      (this.DB.clientes || []).forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.EMPRESA_NOMBRE || c.EMPRESA || '';
+        dl.appendChild(o);
+      });
+    }
+    document.getElementById('of-modal-hist')?.classList.add('open');
+  },
+
+  async guardarOfertaManualForm() {
+    const idOferta = document.getElementById('of-h-id')?.value?.trim();
+    const cliente  = document.getElementById('of-h-cliente')?.value?.trim();
+    if (!idOferta || !cliente) { UI.toast('N° de oferta y cliente son requeridos', 'warn'); return; }
+
+    const fechaRaw = document.getElementById('of-h-fecha')?.value; // yyyy-mm-dd o vacío
+    const fecha    = fechaRaw ? new Date(fechaRaw + 'T00:00:00').toLocaleDateString('es-CO') : '';
+    const total    = parseFloat(document.getElementById('of-h-total')?.value) || 0;
+    const estado   = document.getElementById('of-h-estado')?.value || 'GENERADA';
+
+    try {
+      const res = await API.call('agregarOfertaManual', {
+        idOferta, cliente, fecha, estado, total: UI.moneda(total)
+      });
+      if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      Store.upsert(this.DB.historial, res.data);
+      this.renderTablaHistorial();
+      this.renderDashboardOfertas();
+      this.cerrarModal('of-modal-hist');
+      UI.toast('Oferta histórica agregada', 'ok');
+    } catch(e) { UI.toast(e.message, 'err'); }
   },
 
   renderSelectKits() {
