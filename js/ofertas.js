@@ -224,19 +224,60 @@ const OFERTAS = {
       const botonesDecision = h.ESTADO === 'GENERADA' ? `
           <button class="btn-icon" style="color:#009E60" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','APROBADA')" title="Aprobar"><i class="ti ti-check"></i></button>
           <button class="btn-icon" style="color:#D32F2F" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','RECHAZADA')" title="Rechazar"><i class="ti ti-x"></i></button>` : '';
+      // "Ver": prioriza el documento real generado (URL_DOC); si no hay
+      // (ofertas de antes de este cambio, o históricas cargadas a mano),
+      // cae al resumen leído de DATA_JSON; si tampoco hay eso, no muestra
+      // nada — no hay ningún detalle guardado que mostrar.
+      let botonVer = '';
+      if (h.URL_DOC) {
+        botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="window.open('${h.URL_DOC}','_blank')" title="Ver documento"><i class="ti ti-file-text"></i></button>`;
+      } else if (h.DATA_JSON) {
+        botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="OFERTAS.verResumenOferta('${h.ID_OFERTA}')" title="Ver resumen"><i class="ti ti-eye"></i></button>`;
+      }
       tr.innerHTML = `
         <td>${h.ID_OFERTA}</td>
         <td>${h.FECHA}</td>
         <td>${h.CLIENTE}</td>
         <td>${h.TOTAL}</td>
         <td><span class="badge ${badgeClass[h.ESTADO] || 'badge-gray'}">${h.ESTADO}</span></td>
-        <td style="white-space:nowrap;">
+        <td style="white-space:nowrap;">${botonVer}
           <button class="btn-icon btn-icon-edit" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CARGAR')" title="Editar"><i class="ti ti-edit"></i></button>
           <button class="btn-icon" style="color:#1976D2" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CLONAR')" title="Clonar"><i class="ti ti-copy"></i></button>${botonesDecision}
           <button class="btn-icon btn-icon-del" onclick="OFERTAS.eliminarOfertaUI('${h.ID_OFERTA}')" title="Eliminar"><i class="ti ti-trash"></i></button>
         </td>`;
       tbody.appendChild(tr);
     });
+  },
+
+  // Resumen de solo lectura para ofertas que no tienen URL_DOC guardado
+  // (generadas antes de este cambio) pero sí tienen DATA_JSON — evita
+  // mandar a alguien que solo quiere revisar al formulario completo de
+  // edición.
+  verResumenOferta(id) {
+    const h = (this.DB.historial || []).find(x => String(x.ID_OFERTA) === String(id));
+    if (!h || !h.DATA_JSON) { UI.toast('Sin detalle guardado para esta oferta', 'warn'); return; }
+    let data;
+    try { data = JSON.parse(h.DATA_JSON); } catch(e) { UI.toast('No se pudo leer el detalle de esta oferta', 'err'); return; }
+
+    const cliente = data.cliente?.EMPRESA_NOMBRE || data.cliente?.EMPRESA || h.CLIENTE || '—';
+    const items = (data.items || []).map(it => `
+      <tr><td>${it.descripcion || ''}</td><td style="text-align:center">${it.cantidad || ''}</td><td style="text-align:right">${UI.moneda(it.unitario||0)}</td><td style="text-align:right">${UI.moneda(it.total||0)}</td></tr>
+    `).join('');
+
+    document.getElementById('of-ver-titulo').textContent = 'Oferta ' + h.ID_OFERTA;
+    document.getElementById('of-ver-contenido').innerHTML = `
+      <div style="margin-bottom:12px;font-size:13px;">
+        <div><b>Cliente:</b> ${cliente}</div>
+        <div><b>Fecha:</b> ${h.FECHA || '—'}</div>
+        ${data.textos?.objeto ? `<div style="margin-top:6px;"><b>Objeto:</b> ${data.textos.objeto}</div>` : ''}
+      </div>
+      <table class="data-tbl">
+        <thead><tr><th>Descripción</th><th style="width:60px">Cant</th><th style="width:100px">Vr. Unit</th><th style="width:100px">Total</th></tr></thead>
+        <tbody>${items || '<tr><td colspan="4" style="text-align:center;color:#888">Sin ítems registrados</td></tr>'}</tbody>
+      </table>
+      <div style="text-align:right;margin-top:10px;font-weight:700;color:var(--primary);font-size:16px;">Total: ${h.TOTAL}</div>
+    `;
+    document.getElementById('of-modal-ver')?.classList.add('open');
   },
 
   // Borra un registro de historial por error de escritura/duplicado, para

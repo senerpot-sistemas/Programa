@@ -561,7 +561,7 @@
             <div class="kpi-card" style="border-top-color:#009E60"><div class="kpi-label">Aprobadas</div><div class="kpi-val" id="of-dash-aprobadas">0</div></div>
             <div class="kpi-card" style="border-top-color:#F59E0B"><div class="kpi-label">Pipeline abierto</div><div class="kpi-val" id="of-dash-pipeline">$ 0</div></div>
             <div class="kpi-card" style="border-top-color:#8B5CF6"><div class="kpi-label">Forecast</div><div class="kpi-val" id="of-dash-forecast">$ 0</div></div>
-            <div class="kpi-card" style="border-top-color:#1D9E75"><div class="kpi-label">Valor ganado</div><div class="kpi-val" id="of-dash-ganado">$ 0</div></div>
+            <div class="kpi-card" style="border-top-color:#1D9E75"><div class="kpi-label">Valor cerrado (con IVA)</div><div class="kpi-val" id="of-dash-ganado">$ 0</div></div>
           </div>
           <div class="chart-card"><div class="kpi-label" style="margin-bottom:10px;">Embudo de ofertas</div><div style="height:200px;"><canvas id="of-dash-chart"></canvas></div></div>
         </div>
@@ -685,7 +685,7 @@
           </div>
           <div class="table-scroll">
           <table class="data-tbl" id="of-tbl-hist">
-            <thead><tr><th>N° Oferta</th><th>Fecha</th><th>Cliente</th><th>Total</th><th style="width:90px">Estado</th><th style="width:170px"></th></tr></thead>
+            <thead><tr><th>N° Oferta</th><th>Fecha</th><th>Cliente</th><th>Total</th><th style="width:90px">Estado</th><th style="width:200px"></th></tr></thead>
             <tbody id="of-tbody-hist"></tbody>
           </table>
           </div>
@@ -713,6 +713,17 @@
               </select>
             </div>
             <button class="btn-generate" onclick="OFERTAS.guardarOfertaManualForm()">Guardar</button>
+          </div>
+        </div>
+
+        <!-- Modal: Ver resumen de oferta (solo lectura) -->
+        <div id="of-modal-ver" class="modal-overlay">
+          <div class="modal-box" style="width:560px;">
+            <div class="modal-header">
+              <span id="of-ver-titulo">Detalle de oferta</span>
+              <button class="modal-close" onclick="OFERTAS.cerrarModal('of-modal-ver')">×</button>
+            </div>
+            <div id="of-ver-contenido"></div>
           </div>
         </div>
 
