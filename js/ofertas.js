@@ -67,8 +67,17 @@ const OFERTAS = {
   // excluye del dashboard por completo. GENERADA es la única etapa
   // "abierta" real (se presentó, el cliente no ha decidido). APROBADA y
   // RECHAZADA son los dos desenlaces posibles, registrados por el botón
-  // de decisión en el historial — ya no hay que adivinar una probabilidad
-  // de cierre con pesos inventados: hay una señal real de ganada/perdida.
+  // de decisión en el historial.
+  //
+  // Pipeline vs. Forecast (Fase 4.2): son cosas distintas y las pidieron
+  // las dos. Pipeline abierto es la suma cruda de lo pendiente, sin
+  // ajustar por probabilidad. Forecast es esa misma suma ponderada por la
+  // TASA DE CONVERSIÓN REAL del historial (aprobadas ÷ decididas) — ya no
+  // es un porcentaje inventado como en la primera versión de este
+  // dashboard: es el desempeño real medido de este mismo cliente/negocio.
+  // Sin decisiones todavía (aprobadas + rechazadas === 0) no hay con qué
+  // calcular una tasa real, así que se asume 50% como punto de partida
+  // neutral y se avisa en el título de la tarjeta.
   renderDashboardOfertas() {
     const hist = this.DB.historial || [];
 
@@ -79,11 +88,23 @@ const OFERTAS = {
     const pipelineAbierto = oportunidades.reduce((sum, h) => sum + this.parseTotalOferta(h.TOTAL), 0);
     const valorGanado     = aprobadas.reduce((sum, h) => sum + this.parseTotalOferta(h.TOTAL), 0);
 
+    const decididas = aprobadas.length + rechazadas.length;
+    const tasaConversion = decididas > 0 ? aprobadas.length / decididas : 0.5;
+    const forecast = pipelineAbierto * tasaConversion;
+
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('of-dash-oportunidades', oportunidades.length);
     set('of-dash-aprobadas',     aprobadas.length);
     set('of-dash-pipeline',      UI.moneda(pipelineAbierto));
     set('of-dash-ganado',        UI.moneda(valorGanado));
+    set('of-dash-forecast',      UI.moneda(forecast));
+
+    const labelForecast = document.querySelector('#of-dash-forecast')?.closest('.kpi-card')?.querySelector('.kpi-label');
+    if (labelForecast) {
+      labelForecast.textContent = decididas > 0
+        ? `Forecast (${Math.round(tasaConversion * 100)}% conversión real)`
+        : 'Forecast (50% — sin histórico aún)';
+    }
 
     this.renderChartEmbudo(oportunidades.length, aprobadas.length, rechazadas.length);
   },
