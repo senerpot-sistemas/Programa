@@ -19,7 +19,7 @@ const OFERTAS = {
     this.addActivo();
     this.addAlcance();
     try {
-      const data = await API.call('obtenerDatos');
+      const data = await DatosERP.obtener();
       this.DB = data;
       this.render();
     } catch(e) {
@@ -40,7 +40,8 @@ const OFERTAS = {
 
   async recargar() {
     try {
-      const data = await API.call('obtenerDatos');
+      DatosERP.invalidar();
+      const data = await DatosERP.obtener();
       this.DB = data;
       this.render();
     } catch(e) { UI.toast('Error recargando datos', 'err'); }

@@ -17,7 +17,7 @@ const PROYECTOS = {
   // ── INIT ────────────────────────────────────
   async init() {
     try {
-      const data = await API.call('obtenerDatos');
+      const data = await DatosERP.obtener();
       this.DB = data;
       this.render();
     } catch(e) { UI.toast('Error cargando proyectos: ' + e.message, 'err'); }
@@ -158,7 +158,13 @@ const PROYECTOS = {
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Valor</div><div style="font-weight:700;color:var(--primary)">${UI.moneda(p.VALOR||0)}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Oferta</div><div>${p.ID_OFERTA||'—'}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Ref. Factura SIGO</div><div>${p.REF_FACTURA_SIGO||'—'}</div></div>
-        <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Responsable</div><div>${p.TECNICO||'—'}</div></div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Responsable</div>
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="pry-responsable-input" value="${p.TECNICO||''}" placeholder="Sin asignar" style="flex:1;min-width:0;padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;" onkeydown="if(event.key==='Enter')PROYECTOS.guardarResponsable('${id}')">
+            <button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.guardarResponsable('${id}')" title="Guardar responsable"><i class="ti ti-check"></i></button>
+          </div>
+        </div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Inicio</div><div>${p.FECHA_INICIO||'—'}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Fin</div><div>${p.FECHA_FIN||'—'}</div></div>
       </div>
@@ -212,6 +218,25 @@ const PROYECTOS = {
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
       input.value = '';
       this.cargarComentarios(id);
+    } catch(e) { UI.toast(e.message, 'err'); }
+  },
+
+  // Reutiliza actualizarEstadoProyecto mandando el mismo estado actual —
+  // el backend ya acepta "tecnico" junto con el cambio de estado (ver
+  // Proyectos.gs), así que no hace falta un endpoint nuevo solo para
+  // esto.
+  async guardarResponsable(id) {
+    const p = (this.DB.proyectos || []).find(x => x.ID_PROYECTO === id);
+    if (!p) return;
+    const input = document.getElementById('pry-responsable-input');
+    const tecnico = input?.value?.trim();
+    if (!tecnico) { UI.toast('Escribe un nombre para el responsable', 'warn'); return; }
+    try {
+      const res = await API.call('actualizarEstadoProyecto', { id, estado: p.ESTADO, tecnico });
+      if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      Store.upsert(this.DB.proyectos, res.data);
+      this.renderTabla(document.getElementById('pry-filtro-estado')?.value || '');
+      UI.toast('Responsable asignado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
   },
 

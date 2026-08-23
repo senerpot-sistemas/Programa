@@ -106,6 +106,26 @@ const Store = {
 };
 
 // ─────────────────────────────────────────────
+//  DATOS ERP — caché compartida entre módulos
+//  Ofertas y Proyectos leen el mismo obtenerDatos() (clientes, ofertas,
+//  proyectos, etc.). Antes cada uno pedía su propia copia la primera vez
+//  que se abría — si entrabas a Ofertas y luego a Proyectos, la app hacía
+//  la misma llamada pesada a Apps Script dos veces, sintiéndose lenta al
+//  cambiar de módulo. Ahora el primero que la pide la comparte con el
+//  segundo — una sola llamada por sesión, no una por módulo.
+// ─────────────────────────────────────────────
+const DatosERP = {
+  _promesa: null,
+  obtener() {
+    if (!this._promesa) this._promesa = API.call('obtenerDatos');
+    return this._promesa;
+  },
+  // Para recargas explícitas (p. ej. OFERTAS.recargar()) — el próximo
+  // obtener() vuelve a pedir datos frescos en vez de reusar la caché.
+  invalidar() { this._promesa = null; }
+};
+
+// ─────────────────────────────────────────────
 //  UI — utilidades globales de interfaz
 // ─────────────────────────────────────────────
 const UI = {
