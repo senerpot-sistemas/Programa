@@ -284,6 +284,8 @@
     .btn-add-row { color:var(--primary); background:none; border:none; cursor:pointer; font-size:13px; font-weight:700; margin-top:6px; display:inline-block; }
     .btn-primary-sm { background:var(--primary); color:white; border:none; padding:7px 14px; border-radius:5px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
     .btn-secondary-sm { background:#64748B; color:white; border:none; padding:7px 14px; border-radius:5px; font-size:12px; font-weight:700; cursor:pointer; }
+    .btn-danger-sm { background:#D32F2F; color:white; border:none; padding:7px 14px; border-radius:5px; font-size:12px; font-weight:700; cursor:pointer; }
+    .btn-danger-sm:hover { background:#B71C1C; }
     .btn-save-kit { background:#FF9800; color:white; border:none; padding:3px 8px; border-radius:4px; font-size:11px; cursor:pointer; }
     .btn-icon { background:none; border:none; cursor:pointer; font-size:16px; padding:2px 5px; }
     .btn-icon-edit { color:#1976D2; } .btn-icon-del { color:#D32F2F; }
@@ -871,6 +873,9 @@
             <div class="modal-header"><span>Detalle del Proyecto</span><button class="modal-close" onclick="PROYECTOS.cerrarModal('pry-modal-detalle')">×</button></div>
             <input type="hidden" id="pry-detalle-id">
             <div id="pry-detalle"></div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);text-align:right;">
+              <button class="btn-danger-sm" id="pry-btn-eliminar" onclick="PROYECTOS.eliminarProyecto()" style="display:none;"><i class="ti ti-trash"></i> Eliminar proyecto</button>
+            </div>
           </div>
         </div>
       </div>

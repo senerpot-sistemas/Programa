@@ -173,6 +173,11 @@ const PROYECTOS = {
       </div>`;
     document.getElementById('pry-modal-detalle')?.classList.add('open');
     document.getElementById('pry-detalle-id').value = id;
+    // El botón de eliminar solo se muestra a ADMINISTRADOR — esto es solo
+    // para que la interfaz tenga sentido, la restricción real ya la aplica
+    // el servidor (ver eliminarProyecto en PERMISOS, Auth.gs).
+    const btnEliminar = document.getElementById('pry-btn-eliminar');
+    if (btnEliminar) btnEliminar.style.display = (typeof AUTH !== 'undefined' && AUTH.rol === 'ADMINISTRADOR') ? '' : 'none';
     this.cargarComentarios(id);
   },
 
@@ -226,6 +231,20 @@ const PROYECTOS = {
       Store.upsert(this.DB.proyectos, res.data);
       this.renderTabla(document.getElementById('pry-filtro-estado')?.value || '');
       UI.toast('Estado actualizado: ' + nuevoEstado, 'ok');
+    } catch(e) { UI.toast(e.message, 'err'); }
+  },
+
+  async eliminarProyecto() {
+    const id = document.getElementById('pry-detalle-id')?.value;
+    if (!id) return;
+    if (!UI.confirmar(`¿Eliminar el proyecto "${id}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      const res = await API.call('eliminarProyecto', { idProyecto: id });
+      if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      Store.remove(this.DB.proyectos, res.rowIndex);
+      this.renderTabla(document.getElementById('pry-filtro-estado')?.value || '');
+      this.cerrarModal('pry-modal-detalle');
+      UI.toast('Proyecto eliminado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
   },
 
