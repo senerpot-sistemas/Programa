@@ -8,9 +8,9 @@ const PROYECTOS = {
 
   DB: { proyectos: [], historial: [], clientes: [] },
 
-  ESTADOS: ['BORRADOR','EN_PROGRESO','PAUSADO','TERMINADO','FACTURADO','COBRADO'],
+  ESTADOS: ['POR_INICIAR','EN_PROGRESO','PAUSADO','TERMINADO','FACTURADO','COBRADO'],
   ESTADO_COLORS: {
-    BORRADOR:'badge-gray', EN_PROGRESO:'badge-blue', PAUSADO:'badge-orange',
+    POR_INICIAR:'badge-gray', EN_PROGRESO:'badge-blue', PAUSADO:'badge-orange',
     TERMINADO:'badge-green', FACTURADO:'badge-blue', COBRADO:'badge-green'
   },
 
