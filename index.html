@@ -329,6 +329,7 @@
     .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:10px; font-weight:500; font-size:16px; color:var(--primary); }
     .modal-close { background:none; border:none; font-size:22px; cursor:pointer; color:red; font-weight:700; line-height:1; }
     .mb10 { margin-bottom:10px; } .mb15 { margin-bottom:15px; }
+    #user-menu.open { display: block !important; }
 
     /* ═══════════════════════════════════════════════════════════════
        FASE 5 — RESPONSIVE MÓVIL (≤768px)
@@ -393,7 +394,28 @@
 </head>
 <body>
 
-<div class="app">
+<!-- ═══ LOGIN ═══ -->
+<div id="login-screen" style="display:flex;min-height:100vh;align-items:center;justify-content:center;background:linear-gradient(135deg,#00593E,#009E60);">
+  <div style="background:#fff;border-radius:12px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,0.25);">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:24px;font-weight:700;color:#00593E;letter-spacing:1px;">SENER<span style="font-weight:400;opacity:.6;">POT</span></div>
+      <div style="font-size:12px;color:#64748B;margin-top:4px;">Sistema Integral</div>
+    </div>
+    <div id="login-error" style="display:none;background:#FEE2E2;color:#B91C1C;padding:9px 12px;border-radius:6px;font-size:12.5px;margin-bottom:14px;"></div>
+    <div class="field-group mb15">
+      <label>Usuario</label>
+      <input type="text" id="login-usuario" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+    </div>
+    <div class="field-group mb15">
+      <label>Contraseña</label>
+      <input type="password" id="login-password" autocomplete="current-password" onkeydown="if(event.key==='Enter')AUTH.login()">
+    </div>
+    <button class="btn-generate" id="login-btn" style="width:100%;" onclick="AUTH.login()">Ingresar</button>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div class="app" id="app-shell" style="display:none;">
 
   <!-- ═══ SIDEBAR ═══ -->
   <div class="sidebar" id="sidebar">
@@ -404,36 +426,43 @@
     </div>
 
     <nav class="sidebar-nav">
-      <button class="nav-item active" id="nav-home" onclick="navegarA('home')">
+      <button class="nav-item active" id="nav-home" data-modulo="home" onclick="navegarA('home')">
         <i class="ti ti-home"></i> Inicio
       </button>
-      <button class="nav-item" id="nav-panel" onclick="navegarA('panel')">
+      <button class="nav-item" id="nav-panel" data-modulo="panel" onclick="navegarA('panel')">
         <i class="ti ti-layout-dashboard"></i> Panel
       </button>
-      <button class="nav-item" id="nav-ofertas" onclick="navegarA('ofertas')">
+      <button class="nav-item" id="nav-ofertas" data-modulo="ofertas" onclick="navegarA('ofertas')">
         <i class="ti ti-file-description"></i> Ofertas
       </button>
-      <button class="nav-item" id="nav-proyectos" onclick="navegarA('proyectos')">
+      <button class="nav-item" id="nav-proyectos" data-modulo="proyectos" onclick="navegarA('proyectos')">
         <i class="ti ti-briefcase"></i> Proyectos
         <span class="nav-badge nuevo">Nuevo</span>
       </button>
-      <button class="nav-item" id="nav-contabilidad" onclick="navegarA('contabilidad')">
+      <button class="nav-item" id="nav-contabilidad" data-modulo="contabilidad" onclick="navegarA('contabilidad')">
         <i class="ti ti-calculator"></i> Contabilidad
       </button>
-      <button class="nav-item" id="nav-almacen" onclick="navegarA('almacen')">
+      <button class="nav-item" id="nav-almacen" data-modulo="almacen" onclick="navegarA('almacen')">
         <i class="ti ti-package"></i> Almacén
         <span class="nav-badge nuevo">Nuevo</span>
       </button>
-      <button class="nav-item" id="nav-reportes" onclick="navegarA('reportes')">
+      <button class="nav-item" id="nav-reportes" data-modulo="reportes" onclick="navegarA('reportes')">
         <i class="ti ti-chart-bar"></i> Reportes
+      </button>
+      <button class="nav-item" id="nav-usuarios" data-modulo="usuarios" onclick="navegarA('usuarios')">
+        <i class="ti ti-users-group"></i> Usuarios
       </button>
     </nav>
 
-    <div class="sidebar-footer">
-      <div class="user-avatar">A</div>
-      <div class="user-info-text">
-        <div class="user-name">Administrador</div>
-        <div class="user-role">SENERPOT</div>
+    <div class="sidebar-footer" style="position:relative;">
+      <div class="user-avatar" id="user-avatar-letra">A</div>
+      <div class="user-info-text" style="flex:1;cursor:pointer;" onclick="document.getElementById('user-menu').classList.toggle('open')">
+        <div class="user-name" id="user-nombre-actual">—</div>
+        <div class="user-role" id="user-rol-actual">—</div>
+      </div>
+      <div id="user-menu" style="display:none;position:absolute;bottom:56px;left:14px;right:14px;background:#fff;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.25);overflow:hidden;z-index:50;">
+        <button style="width:100%;text-align:left;padding:10px 14px;border:none;background:none;cursor:pointer;font-size:13px;color:#1E293B;" onclick="AUTH.abrirModalCambiarPassword();document.getElementById('user-menu').classList.remove('open')">🔑 Cambiar contraseña</button>
+        <button style="width:100%;text-align:left;padding:10px 14px;border:none;background:none;cursor:pointer;font-size:13px;color:#D32F2F;border-top:1px solid #eee;" onclick="AUTH.logout()">🚪 Cerrar sesión</button>
       </div>
     </div>
 
@@ -464,7 +493,7 @@
         </div>
         <div class="modules-grid">
 
-          <div class="module-card" style="--accent:#1D9E75" onclick="navegarA('panel')">
+          <div class="module-card" data-modulo="panel" style="--accent:#1D9E75" onclick="navegarA('panel')">
             <div class="module-icon"><i class="ti ti-layout-dashboard"></i></div>
             <div class="module-name">Panel</div>
             <div class="module-desc">KPIs, cartera pendiente y resumen del mes</div>
@@ -474,7 +503,7 @@
             </div>
           </div>
 
-          <div class="module-card" style="--accent:#639922" onclick="navegarA('ofertas')">
+          <div class="module-card" data-modulo="ofertas" style="--accent:#639922" onclick="navegarA('ofertas')">
             <div class="module-icon"><i class="ti ti-file-description"></i></div>
             <div class="module-name">Ofertas</div>
             <div class="module-desc">Crear y gestionar propuestas comerciales</div>
@@ -484,7 +513,7 @@
             </div>
           </div>
 
-          <div class="module-card" style="--accent:#185FA5" onclick="navegarA('proyectos')">
+          <div class="module-card" data-modulo="proyectos" style="--accent:#185FA5" onclick="navegarA('proyectos')">
             <div class="module-icon"><i class="ti ti-briefcase"></i></div>
             <div class="module-name">Proyectos</div>
             <div class="module-desc">Órdenes de trabajo y seguimiento de servicios</div>
@@ -494,7 +523,7 @@
             </div>
           </div>
 
-          <div class="module-card" style="--accent:#BA7517" onclick="navegarA('contabilidad')">
+          <div class="module-card" data-modulo="contabilidad" style="--accent:#BA7517" onclick="navegarA('contabilidad')">
             <div class="module-icon"><i class="ti ti-calculator"></i></div>
             <div class="module-name">Contabilidad</div>
             <div class="module-desc">Documentos, cartera y soportes contables</div>
@@ -504,7 +533,7 @@
             </div>
           </div>
 
-          <div class="module-card" style="--accent:#534AB7" onclick="navegarA('almacen')">
+          <div class="module-card" data-modulo="almacen" style="--accent:#534AB7" onclick="navegarA('almacen')">
             <div class="module-icon"><i class="ti ti-package"></i></div>
             <div class="module-name">Almacén</div>
             <div class="module-desc">Catálogo de materiales, precios y proveedores</div>
@@ -514,10 +543,20 @@
             </div>
           </div>
 
-          <div class="module-card" style="--accent:#993C1D" onclick="navegarA('reportes')">
+          <div class="module-card" data-modulo="reportes" style="--accent:#993C1D" onclick="navegarA('reportes')">
             <div class="module-icon"><i class="ti ti-chart-bar"></i></div>
             <div class="module-name">Reportes</div>
             <div class="module-desc">Análisis financiero y reportes de gestión</div>
+            <div class="module-footer">
+              <span class="status-badge">Activo</span>
+              <i class="ti ti-arrow-right module-arrow"></i>
+            </div>
+          </div>
+
+          <div class="module-card" data-modulo="usuarios" style="--accent:#334155" onclick="navegarA('usuarios')">
+            <div class="module-icon"><i class="ti ti-users-group"></i></div>
+            <div class="module-name">Usuarios</div>
+            <div class="module-desc">Cuentas de acceso y roles del equipo</div>
             <div class="module-footer">
               <span class="status-badge">Activo</span>
               <i class="ti ti-arrow-right module-arrow"></i>
@@ -821,7 +860,7 @@
             <div class="field-group mb10"><label>Nombre del proyecto *</label><input type="text" id="pry-nombre" placeholder="Ej: Mantenimiento Transformadores ENEL"></div>
             <div class="field-group mb10"><label>Cliente *</label><select id="pry-sel-cliente"><option value="">— Seleccionar —</option></select></div>
             <div class="field-group mb10"><label>Valor del proyecto</label><input type="number" id="pry-valor" placeholder="0"></div>
-            <div class="field-group mb10"><label>Técnico asignado</label><input type="text" id="pry-tecnico" placeholder="Nombre del técnico"></div>
+            <div class="field-group mb10"><label>Responsable</label><input type="text" id="pry-tecnico" placeholder="Ej: ingeniero de proyecto, subcontratado, etc."></div>
             <div class="field-group mb15"><label>Notas</label><textarea id="pry-notas" rows="3" placeholder="Observaciones adicionales..."></textarea></div>
             <button class="btn-generate" id="pry-btn-crear" onclick="PROYECTOS.crearProyecto()">Crear Proyecto</button>
           </div>
@@ -1078,6 +1117,54 @@
         </div>
       </div>
 
+      <!-- ── USUARIOS (solo Administrador) ── -->
+      <div id="view-usuarios" class="view">
+        <div class="module-toolbar">
+          <span style="font-size:13px;color:var(--text-muted);flex:1;">Cuentas de acceso y rol de cada persona. La restricción real de qué puede hacer cada rol se aplica en el servidor, no solo aquí.</span>
+          <button class="btn-primary-sm" onclick="USUARIOS.abrirModal()"><i class="ti ti-plus"></i> Nuevo usuario</button>
+        </div>
+        <div class="table-scroll">
+        <table class="data-tbl">
+          <thead><tr><th>Usuario</th><th>Nombre</th><th style="width:130px">Rol</th><th style="width:110px">Estado</th><th style="width:90px"></th></tr></thead>
+          <tbody id="usr-tbody"></tbody>
+        </table>
+        </div>
+        <!-- Modal: Usuario -->
+        <div id="usr-modal" class="modal-overlay">
+          <div class="modal-box">
+            <div class="modal-header"><span id="usr-modal-title">Nuevo Usuario</span><button class="modal-close" onclick="USUARIOS.cerrarModal()">×</button></div>
+            <div class="field-group mb10"><label>Usuario *</label><input type="text" id="usr-usuario" placeholder="ej: jperez"></div>
+            <div class="field-group mb10"><label>Nombre completo</label><input type="text" id="usr-nombre" placeholder="Ej: Juan Pérez"></div>
+            <div class="field-group mb10"><label>Contraseña</label><input type="password" id="usr-password" placeholder="Contraseña (mínimo 6 caracteres)"></div>
+            <div class="field-group mb10">
+              <label>Rol</label>
+              <select id="usr-rol">
+                <option value="ADMINISTRADOR">Administrador — acceso total</option>
+                <option value="COMERCIAL">Comercial — Ofertas, ver Proyectos, Panel</option>
+                <option value="ADMINISTRATIVO">Administrativo — Contabilidad, Almacén, Panel, Reportes</option>
+                <option value="TECNICO">Técnico — Proyectos (ver/actualizar/comentar), ver Almacén</option>
+              </select>
+            </div>
+            <div class="field-group mb15" style="flex-direction:row;align-items:center;gap:8px;">
+              <input type="checkbox" id="usr-activo" style="width:auto;" checked>
+              <label style="margin:0;text-transform:none;font-weight:400;color:var(--text);font-size:13px;">Usuario activo (puede iniciar sesión)</label>
+            </div>
+            <button class="btn-generate" onclick="USUARIOS.guardar()">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: Cambiar mi contraseña (cualquier rol) -->
+      <div id="modal-cambiar-password" class="modal-overlay">
+        <div class="modal-box">
+          <div class="modal-header"><span>Cambiar contraseña</span><button class="modal-close" onclick="AUTH.cerrarModal('modal-cambiar-password')">×</button></div>
+          <div class="field-group mb10"><label>Contraseña actual</label><input type="password" id="pwd-actual"></div>
+          <div class="field-group mb10"><label>Contraseña nueva</label><input type="password" id="pwd-nueva" placeholder="Mínimo 6 caracteres"></div>
+          <div class="field-group mb15"><label>Repetir contraseña nueva</label><input type="password" id="pwd-repetir"></div>
+          <button class="btn-generate" onclick="AUTH.cambiarPasswordPropia()">Actualizar contraseña</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1148,6 +1235,7 @@
   // ── INIT ─────────────────────────────────────────────────
   window.onload = function() {
     mostrarFecha();
+    AUTH.init(); // decide si muestra login o la app, según haya sesión guardada
   };
 
   // ── NAVEGAR + inicializar módulo ─────────────────────────
@@ -1160,6 +1248,7 @@
     if (modulo === 'proyectos'    && !_modInited.proyectos    && typeof PROYECTOS    !== 'undefined') { PROYECTOS.init();    _modInited.proyectos = true; }
     if (modulo === 'almacen'      && !_modInited.almacen      && typeof ALMACEN      !== 'undefined') { ALMACEN.init();      _modInited.almacen = true; }
     if (modulo === 'panel'        && !_modInited.panel        && typeof PANEL        !== 'undefined') { PANEL.init();        _modInited.panel = true; }
+    if (modulo === 'usuarios'     && !_modInited.usuarios     && typeof USUARIOS     !== 'undefined') { USUARIOS.init();     _modInited.usuarios = true; }
   };
 </script>
 
@@ -1167,6 +1256,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script src="js/api.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/ofertas.js"></script>
 <script src="js/contabilidad.js"></script>
 <script src="js/modulos.js"></script>

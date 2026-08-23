@@ -158,13 +158,56 @@ const PROYECTOS = {
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Valor</div><div style="font-weight:700;color:var(--primary)">${UI.moneda(p.VALOR||0)}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Oferta</div><div>${p.ID_OFERTA||'—'}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Ref. Factura SIGO</div><div>${p.REF_FACTURA_SIGO||'—'}</div></div>
-        <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Técnico</div><div>${p.TECNICO||'—'}</div></div>
+        <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Responsable</div><div>${p.TECNICO||'—'}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Inicio</div><div>${p.FECHA_INICIO||'—'}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Fin</div><div>${p.FECHA_FIN||'—'}</div></div>
       </div>
-      ${p.NOTAS ? `<div style="background:#f9fafb;padding:10px;border-radius:6px;font-size:13px"><b>Notas:</b> ${p.NOTAS}</div>` : ''}`;
+      ${p.NOTAS ? `<div style="background:#f9fafb;padding:10px;border-radius:6px;font-size:13px;margin-bottom:14px;"><b>Notas:</b> ${p.NOTAS}</div>` : ''}
+      <div style="border-top:1px solid var(--border);padding-top:14px;">
+        <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Bitácora — avances, materiales, novedades</div>
+        <div id="pry-comentarios-lista" style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">Cargando…</div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="pry-comentario-nuevo" placeholder="Ej: se visitó el sitio, falta el material X..." style="flex:1;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;" onkeydown="if(event.key==='Enter')PROYECTOS.agregarComentario('${id}')">
+          <button class="btn-primary-sm" onclick="PROYECTOS.agregarComentario('${id}')">Agregar</button>
+        </div>
+      </div>`;
     document.getElementById('pry-modal-detalle')?.classList.add('open');
     document.getElementById('pry-detalle-id').value = id;
+    this.cargarComentarios(id);
+  },
+
+  async cargarComentarios(id) {
+    const lista = document.getElementById('pry-comentarios-lista');
+    if (!lista) return;
+    try {
+      const comentarios = await API.call('obtenerComentariosProyecto', { idProyecto: id });
+      if (!comentarios || !comentarios.length) {
+        lista.innerHTML = '<div style="font-size:12px;color:#888;">Sin comentarios todavía.</div>';
+        return;
+      }
+      lista.innerHTML = comentarios.map(c => `
+        <div style="background:#f9fafb;padding:8px 10px;border-radius:6px;font-size:12.5px;">
+          <div style="font-weight:700;color:var(--primary-dark);">${c.USUARIO} <span style="font-weight:400;color:#94A3B8;font-size:11px;">${c.FECHA}</span></div>
+          <div>${c.COMENTARIO}</div>
+        </div>`).join('');
+    } catch(e) {
+      lista.innerHTML = '<div style="font-size:12px;color:#D32F2F;">No se pudieron cargar los comentarios.</div>';
+    }
+  },
+
+  // El autor del comentario lo pone el servidor a partir de la sesión
+  // (ver params._sesion en Api.gs) — nunca se envía "quién soy" desde
+  // aquí, para que la bitácora no se pueda falsificar.
+  async agregarComentario(id) {
+    const input = document.getElementById('pry-comentario-nuevo');
+    const comentario = input?.value?.trim();
+    if (!comentario) return;
+    try {
+      const res = await API.call('agregarComentarioProyecto', { idProyecto: id, comentario });
+      if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      input.value = '';
+      this.cargarComentarios(id);
+    } catch(e) { UI.toast(e.message, 'err'); }
   },
 
   async cambiarEstado(id) {

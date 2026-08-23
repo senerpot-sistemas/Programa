@@ -18,6 +18,15 @@ const API = {
     return (typeof CONFIG !== 'undefined' && CONFIG.apiKey) ? CONFIG.apiKey : '';
   },
 
+  // Token de sesión de usuario (distinto de apiKey — apiKey identifica a
+  // la app, token identifica a la persona y su rol). Se guarda en
+  // sessionStorage: sobrevive a un refresh de la página, pero se pierde
+  // al cerrar la pestaña — más seguro que localStorage en un equipo
+  // compartido, sin obligar a re-loguear en cada F5.
+  get token() {
+    return sessionStorage.getItem('senerpot_token') || '';
+  },
+
   // Llamada principal — async/await
   async call(action, params = {}) {
     const url = this.url;
@@ -33,13 +42,20 @@ const API = {
     try {
       // GET con parámetros en URL — evita problemas de CORS con GAS
       const paramsStr = encodeURIComponent(JSON.stringify(params));
-      const fullUrl   = `${url}?action=${encodeURIComponent(action)}&params=${paramsStr}&key=${encodeURIComponent(this.key)}`;
+      const fullUrl   = `${url}?action=${encodeURIComponent(action)}&params=${paramsStr}&key=${encodeURIComponent(this.key)}&token=${encodeURIComponent(this.token)}`;
 
       const res  = await fetch(fullUrl, { redirect: 'follow' });
       const json = await res.json();
 
       if (!json.ok) {
-        if (json.codigo === 401) UI.toast('🔒 No autorizado — revisa CONFIG.apiKey', 'err');
+        if (json.codigo === 401 && action !== 'login') {
+          // Sesión inválida/expirada: forzar de vuelta a la pantalla de
+          // login en vez de dejar la app en un estado a medias.
+          if (typeof AUTH !== 'undefined') AUTH.sesionExpirada();
+        }
+        // codigo 403 (permiso denegado) no se maneja aquí a propósito:
+        // cada función que llama a la API ya tiene su propio catch que
+        // muestra el mensaje — duplicar el toast aquí solo lo repetiría.
         throw new Error(json.error || 'Error en el servidor');
       }
       return json.data;
