@@ -169,6 +169,21 @@ const PROYECTOS = {
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Fin</div><div>${p.FECHA_FIN||'—'}</div></div>
       </div>
       ${p.NOTAS ? `<div style="background:#f9fafb;padding:10px;border-radius:6px;font-size:13px;margin-bottom:14px;"><b>Notas:</b> ${p.NOTAS}</div>` : ''}
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Presupuesto del proyecto</div>
+          ${p.ID_OFERTA ? `<button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.copiarDeOferta('${id}')" title="Copiar ítems de la oferta ${p.ID_OFERTA}"><i class="ti ti-copy"></i></button>` : ''}
+        </div>
+        <div id="pry-presupuesto-lista" style="font-size:12.5px;">Cargando…</div>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+          <input type="text" id="pry-pres-desc" placeholder="Descripción" style="flex:2;min-width:120px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
+          <input type="number" id="pry-pres-cant" placeholder="Cant." value="1" style="width:55px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
+          <input type="text" id="pry-pres-unidad" placeholder="UN" value="UN" style="width:45px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
+          <input type="number" id="pry-pres-costo" placeholder="Costo unit." style="width:90px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
+          <button class="btn-primary-sm" onclick="PROYECTOS.agregarLineaPresupuestoUI('${id}')">Agregar</button>
+        </div>
+        <div id="pry-presupuesto-resumen" style="text-align:right;font-size:13px;margin-top:8px;"></div>
+      </div>
       ${this.bloqueComprasProyecto(id)}
       <div style="border-top:1px solid var(--border);padding-top:14px;">
         <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Bitácora — avances, materiales, novedades</div>
@@ -180,6 +195,7 @@ const PROYECTOS = {
       </div>`;
     document.getElementById('pry-modal-detalle')?.classList.add('open');
     document.getElementById('pry-detalle-id').value = id;
+    this.cargarPresupuesto(id);
     // El botón de eliminar solo se muestra a ADMINISTRADOR — esto es solo
     // para que la interfaz tenga sentido, la restricción real ya la aplica
     // el servidor (ver eliminarProyecto en PERMISOS, Auth.gs).
@@ -215,6 +231,98 @@ const PROYECTOS = {
       </table>
       <div style="text-align:right;font-weight:700;margin-top:6px;font-size:13px;">Total comprado: ${UI.moneda(total)}</div>
     </div>`;
+  },
+
+  totalComprasProyecto(id) {
+    return (this.DB.almacen || [])
+      .filter(c => c.ID_PROYECTO === id)
+      .reduce((sum, c) => sum + (parseFloat(c.PRECIO_COMPRA)||0) * (parseFloat(c.CANTIDAD)||1), 0);
+  },
+
+  // ── PRESUPUESTO ──────────────────────────────
+  // Se carga aparte (no viene en el obtenerDatos() compartido con Ofertas)
+  // porque, igual que la bitácora, es un detalle que solo hace falta al
+  // abrir un proyecto puntual — cargarlo siempre en el payload grande
+  // sería peso muerto para todos los que solo ven la lista.
+  async cargarPresupuesto(id) {
+    const lista = document.getElementById('pry-presupuesto-lista');
+    if (!lista) return;
+    try {
+      this._presupuestoActual = await API.call('obtenerPresupuestoProyecto', { idProyecto: id });
+      this.renderPresupuesto(id);
+    } catch(e) {
+      lista.innerHTML = '<div style="font-size:12px;color:#D32F2F;">No se pudo cargar el presupuesto.</div>';
+    }
+  },
+
+  renderPresupuesto(id) {
+    const lista  = document.getElementById('pry-presupuesto-lista');
+    const resumen = document.getElementById('pry-presupuesto-resumen');
+    if (!lista) return;
+    const lineas = this._presupuestoActual || [];
+    const totalPresupuestado = lineas.reduce((s,l) => s + (parseFloat(l.COSTO_UNITARIO)||0) * (parseFloat(l.CANTIDAD)||1), 0);
+
+    if (!lineas.length) {
+      lista.innerHTML = '<div style="font-size:12px;color:#888;">Sin líneas presupuestadas todavía.</div>';
+    } else {
+      lista.innerHTML = `<table style="width:100%;font-size:12.5px;border-collapse:collapse;"><tbody>${lineas.map(l => `
+        <tr>
+          <td>${l.DESCRIPCION||''}</td>
+          <td style="text-align:right;">${l.CANTIDAD||1} ${l.UNIDAD||'UN'}</td>
+          <td style="text-align:right;">${UI.moneda((parseFloat(l.COSTO_UNITARIO)||0) * (parseFloat(l.CANTIDAD)||1))}</td>
+          <td style="text-align:center;"><button class="btn-icon btn-icon-del" onclick="PROYECTOS.eliminarLineaPresupuestoUI('${l.ID}','${id}')" title="Eliminar"><i class="ti ti-trash"></i></button></td>
+        </tr>`).join('')}</tbody></table>`;
+    }
+
+    if (!resumen) return;
+    const totalReal = this.totalComprasProyecto(id);
+    const diferencia = totalPresupuestado - totalReal;
+    const colorDif = diferencia >= 0 ? '#009E60' : '#D32F2F';
+    resumen.innerHTML = `
+      <div>Presupuestado: <b>${UI.moneda(totalPresupuestado)}</b></div>
+      <div style="color:${colorDif};font-weight:700;">${diferencia >= 0 ? 'Disponible' : 'Excedido'}: ${UI.moneda(Math.abs(diferencia))}</div>`;
+  },
+
+  async agregarLineaPresupuestoUI(id) {
+    const descripcion   = document.getElementById('pry-pres-desc')?.value?.trim();
+    const cantidad      = document.getElementById('pry-pres-cant')?.value || 1;
+    const unidad        = document.getElementById('pry-pres-unidad')?.value || 'UN';
+    const costoUnitario = document.getElementById('pry-pres-costo')?.value || 0;
+    if (!descripcion) { UI.toast('Escribe una descripción', 'warn'); return; }
+    try {
+      const res = await API.call('agregarLineaPresupuesto', { idProyecto: id, descripcion, cantidad, unidad, costoUnitario });
+      if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      this._presupuestoActual = this._presupuestoActual || [];
+      this._presupuestoActual.push(res.data);
+      this.renderPresupuesto(id);
+      ['pry-pres-desc','pry-pres-costo'].forEach(elId => { const el = document.getElementById(elId); if (el) el.value = ''; });
+      document.getElementById('pry-pres-cant').value = 1;
+      UI.toast('Línea agregada al presupuesto', 'ok');
+    } catch(e) { UI.toast(e.message, 'err'); }
+  },
+
+  async eliminarLineaPresupuestoUI(lineaId, id) {
+    if (!UI.confirmar('¿Eliminar esta línea del presupuesto?')) return;
+    try {
+      const res = await API.call('eliminarLineaPresupuesto', { id: lineaId });
+      if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      this._presupuestoActual = (this._presupuestoActual || []).filter(l => l.ID !== lineaId);
+      this.renderPresupuesto(id);
+      UI.toast('Línea eliminada', 'ok');
+    } catch(e) { UI.toast(e.message, 'err'); }
+  },
+
+  // El costo unitario queda en 0 (ver copiarItemsOfertaAPresupuesto en
+  // Proyectos.gs) — el precio de la oferta es lo que se le cobra al
+  // cliente, no lo que cuesta comprar, así que hay que completarlo a mano.
+  async copiarDeOferta(id) {
+    if (!UI.confirmar('¿Copiar los ítems de la oferta al presupuesto? Las cantidades se copian, el costo queda en 0 para que lo completes.')) return;
+    try {
+      const res = await API.call('copiarItemsOfertaAPresupuesto', { idProyecto: id });
+      if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      await this.cargarPresupuesto(id);
+      UI.toast(res.cantidad + ' ítems copiados al presupuesto', 'ok');
+    } catch(e) { UI.toast(e.message, 'err'); }
   },
 
   async cargarComentarios(id) {
