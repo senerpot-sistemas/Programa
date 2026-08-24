@@ -176,14 +176,19 @@ const PROYECTOS = {
         </div>
         <div id="pry-presupuesto-lista" style="font-size:12.5px;">Cargando…</div>
         <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
-          <input type="text" id="pry-pres-desc" list="pry-pres-dl" placeholder="Descripción (busca en compras ya hechas)" style="flex:2;min-width:160px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;" oninput="PROYECTOS.sugerirDesdeCompra(this.value)">
+          <input type="text" id="pry-pres-desc" list="pry-pres-dl" placeholder="Descripción (busca en compras ya hechas)" style="flex:2;min-width:160px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;" oninput="PROYECTOS.sugerirDesdeCompra(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();PROYECTOS.agregarLineaLocal('${id}');}">
           <datalist id="pry-pres-dl"></datalist>
-          <input type="number" id="pry-pres-cant" placeholder="Cant." value="1" style="width:55px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
+          <input type="number" id="pry-pres-cant" placeholder="Cant." value="1" style="width:55px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;" onkeydown="if(event.key==='Enter'){event.preventDefault();PROYECTOS.agregarLineaLocal('${id}');}">
           <input type="text" id="pry-pres-unidad" placeholder="UN" value="UN" style="width:45px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
-          <input type="number" id="pry-pres-costo" placeholder="Costo unit." style="width:90px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
-          <button class="btn-primary-sm" onclick="PROYECTOS.agregarLineaPresupuestoUI('${id}', this)">Agregar</button>
+          <input type="number" id="pry-pres-costo" placeholder="Costo unit." style="width:90px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;" onkeydown="if(event.key==='Enter'){event.preventDefault();PROYECTOS.agregarLineaLocal('${id}');}">
+          <button class="btn-primary-sm" onclick="PROYECTOS.agregarLineaLocal('${id}')">+ Agregar a la lista</button>
         </div>
         <div id="pry-pres-hint" style="font-size:11px;color:#888;margin-top:4px;"></div>
+        <div id="pry-pres-guardar-wrap" style="display:none;margin-top:10px;">
+          <button class="btn-generate" id="pry-pres-btn-guardar" onclick="PROYECTOS.guardarPresupuestoLote('${id}', this)" style="width:100%;background:#F59E0B;">
+            Guardar presupuesto (<span id="pry-pres-count">0</span> líneas sin guardar)
+          </button>
+        </div>
         <div id="pry-presupuesto-resumen" style="text-align:right;font-size:13px;margin-top:8px;"></div>
       </div>
       ${this.bloqueComprasProyecto(id)}
@@ -197,6 +202,7 @@ const PROYECTOS = {
       </div>`;
     document.getElementById('pry-modal-detalle')?.classList.add('open');
     document.getElementById('pry-detalle-id').value = id;
+    this._presupuestoPendiente = []; // limpio al abrir — no arrastrar líneas sin guardar de otro proyecto
     this.poblarDatalistCompras();
     this.cargarPresupuesto(id);
     // El botón de eliminar solo se muestra a ADMINISTRADOR — esto es solo
@@ -298,59 +304,101 @@ const PROYECTOS = {
   },
 
   renderPresupuesto(id) {
-    const lista  = document.getElementById('pry-presupuesto-lista');
+    const lista   = document.getElementById('pry-presupuesto-lista');
     const resumen = document.getElementById('pry-presupuesto-resumen');
     if (!lista) return;
-    const lineas = this._presupuestoActual || [];
-    const totalPresupuestado = lineas.reduce((s,l) => s + (parseFloat(l.COSTO_UNITARIO)||0) * (parseFloat(l.CANTIDAD)||1), 0);
+    const lineas     = this._presupuestoActual || [];
+    const pendientes = this._presupuestoPendiente || [];
+    const totalGuardado  = lineas.reduce((s,l) => s + (parseFloat(l.COSTO_UNITARIO)||0) * (parseFloat(l.CANTIDAD)||1), 0);
+    const totalPendiente = pendientes.reduce((s,l) => s + (parseFloat(l.costoUnitario)||0) * (parseFloat(l.cantidad)||1), 0);
+    const totalPresupuestado = totalGuardado + totalPendiente;
 
-    if (!lineas.length) {
+    if (!lineas.length && !pendientes.length) {
       lista.innerHTML = '<div style="font-size:12px;color:#888;">Sin líneas presupuestadas todavía.</div>';
     } else {
-      lista.innerHTML = `<table style="width:100%;font-size:12.5px;border-collapse:collapse;"><tbody>${lineas.map(l => `
+      const filasGuardadas = lineas.map(l => `
         <tr>
           <td>${l.DESCRIPCION||''}</td>
           <td style="text-align:right;">${l.CANTIDAD||1} ${l.UNIDAD||'UN'}</td>
           <td style="text-align:right;">${UI.moneda((parseFloat(l.COSTO_UNITARIO)||0) * (parseFloat(l.CANTIDAD)||1))}</td>
           <td style="text-align:center;"><button class="btn-icon btn-icon-del" onclick="PROYECTOS.eliminarLineaPresupuestoUI('${l.ID}','${id}')" title="Eliminar"><i class="ti ti-trash"></i></button></td>
-        </tr>`).join('')}</tbody></table>`;
+        </tr>`).join('');
+      // Las líneas "sin guardar" viven solo en memoria (this._presupuestoPendiente)
+      // hasta que se aprieta "Guardar presupuesto" — se ven marcadas en naranja
+      // para que quede claro que todavía no están en la base de datos.
+      const filasPendientes = pendientes.map(l => `
+        <tr style="background:#FFF8E1;">
+          <td>${l.descripcion} <span class="badge badge-orange" style="font-size:9px;">sin guardar</span></td>
+          <td style="text-align:right;">${l.cantidad} ${l.unidad}</td>
+          <td style="text-align:right;">${UI.moneda((l.costoUnitario||0) * (l.cantidad||1))}</td>
+          <td style="text-align:center;"><button class="btn-icon btn-icon-del" onclick="PROYECTOS.quitarLineaPendiente('${id}','${l._tempId}')" title="Quitar de la lista"><i class="ti ti-x"></i></button></td>
+        </tr>`).join('');
+      lista.innerHTML = `<table style="width:100%;font-size:12.5px;border-collapse:collapse;"><tbody>${filasGuardadas}${filasPendientes}</tbody></table>`;
     }
+
+    const wrapGuardar = document.getElementById('pry-pres-guardar-wrap');
+    const countEl     = document.getElementById('pry-pres-count');
+    if (wrapGuardar) wrapGuardar.style.display = pendientes.length ? 'block' : 'none';
+    if (countEl) countEl.textContent = pendientes.length;
 
     if (!resumen) return;
     const totalReal = this.totalComprasProyecto(id);
     const diferencia = totalPresupuestado - totalReal;
     const colorDif = diferencia >= 0 ? '#009E60' : '#D32F2F';
     resumen.innerHTML = `
-      <div>Presupuestado: <b>${UI.moneda(totalPresupuestado)}</b></div>
+      <div>Presupuestado: <b>${UI.moneda(totalPresupuestado)}</b>${pendientes.length ? ` <span style="color:#F59E0B;font-weight:400;">(incluye ${pendientes.length} sin guardar)</span>` : ''}</div>
       <div style="color:${colorDif};font-weight:700;">${diferencia >= 0 ? 'Disponible' : 'Excedido'}: ${UI.moneda(Math.abs(diferencia))}</div>`;
   },
 
-  async agregarLineaPresupuestoUI(id, btn) {
-    // Mismo resguardo que ALMACEN.guardar(): sin esto, un clic mientras
-    // se espera la respuesta de Apps Script (que puede tardar) parece no
-    // hacer nada, y un segundo clic termina agregando la línea dos veces.
-    if (this._agregandoPresupuesto) return;
-    this._agregandoPresupuesto = true;
-    UI.spin(btn, true);
-
+  // Agregar a la lista NO llama al servidor — solo mete la línea en un
+  // arreglo en memoria y vuelve a pintar. Por eso se siente instantáneo
+  // aunque se agreguen 20 ítems seguidos; antes cada "Agregar" era un
+  // viaje de red a Apps Script (que puede tardar varios segundos), así
+  // que cargar muchos ítems uno por uno se sentía lentísimo.
+  agregarLineaLocal(id) {
     const descripcion   = document.getElementById('pry-pres-desc')?.value?.trim();
     const cantidad      = document.getElementById('pry-pres-cant')?.value || 1;
     const unidad        = document.getElementById('pry-pres-unidad')?.value || 'UN';
     const costoUnitario = document.getElementById('pry-pres-costo')?.value || 0;
-    if (!descripcion) { UI.toast('Escribe una descripción', 'warn'); this._agregandoPresupuesto = false; UI.spin(btn, false); return; }
+    if (!descripcion) { UI.toast('Escribe una descripción', 'warn'); return; }
+
+    this._presupuestoPendiente = this._presupuestoPendiente || [];
+    this._presupuestoPendiente.push({
+      _tempId: 'tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2),
+      descripcion, unidad, cantidad: parseFloat(cantidad)||1, costoUnitario: parseFloat(costoUnitario)||0
+    });
+    this.renderPresupuesto(id);
+
+    ['pry-pres-desc','pry-pres-costo'].forEach(elId => { const el = document.getElementById(elId); if (el) el.value = ''; });
+    document.getElementById('pry-pres-cant').value = 1;
+    const hint = document.getElementById('pry-pres-hint');
+    if (hint) hint.textContent = '';
+    document.getElementById('pry-pres-desc')?.focus(); // listo para seguir escribiendo el siguiente ítem sin tocar el mouse
+  },
+
+  quitarLineaPendiente(id, tempId) {
+    this._presupuestoPendiente = (this._presupuestoPendiente || []).filter(l => l._tempId !== tempId);
+    this.renderPresupuesto(id);
+  },
+
+  // El único viaje al servidor: manda todas las líneas acumuladas de una
+  // sola vez (agregarLineasPresupuestoLote hace una sola escritura en la
+  // hoja para todas), en vez de una llamada por línea.
+  async guardarPresupuestoLote(id, btn) {
+    const pendientes = this._presupuestoPendiente || [];
+    if (!pendientes.length) return;
+    if (this._guardandoLote) return;
+    this._guardandoLote = true;
+    UI.spin(btn, true);
     try {
-      const res = await API.call('agregarLineaPresupuesto', { idProyecto: id, descripcion, cantidad, unidad, costoUnitario });
+      const res = await API.call('agregarLineasPresupuestoLote', { idProyecto: id, items: pendientes });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
-      this._presupuestoActual = this._presupuestoActual || [];
-      this._presupuestoActual.push(res.data);
+      this._presupuestoActual = (this._presupuestoActual || []).concat(res.data);
+      this._presupuestoPendiente = [];
       this.renderPresupuesto(id);
-      ['pry-pres-desc','pry-pres-costo'].forEach(elId => { const el = document.getElementById(elId); if (el) el.value = ''; });
-      document.getElementById('pry-pres-cant').value = 1;
-      const hint = document.getElementById('pry-pres-hint');
-      if (hint) hint.textContent = '';
-      UI.toast('Línea agregada al presupuesto', 'ok');
+      UI.toast(res.data.length + ' línea' + (res.data.length === 1 ? '' : 's') + ' guardada' + (res.data.length === 1 ? '' : 's'), 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._agregandoPresupuesto = false; UI.spin(btn, false); }
+    finally { this._guardandoLote = false; UI.spin(btn, false); }
   },
 
   async eliminarLineaPresupuestoUI(lineaId, id) {
@@ -463,7 +511,16 @@ const PROYECTOS = {
     } catch(e) { UI.toast(e.message, 'err'); }
   },
 
-  cerrarModal(id) { document.getElementById(id)?.classList.remove('open'); }
+  cerrarModal(id) {
+    // Las líneas de presupuesto "sin guardar" solo viven en memoria — si
+    // se cierra el modal sin apretar "Guardar presupuesto", se pierden.
+    // Avisar antes en vez de descartarlas en silencio.
+    if (id === 'pry-modal-detalle' && (this._presupuestoPendiente || []).length) {
+      if (!UI.confirmar(`Tienes ${this._presupuestoPendiente.length} línea(s) de presupuesto sin guardar. ¿Cerrar de todos modos y perderlas?`)) return;
+      this._presupuestoPendiente = [];
+    }
+    document.getElementById(id)?.classList.remove('open');
+  }
 };
 
 
