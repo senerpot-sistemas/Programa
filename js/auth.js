@@ -19,7 +19,8 @@ const AUTH = {
     ADMINISTRADOR:  ['home','panel','ofertas','proyectos','contabilidad','almacen','reportes','usuarios'],
     COMERCIAL:      ['home','panel','ofertas','proyectos'],
     ADMINISTRATIVO: ['home','panel','contabilidad','almacen','reportes'],
-    TECNICO:        ['home','proyectos','almacen']
+    TECNICO:        ['home','proyectos','almacen'],
+    INGENIERIA:     ['home','panel','ofertas','proyectos','almacen']
   },
 
   init() {
@@ -47,7 +48,7 @@ const AUTH = {
     document.getElementById('app-shell').style.display = 'flex';
     this.aplicarRol();
 
-    const NOMBRES_ROL = { ADMINISTRADOR: 'Administrador', COMERCIAL: 'Comercial', ADMINISTRATIVO: 'Administrativo', TECNICO: 'Técnico' };
+    const NOMBRES_ROL = { ADMINISTRADOR: 'Administrador', COMERCIAL: 'Comercial', ADMINISTRATIVO: 'Administrativo', TECNICO: 'Técnico', INGENIERIA: 'Ingeniería' };
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('user-nombre-actual', this.nombre || this.usuario);
     set('user-rol-actual', NOMBRES_ROL[this.rol] || this.rol);
@@ -171,7 +172,7 @@ const USUARIOS = {
     const tbody = document.getElementById('usr-tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    const NOMBRES_ROL = { ADMINISTRADOR: 'Administrador', COMERCIAL: 'Comercial', ADMINISTRATIVO: 'Administrativo', TECNICO: 'Técnico' };
+    const NOMBRES_ROL = { ADMINISTRADOR: 'Administrador', COMERCIAL: 'Comercial', ADMINISTRATIVO: 'Administrativo', TECNICO: 'Técnico', INGENIERIA: 'Ingeniería' };
     (this.DB || []).forEach(u => {
       const activo = u.ACTIVO === true || String(u.ACTIVO).toUpperCase() === 'TRUE';
       const tr = document.createElement('tr');
