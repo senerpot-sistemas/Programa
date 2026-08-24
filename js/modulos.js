@@ -181,7 +181,7 @@ const PROYECTOS = {
           <input type="number" id="pry-pres-cant" placeholder="Cant." value="1" style="width:55px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
           <input type="text" id="pry-pres-unidad" placeholder="UN" value="UN" style="width:45px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
           <input type="number" id="pry-pres-costo" placeholder="Costo unit." style="width:90px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
-          <button class="btn-primary-sm" onclick="PROYECTOS.agregarLineaPresupuestoUI('${id}')">Agregar</button>
+          <button class="btn-primary-sm" onclick="PROYECTOS.agregarLineaPresupuestoUI('${id}', this)">Agregar</button>
         </div>
         <div id="pry-pres-hint" style="font-size:11px;color:#888;margin-top:4px;"></div>
         <div id="pry-presupuesto-resumen" style="text-align:right;font-size:13px;margin-top:8px;"></div>
@@ -325,12 +325,19 @@ const PROYECTOS = {
       <div style="color:${colorDif};font-weight:700;">${diferencia >= 0 ? 'Disponible' : 'Excedido'}: ${UI.moneda(Math.abs(diferencia))}</div>`;
   },
 
-  async agregarLineaPresupuestoUI(id) {
+  async agregarLineaPresupuestoUI(id, btn) {
+    // Mismo resguardo que ALMACEN.guardar(): sin esto, un clic mientras
+    // se espera la respuesta de Apps Script (que puede tardar) parece no
+    // hacer nada, y un segundo clic termina agregando la línea dos veces.
+    if (this._agregandoPresupuesto) return;
+    this._agregandoPresupuesto = true;
+    UI.spin(btn, true);
+
     const descripcion   = document.getElementById('pry-pres-desc')?.value?.trim();
     const cantidad      = document.getElementById('pry-pres-cant')?.value || 1;
     const unidad        = document.getElementById('pry-pres-unidad')?.value || 'UN';
     const costoUnitario = document.getElementById('pry-pres-costo')?.value || 0;
-    if (!descripcion) { UI.toast('Escribe una descripción', 'warn'); return; }
+    if (!descripcion) { UI.toast('Escribe una descripción', 'warn'); this._agregandoPresupuesto = false; UI.spin(btn, false); return; }
     try {
       const res = await API.call('agregarLineaPresupuesto', { idProyecto: id, descripcion, cantidad, unidad, costoUnitario });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -343,6 +350,7 @@ const PROYECTOS = {
       if (hint) hint.textContent = '';
       UI.toast('Línea agregada al presupuesto', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._agregandoPresupuesto = false; UI.spin(btn, false); }
   },
 
   async eliminarLineaPresupuestoUI(lineaId, id) {
@@ -573,7 +581,16 @@ const ALMACEN = {
 
   cerrarModal() { document.getElementById('alm-modal')?.classList.remove('open'); },
 
-  async guardar() {
+  async guardar(btn) {
+    // Sin esto, un clic mientras Apps Script todavía está respondiendo
+    // (puede tardar varios segundos) parece no hacer nada, y el impulso
+    // natural es volver a hacer clic — eso duplica la compra. Deshabilitar
+    // el botón apenas se hace clic evita que un segundo clic dispare una
+    // segunda escritura antes de que vuelva la respuesta de la primera.
+    if (this._guardando) return;
+    this._guardando = true;
+    UI.spin(btn, true);
+
     const obj = {
       _rowIndex:    document.getElementById('alm-edit-idx')?.value,
       id:           this._editId || undefined,
@@ -588,7 +605,7 @@ const ALMACEN = {
       referencia:   document.getElementById('alm-referencia')?.value,
       notas:        document.getElementById('alm-notas-modal')?.value
     };
-    if (!obj.descripcion) { UI.toast('Falta descripción', 'warn'); return; }
+    if (!obj.descripcion) { UI.toast('Falta descripción', 'warn'); this._guardando = false; UI.spin(btn, false); return; }
     const accion = obj._rowIndex ? 'editarItemAlmacen' : 'guardarItemAlmacen';
     try {
       const res = await API.call(accion, obj);
@@ -601,6 +618,7 @@ const ALMACEN = {
       this.cerrarModal();
       UI.toast('Compra guardada', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._guardando = false; UI.spin(btn, false); }
   },
 
   async eliminar(i) {
