@@ -169,6 +169,7 @@ const PROYECTOS = {
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Fin</div><div>${p.FECHA_FIN||'—'}</div></div>
       </div>
       ${p.NOTAS ? `<div style="background:#f9fafb;padding:10px;border-radius:6px;font-size:13px;margin-bottom:14px;"><b>Notas:</b> ${p.NOTAS}</div>` : ''}
+      ${this.bloqueComprasProyecto(id)}
       <div style="border-top:1px solid var(--border);padding-top:14px;">
         <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Bitácora — avances, materiales, novedades</div>
         <div id="pry-comentarios-lista" style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">Cargando…</div>
@@ -185,6 +186,35 @@ const PROYECTOS = {
     const btnEliminar = document.getElementById('pry-btn-eliminar');
     if (btnEliminar) btnEliminar.style.display = (typeof AUTH !== 'undefined' && AUTH.rol === 'ADMINISTRADOR') ? '' : 'none';
     this.cargarComentarios(id);
+  },
+
+  // Costo real del proyecto — suma en memoria de las compras del módulo
+  // Compras (BD_ALMACEN) que quedaron marcadas con este ID_PROYECTO. No es
+  // una llamada nueva a la API: this.DB.almacen ya viene incluido en el
+  // mismo obtenerDatos() que cargó los proyectos (ver DatosERP en api.js).
+  bloqueComprasProyecto(id) {
+    const compras = (this.DB.almacen || []).filter(c => c.ID_PROYECTO === id);
+    const total = compras.reduce((sum, c) => sum + (parseFloat(c.PRECIO_COMPRA)||0) * (parseFloat(c.CANTIDAD)||1), 0);
+    if (!compras.length) {
+      return `<div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Compras cargadas a este proyecto</div>
+        <div style="font-size:12px;color:#888;">Sin compras registradas todavía. Se cargan desde el módulo Compras, eligiendo este proyecto.</div>
+      </div>`;
+    }
+    const filas = compras.map(c => `
+      <tr>
+        <td>${c.DESCRIPCION||''}</td>
+        <td style="text-align:right;">${c.CANTIDAD||1} ${c.UNIDAD||'UN'}</td>
+        <td>${c.PROVEEDOR||'—'}</td>
+        <td style="text-align:right;">${UI.moneda((parseFloat(c.PRECIO_COMPRA)||0) * (parseFloat(c.CANTIDAD)||1))}</td>
+      </tr>`).join('');
+    return `<div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Compras cargadas a este proyecto</div>
+      <table style="width:100%;font-size:12.5px;border-collapse:collapse;">
+        <tbody>${filas}</tbody>
+      </table>
+      <div style="text-align:right;font-weight:700;margin-top:6px;font-size:13px;">Total comprado: ${UI.moneda(total)}</div>
+    </div>`;
   },
 
   async cargarComentarios(id) {
@@ -278,23 +308,35 @@ const PROYECTOS = {
 
 
 /* ═══════════════════════════════════════════════
-   ALMACEN
+   ALMACEN (mostrado como "Compras" en la interfaz) — registro de compras
+   reales por proyecto: cada fila es una compra (proveedor, cantidad,
+   precio y a qué proyecto se cargó), no un catálogo de inventario físico
+   — SENERPOT no maneja bodega.
 ═══════════════════════════════════════════════ */
 const ALMACEN = {
 
   DB: [],
+  _proyectos: [],
   CATEGORIAS: ['MATERIALES','EQUIPOS','HERRAMIENTAS','SERVICIOS','REPUESTOS','OTROS'],
 
   async init() {
     try {
-      this.DB = await API.call('obtenerAlmacen');
+      const data = await DatosERP.obtener();
+      this.DB = data.almacen || [];
+      this._proyectos = data.proyectos || [];
       this.render();
-    } catch(e) { UI.toast('Error cargando almacén', 'err'); }
+    } catch(e) { UI.toast('Error cargando compras', 'err'); }
   },
 
   render() {
     this.renderTabla();
     this.poblarFiltros();
+  },
+
+  nombreProyecto(idProyecto) {
+    if (!idProyecto) return '<span style="color:#ccc">— General —</span>';
+    const p = this._proyectos.find(x => x.ID_PROYECTO === idProyecto);
+    return p ? `${p.ID_PROYECTO} — ${p.CLIENTE||''}` : idProyecto;
   },
 
   renderTabla(filtro = '') {
@@ -304,7 +346,7 @@ const ALMACEN = {
     let lista = this.DB || [];
     if (filtro) lista = lista.filter(i => String(i.CATEGORIA||'').toUpperCase() === filtro.toUpperCase());
     if (!lista.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">Sin ítems. Agrega materiales o servicios.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888">Sin compras registradas todavía.</td></tr>';
       return;
     }
     lista.forEach(i => {
@@ -313,9 +355,10 @@ const ALMACEN = {
         <td><span class="badge badge-blue" style="font-size:10px">${i.CATEGORIA||''}</span></td>
         <td>${i.DESCRIPCION||''}</td>
         <td>${i.UNIDAD||'UN'}</td>
+        <td class="text-right">${i.CANTIDAD||1}</td>
         <td>${i.PROVEEDOR||'—'}</td>
         <td class="text-right">${UI.moneda(i.PRECIO_COMPRA||0)}</td>
-        <td class="text-right">${UI.moneda(i.PRECIO_VENTA||0)}</td>
+        <td style="font-size:12px;">${this.nombreProyecto(i.ID_PROYECTO)}</td>
         <td style="text-align:center;white-space:nowrap;">
           <button class="btn-icon btn-icon-edit" onclick='ALMACEN.editarUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Editar"><i class="ti ti-edit"></i></button>
           <button class="btn-icon btn-icon-del" onclick='ALMACEN.eliminar(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Eliminar"><i class="ti ti-trash"></i></button>
@@ -341,8 +384,21 @@ const ALMACEN = {
     if (selMod) { selMod.innerHTML = ''; this.CATEGORIAS.forEach(c => { const o = document.createElement('option'); o.value = c; o.text = c; selMod.add(o); }); }
   },
 
+  poblarSelectProyectos(actual = '') {
+    const sel = document.getElementById('alm-sel-proyecto');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— Compra general (sin proyecto) —</option>';
+    this._proyectos.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.ID_PROYECTO;
+      o.text  = `${p.ID_PROYECTO} — ${p.CLIENTE||''}`;
+      sel.add(o);
+    });
+    sel.value = actual;
+  },
+
   abrirModal(i = null) {
-    document.getElementById('alm-modal-title').textContent = i ? 'Editar Ítem' : 'Nuevo Ítem';
+    document.getElementById('alm-modal-title').textContent = i ? 'Editar Compra' : 'Nueva Compra';
     document.getElementById('alm-edit-idx').value = i ? i._rowIndex : '';
     // ID_ITEM es el ID inmutable asignado al crear el ítem (ver Proyectos.gs)
     // — se reenvía en guardar()/eliminar() para el bloqueo optimista.
@@ -351,11 +407,13 @@ const ALMACEN = {
     set('alm-cat-modal',   i?.CATEGORIA || 'MATERIALES');
     set('alm-desc',         i?.DESCRIPCION);
     set('alm-unidad',       i?.UNIDAD || 'UN');
+    set('alm-cantidad',     i?.CANTIDAD || 1);
     set('alm-proveedor',    i?.PROVEEDOR);
     set('alm-precio-c',     i?.PRECIO_COMPRA || 0);
     set('alm-precio-v',     i?.PRECIO_VENTA  || 0);
     set('alm-referencia',   i?.REFERENCIA);
     set('alm-notas-modal',  i?.NOTAS);
+    this.poblarSelectProyectos(i?.ID_PROYECTO || '');
     document.getElementById('alm-modal').classList.add('open');
   },
 
@@ -370,9 +428,11 @@ const ALMACEN = {
       categoria:    document.getElementById('alm-cat-modal')?.value,
       descripcion:  document.getElementById('alm-desc')?.value,
       unidad:       document.getElementById('alm-unidad')?.value || 'UN',
+      cantidad:     document.getElementById('alm-cantidad')?.value || 1,
       proveedor:    document.getElementById('alm-proveedor')?.value,
       precioCompra: document.getElementById('alm-precio-c')?.value || 0,
       precioVenta:  document.getElementById('alm-precio-v')?.value || 0,
+      idProyecto:   document.getElementById('alm-sel-proyecto')?.value || '',
       referencia:   document.getElementById('alm-referencia')?.value,
       notas:        document.getElementById('alm-notas-modal')?.value
     };
@@ -387,7 +447,7 @@ const ALMACEN = {
       Store.upsert(this.DB, res.data);
       this.renderTabla(document.getElementById('alm-filtro-cat')?.value || '');
       this.cerrarModal();
-      UI.toast('Ítem guardado', 'ok');
+      UI.toast('Compra guardada', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
   },
 

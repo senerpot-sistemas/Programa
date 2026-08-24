@@ -445,7 +445,7 @@
         <i class="ti ti-calculator"></i> Contabilidad
       </button>
       <button class="nav-item" id="nav-almacen" data-modulo="almacen" onclick="navegarA('almacen')">
-        <i class="ti ti-package"></i> Almacén
+        <i class="ti ti-shopping-cart"></i> Compras
         <span class="nav-badge nuevo">Nuevo</span>
       </button>
       <button class="nav-item" id="nav-reportes" data-modulo="reportes" onclick="navegarA('reportes')">
@@ -536,9 +536,9 @@
           </div>
 
           <div class="module-card" data-modulo="almacen" style="--accent:#534AB7" onclick="navegarA('almacen')">
-            <div class="module-icon"><i class="ti ti-package"></i></div>
-            <div class="module-name">Almacén</div>
-            <div class="module-desc">Catálogo de materiales, precios y proveedores</div>
+            <div class="module-icon"><i class="ti ti-shopping-cart"></i></div>
+            <div class="module-name">Compras</div>
+            <div class="module-desc">Compras, proveedores y costos por proyecto</div>
             <div class="module-footer">
               <span class="status-badge nuevo">Nuevo</span>
               <i class="ti ti-arrow-right module-arrow"></i>
@@ -1082,27 +1082,31 @@
           <select id="alm-filtro-cat" onchange="ALMACEN.filtrar()" style="padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
             <option value="">Todas las categorías</option>
           </select>
-          <button class="btn-primary-sm" onclick="ALMACEN.abrirModal()"><i class="ti ti-plus"></i> Nuevo ítem</button>
+          <button class="btn-primary-sm" onclick="ALMACEN.abrirModal()"><i class="ti ti-plus"></i> Nueva compra</button>
         </div>
         <div class="table-scroll">
         <table class="data-tbl">
-          <thead><tr><th style="width:110px">Categoría</th><th>Descripción</th><th style="width:50px">UN</th><th>Proveedor</th><th style="width:110px" class="text-right">P. Compra</th><th style="width:110px" class="text-right">P. Venta</th><th style="width:70px"></th></tr></thead>
+          <thead><tr><th style="width:110px">Categoría</th><th>Descripción</th><th style="width:50px">UN</th><th style="width:60px" class="text-right">Cant.</th><th>Proveedor</th><th style="width:110px" class="text-right">P. Compra</th><th>Proyecto</th><th style="width:70px"></th></tr></thead>
           <tbody id="alm-tbody"></tbody>
         </table>
         </div>
         <!-- Modal -->
         <div id="alm-modal" class="modal-overlay">
           <div class="modal-box">
-            <div class="modal-header"><span id="alm-modal-title">Nuevo Ítem</span><button class="modal-close" onclick="ALMACEN.cerrarModal()">×</button></div>
+            <div class="modal-header"><span id="alm-modal-title">Nueva Compra</span><button class="modal-close" onclick="ALMACEN.cerrarModal()">×</button></div>
             <input type="hidden" id="alm-edit-idx">
             <div class="field-group mb10"><label>Categoría</label><select id="alm-cat-modal"></select></div>
             <div class="field-group mb10"><label>Descripción *</label><textarea id="alm-desc" rows="2" placeholder="Nombre completo del material o servicio"></textarea></div>
-            <div class="field-group mb10"><label>Unidad</label><input type="text" id="alm-unidad" value="UN"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+              <div class="field-group"><label>Unidad</label><input type="text" id="alm-unidad" value="UN"></div>
+              <div class="field-group"><label>Cantidad</label><input type="number" id="alm-cantidad" value="1"></div>
+            </div>
             <div class="field-group mb10"><label>Proveedor</label><input type="text" id="alm-proveedor" placeholder="Nombre del proveedor"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-              <div class="field-group"><label>Precio Compra</label><input type="number" id="alm-precio-c" value="0"></div>
-              <div class="field-group"><label>Precio Venta</label><input type="number" id="alm-precio-v" value="0"></div>
+              <div class="field-group"><label>Precio Compra (unitario)</label><input type="number" id="alm-precio-c" value="0"></div>
+              <div class="field-group"><label>Precio Venta (unitario)</label><input type="number" id="alm-precio-v" value="0"></div>
             </div>
+            <div class="field-group mb10"><label>Proyecto relacionado</label><select id="alm-sel-proyecto"><option value="">— Compra general (sin proyecto) —</option></select></div>
             <div class="field-group mb10"><label>Referencia / Cod. Fabricante</label><input type="text" id="alm-referencia"></div>
             <div class="field-group mb15"><label>Notas</label><textarea id="alm-notas-modal" rows="2"></textarea></div>
             <button class="btn-generate" onclick="ALMACEN.guardar()">Guardar</button>
@@ -1146,8 +1150,8 @@
               <select id="usr-rol">
                 <option value="ADMINISTRADOR">Administrador — acceso total</option>
                 <option value="COMERCIAL">Comercial — Ofertas, ver Proyectos, Panel</option>
-                <option value="ADMINISTRATIVO">Administrativo — Contabilidad, Almacén, Panel, Reportes</option>
-                <option value="TECNICO">Técnico — Proyectos (ver/actualizar/comentar), ver Almacén</option>
+                <option value="ADMINISTRATIVO">Administrativo — Contabilidad, Compras, Panel, Reportes</option>
+                <option value="TECNICO">Técnico — Proyectos (ver/actualizar/comentar), ver Compras</option>
               </select>
             </div>
             <div class="field-group mb15" style="flex-direction:row;align-items:center;gap:8px;">
@@ -1188,7 +1192,7 @@
     ofertas:       'Ofertas',
     proyectos:     'Proyectos',
     contabilidad:  'Contabilidad',
-    almacen:       'Almacén',
+    almacen:       'Compras',
     reportes:      'Reportes'
   };
 
