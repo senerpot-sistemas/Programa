@@ -704,6 +704,11 @@ const PANEL = {
 
   charts: {},
 
+  // null = mes actual (default al entrar); 0-11 = ese mes del año en curso;
+  // 'ANIO' = todo el año. Se guarda aquí (no solo en el <select>) para que
+  // recargar los datos y volver a pintar no dependa de leer el DOM primero.
+  periodo: null,
+
   async init() {
     const el = document.getElementById('panel-loader');
     if (el) el.style.display = 'flex';
@@ -718,33 +723,59 @@ const PANEL = {
       document.getElementById('panel-content').style.display = 'block';
       this.renderKPIs(data.kpis);
       this.renderCharts(data.charts);
-      this.renderResumenOfertas(erp.historial || []);
-      this.renderResumenProyectos(erp.proyectos || []);
+      const sel = document.getElementById('panel-periodo');
+      if (sel) sel.value = String(new Date().getMonth()); // arranca en el mes actual
+      this._erp = erp;
+      this.renderResumen();
     } catch(e) {
       if (el) el.innerHTML = '<div style="color:#D32F2F">Error: ' + e.message + '</div>';
     }
   },
 
-  // BD_OFERTAS.FECHA llega como "dd/MM/yyyy" o "dd/MM/yyyy HH:mm" (Sheets
-  // autoconvierte fechas al escribir) — new Date(str) con ese formato la
-  // interpretaría como MM/dd/yyyy y daría el mes equivocado, así que se
-  // parsea a mano (mismo patrón que _parseFechaDMY en PROYECTOS).
-  _esDeEsteMes(fechaStr) {
+  cambiarPeriodo() {
+    const sel = document.getElementById('panel-periodo');
+    this.periodo = sel.value === 'ANIO' ? 'ANIO' : parseInt(sel.value, 10);
+    this.renderResumen();
+  },
+
+  // BD_OFERTAS.FECHA / BD_PROYECTOS.FECHA_CREACION llegan como "dd/MM/yyyy"
+  // o "dd/MM/yyyy HH:mm" (Sheets autoconvierte fechas al escribir) —
+  // new Date(str) con ese formato la interpretaría como MM/dd/yyyy y daría
+  // el mes equivocado, así que se parsea a mano. Todos los datos actuales
+  // son de 2026 — cuando exista un segundo año, esto se extiende con un
+  // selector de año además del de mes.
+  _coincideConPeriodo(fechaStr) {
     const p = String(fechaStr||'').split(' ')[0].split('/');
     if (p.length !== 3) return false;
-    const hoy = new Date();
-    return (parseInt(p[1],10) - 1) === hoy.getMonth() && parseInt(p[2],10) === hoy.getFullYear();
+    const anio = parseInt(p[2],10);
+    if (anio !== new Date().getFullYear()) return false;
+    if (this.periodo === 'ANIO') return true;
+    const mesObjetivo = this.periodo === null ? new Date().getMonth() : this.periodo;
+    return (parseInt(p[1],10) - 1) === mesObjetivo;
+  },
+
+  renderResumen() {
+    if (!this._erp) return;
+    const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const label = document.getElementById('panel-periodo-label');
+    if (label) {
+      const nombrePeriodo = this.periodo === 'ANIO' ? ('Todo ' + new Date().getFullYear())
+        : MESES[this.periodo === null ? new Date().getMonth() : this.periodo] + ' ' + new Date().getFullYear();
+      label.textContent = 'Ofertas y Proyectos — ' + nombrePeriodo;
+    }
+    this.renderResumenOfertas(this._erp.historial || []);
+    this.renderResumenProyectos(this._erp.proyectos || []);
   },
 
   renderResumenOfertas(historial) {
-    const delMes = historial.filter(h => this._esDeEsteMes(h.FECHA));
-    const generadas  = delMes.filter(h => h.ESTADO === 'GENERADA').length;
-    const aprobadas  = delMes.filter(h => h.ESTADO === 'APROBADA').length;
-    const rechazadas = delMes.filter(h => h.ESTADO === 'RECHAZADA').length;
-    const valor = delMes.reduce((s,h) => s + OFERTAS.parseTotalOferta(h.TOTAL), 0);
+    const delPeriodo = historial.filter(h => this._coincideConPeriodo(h.FECHA));
+    const generadas  = delPeriodo.filter(h => h.ESTADO === 'GENERADA').length;
+    const aprobadas  = delPeriodo.filter(h => h.ESTADO === 'APROBADA').length;
+    const rechazadas = delPeriodo.filter(h => h.ESTADO === 'RECHAZADA').length;
+    const valor = delPeriodo.reduce((s,h) => s + OFERTAS.parseTotalOferta(h.TOTAL), 0);
 
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set('panel-of-total',      delMes.length);
+    set('panel-of-total',      delPeriodo.length);
     set('panel-of-generadas',  generadas);
     set('panel-of-aprobadas',  aprobadas);
     set('panel-of-rechazadas', rechazadas);
@@ -752,10 +783,11 @@ const PANEL = {
   },
 
   renderResumenProyectos(proyectos) {
-    const activos = proyectos.filter(p => !['TERMINADO','FACTURADO','COBRADO'].includes(p.ESTADO));
-    const porIniciar = activos.filter(p => p.ESTADO === 'POR_INICIAR').length;
-    const enProgreso = activos.filter(p => p.ESTADO === 'EN_PROGRESO').length;
-    const valor = activos.reduce((s,p) => s + (parseFloat(p.VALOR)||0), 0);
+    const delPeriodo = proyectos.filter(p => this._coincideConPeriodo(p.FECHA_CREACION));
+    const activos = delPeriodo.filter(p => !['TERMINADO','FACTURADO','COBRADO'].includes(p.ESTADO));
+    const porIniciar = delPeriodo.filter(p => p.ESTADO === 'POR_INICIAR').length;
+    const enProgreso = delPeriodo.filter(p => p.ESTADO === 'EN_PROGRESO').length;
+    const valor = delPeriodo.reduce((s,p) => s + (parseFloat(p.VALOR)||0), 0);
 
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('panel-pry-activos',    activos.length);

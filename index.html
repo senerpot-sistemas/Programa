@@ -583,7 +583,24 @@
           <span>Cargando datos...</span>
         </div>
         <div id="panel-content" style="display:none;">
-          <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Ofertas — este mes</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+            <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;" id="panel-periodo-label">Ofertas y Proyectos</div>
+            <select id="panel-periodo" onchange="PANEL.cambiarPeriodo()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;">
+              <option value="ANIO">Todo el año</option>
+              <option value="0">Enero</option>
+              <option value="1">Febrero</option>
+              <option value="2">Marzo</option>
+              <option value="3">Abril</option>
+              <option value="4">Mayo</option>
+              <option value="5">Junio</option>
+              <option value="6">Julio</option>
+              <option value="7">Agosto</option>
+              <option value="8">Septiembre</option>
+              <option value="9">Octubre</option>
+              <option value="10">Noviembre</option>
+              <option value="11">Diciembre</option>
+            </select>
+          </div>
           <div class="kpi-grid-5" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;">
             <div class="kpi-card" style="border-top-color:#64748B"><div class="kpi-label">Ofertas creadas</div><div class="kpi-val" id="panel-of-total">0</div></div>
             <div class="kpi-card" style="border-top-color:#3B82F6"><div class="kpi-label">Generadas (pendientes)</div><div class="kpi-val" id="panel-of-generadas">0</div></div>
@@ -592,7 +609,7 @@
             <div class="kpi-card" style="border-top-color:#8B5CF6"><div class="kpi-label">Valor cotizado</div><div class="kpi-val" id="panel-of-valor">$ 0</div></div>
           </div>
 
-          <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Proyectos — estado actual</div>
+          <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Proyectos creados en el período</div>
           <div class="kpi-grid-5" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
             <div class="kpi-card" style="border-top-color:#1D9E75"><div class="kpi-label">Proyectos activos</div><div class="kpi-val" id="panel-pry-activos">0</div></div>
             <div class="kpi-card" style="border-top-color:#64748B"><div class="kpi-label">Por iniciar</div><div class="kpi-val" id="panel-pry-porIniciar">0</div></div>
