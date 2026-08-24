@@ -176,12 +176,14 @@ const PROYECTOS = {
         </div>
         <div id="pry-presupuesto-lista" style="font-size:12.5px;">Cargando…</div>
         <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
-          <input type="text" id="pry-pres-desc" placeholder="Descripción" style="flex:2;min-width:120px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
+          <input type="text" id="pry-pres-desc" list="pry-pres-dl" placeholder="Descripción (busca en compras ya hechas)" style="flex:2;min-width:160px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;" oninput="PROYECTOS.sugerirDesdeCompra(this.value)">
+          <datalist id="pry-pres-dl"></datalist>
           <input type="number" id="pry-pres-cant" placeholder="Cant." value="1" style="width:55px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
           <input type="text" id="pry-pres-unidad" placeholder="UN" value="UN" style="width:45px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
           <input type="number" id="pry-pres-costo" placeholder="Costo unit." style="width:90px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
           <button class="btn-primary-sm" onclick="PROYECTOS.agregarLineaPresupuestoUI('${id}')">Agregar</button>
         </div>
+        <div id="pry-pres-hint" style="font-size:11px;color:#888;margin-top:4px;"></div>
         <div id="pry-presupuesto-resumen" style="text-align:right;font-size:13px;margin-top:8px;"></div>
       </div>
       ${this.bloqueComprasProyecto(id)}
@@ -195,6 +197,7 @@ const PROYECTOS = {
       </div>`;
     document.getElementById('pry-modal-detalle')?.classList.add('open');
     document.getElementById('pry-detalle-id').value = id;
+    this.poblarDatalistCompras();
     this.cargarPresupuesto(id);
     // El botón de eliminar solo se muestra a ADMINISTRADOR — esto es solo
     // para que la interfaz tenga sentido, la restricción real ya la aplica
@@ -237,6 +240,45 @@ const PROYECTOS = {
     return (this.DB.almacen || [])
       .filter(c => c.ID_PROYECTO === id)
       .reduce((sum, c) => sum + (parseFloat(c.PRECIO_COMPRA)||0) * (parseFloat(c.CANTIDAD)||1), 0);
+  },
+
+  // dd/MM/yyyy — new Date(str) lo interpreta mal (lo lee como MM/dd/yyyy)
+  _parseFechaDMY(s) {
+    const p = String(s||'').split(' ')[0].split('/');
+    if (p.length !== 3) return new Date(0);
+    return new Date(+p[2], +p[1]-1, +p[0]);
+  },
+
+  // Autocompletado del campo Descripción en Presupuesto, a partir de las
+  // compras ya registradas en el módulo Compras (BD_ALMACEN) — así, si ya
+  // compraron algo parecido antes, se puede elegir en vez de escribir de
+  // cero y de paso se sugiere el costo real más reciente.
+  poblarDatalistCompras() {
+    const dl = document.getElementById('pry-pres-dl');
+    if (!dl) return;
+    const vistos = new Set();
+    dl.innerHTML = (this.DB.almacen || [])
+      .filter(c => { if (vistos.has(c.DESCRIPCION)) return false; vistos.add(c.DESCRIPCION); return true; })
+      .map(c => `<option value="${c.DESCRIPCION}">`)
+      .join('');
+  },
+
+  // Al escribir/elegir una descripción que coincide con una compra ya
+  // hecha, sugiere unidad y costo unitario (el de la compra más reciente
+  // con esa descripción) — la persona los puede corregir igual, esto solo
+  // ahorra tener que ir a mirar cuánto costó la última vez.
+  sugerirDesdeCompra(texto) {
+    const hint = document.getElementById('pry-pres-hint');
+    const t = String(texto||'').trim().toUpperCase();
+    if (!t) { if (hint) hint.textContent = ''; return; }
+    const coincidencias = (this.DB.almacen || []).filter(c => c.DESCRIPCION === t);
+    if (!coincidencias.length) { if (hint) hint.textContent = ''; return; }
+    const mejor = coincidencias.sort((a,b) => this._parseFechaDMY(b.FECHA_ULTIMO_PRECIO) - this._parseFechaDMY(a.FECHA_ULTIMO_PRECIO))[0];
+    const inputUnidad = document.getElementById('pry-pres-unidad');
+    const inputCosto  = document.getElementById('pry-pres-costo');
+    if (inputUnidad) inputUnidad.value = mejor.UNIDAD || 'UN';
+    if (inputCosto)  inputCosto.value  = mejor.PRECIO_COMPRA || 0;
+    if (hint) hint.textContent = `Última compra: ${UI.moneda(mejor.PRECIO_COMPRA||0)} (${mejor.PROVEEDOR||'—'}, ${mejor.FECHA_ULTIMO_PRECIO||''})` + (coincidencias.length > 1 ? ` — ${coincidencias.length} compras registradas con esta descripción` : '');
   },
 
   // ── PRESUPUESTO ──────────────────────────────
@@ -297,6 +339,8 @@ const PROYECTOS = {
       this.renderPresupuesto(id);
       ['pry-pres-desc','pry-pres-costo'].forEach(elId => { const el = document.getElementById(elId); if (el) el.value = ''; });
       document.getElementById('pry-pres-cant').value = 1;
+      const hint = document.getElementById('pry-pres-hint');
+      if (hint) hint.textContent = '';
       UI.toast('Línea agregada al presupuesto', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
   },
