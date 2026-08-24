@@ -161,6 +161,18 @@ const UI = {
 
   confirmar(msg) { return window.confirm(msg); },
 
+  // Botón del ojo en campos de contraseña — el input es el hermano
+  // anterior del botón en el HTML (misma .password-wrap).
+  togglePassword(btn) {
+    const input = btn.previousElementSibling;
+    const icon  = btn.querySelector('i');
+    if (!input || !icon) return;
+    const verla = input.type === 'password';
+    input.type = verla ? 'text' : 'password';
+    icon.classList.toggle('ti-eye', !verla);
+    icon.classList.toggle('ti-eye-off', verla);
+  },
+
   moneda(n) {
     return '$ ' + Number(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }

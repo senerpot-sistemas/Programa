@@ -261,6 +261,10 @@
     .field-group { display:flex; flex-direction:column; min-width:0; }
     .field-group label { font-size:11px; font-weight:700; color:var(--primary-dark); text-transform:uppercase; margin-bottom:4px; }
     .field-group input,.field-group select,.field-group textarea { padding:8px; border:1px solid #ccc; border-radius:4px; font-size:13px; font-family:inherit; resize:vertical; min-width:0; max-width:100%; box-sizing:border-box; overflow:hidden; text-overflow:ellipsis; }
+    .password-wrap { position:relative; display:flex; }
+    .password-wrap input { width:100%; padding-right:34px !important; }
+    .password-toggle { position:absolute; right:2px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:#94A3B8; font-size:16px; padding:6px 8px; line-height:1; }
+    .password-toggle:hover { color:#64748B; }
     .field-group input:focus,.field-group select:focus,.field-group textarea:focus { border-color:var(--primary); outline:none; }
 
     /* Tables */
@@ -410,7 +414,10 @@
     </div>
     <div class="field-group mb15">
       <label>Contraseña</label>
-      <input type="password" id="login-password" autocomplete="current-password" onkeydown="if(event.key==='Enter')AUTH.login()">
+      <div class="password-wrap">
+        <input type="password" id="login-password" autocomplete="current-password" onkeydown="if(event.key==='Enter')AUTH.login()">
+        <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+      </div>
     </div>
     <button class="btn-generate" id="login-btn" style="width:100%;" onclick="AUTH.login()">Ingresar</button>
   </div>
@@ -1144,7 +1151,12 @@
             <div class="modal-header"><span id="usr-modal-title">Nuevo Usuario</span><button class="modal-close" onclick="USUARIOS.cerrarModal()">×</button></div>
             <div class="field-group mb10"><label>Usuario *</label><input type="text" id="usr-usuario" placeholder="ej: jperez"></div>
             <div class="field-group mb10"><label>Nombre completo</label><input type="text" id="usr-nombre" placeholder="Ej: Juan Pérez"></div>
-            <div class="field-group mb10"><label>Contraseña</label><input type="password" id="usr-password" placeholder="Contraseña (mínimo 6 caracteres)"></div>
+            <div class="field-group mb10"><label>Contraseña</label>
+              <div class="password-wrap">
+                <input type="password" id="usr-password" placeholder="Contraseña (mínimo 6 caracteres)">
+                <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+              </div>
+            </div>
             <div class="field-group mb10">
               <label>Rol</label>
               <select id="usr-rol">
@@ -1168,9 +1180,24 @@
       <div id="modal-cambiar-password" class="modal-overlay">
         <div class="modal-box">
           <div class="modal-header"><span>Cambiar contraseña</span><button class="modal-close" onclick="AUTH.cerrarModal('modal-cambiar-password')">×</button></div>
-          <div class="field-group mb10"><label>Contraseña actual</label><input type="password" id="pwd-actual"></div>
-          <div class="field-group mb10"><label>Contraseña nueva</label><input type="password" id="pwd-nueva" placeholder="Mínimo 6 caracteres"></div>
-          <div class="field-group mb15"><label>Repetir contraseña nueva</label><input type="password" id="pwd-repetir"></div>
+          <div class="field-group mb10"><label>Contraseña actual</label>
+            <div class="password-wrap">
+              <input type="password" id="pwd-actual">
+              <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+            </div>
+          </div>
+          <div class="field-group mb10"><label>Contraseña nueva</label>
+            <div class="password-wrap">
+              <input type="password" id="pwd-nueva" placeholder="Mínimo 6 caracteres">
+              <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+            </div>
+          </div>
+          <div class="field-group mb15"><label>Repetir contraseña nueva</label>
+            <div class="password-wrap">
+              <input type="password" id="pwd-repetir">
+              <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+            </div>
+          </div>
           <button class="btn-generate" onclick="AUTH.cambiarPasswordPropia()">Actualizar contraseña</button>
         </div>
       </div>
