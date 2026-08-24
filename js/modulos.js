@@ -709,6 +709,8 @@ const PANEL = {
   // recargar los datos y volver a pintar no dependa de leer el DOM primero.
   periodo: null,
 
+  ESTADO_HEX: { POR_INICIAR:'#64748B', EN_PROGRESO:'#3B82F6', PAUSADO:'#F59E0B', TERMINADO:'#009E60', FACTURADO:'#1D9E75', COBRADO:'#00593E' },
+
   async init() {
     const el = document.getElementById('panel-loader');
     if (el) el.style.display = 'flex';
@@ -726,7 +728,10 @@ const PANEL = {
       const sel = document.getElementById('panel-periodo');
       if (sel) sel.value = String(new Date().getMonth()); // arranca en el mes actual
       this._erp = erp;
+      this.renderHero(erp);
       this.renderResumen();
+      this.renderTendenciaOfertas(erp.historial || []);
+      this.renderProyectosPorEstado(erp.proyectos || []);
     } catch(e) {
       if (el) el.innerHTML = '<div style="color:#D32F2F">Error: ' + e.message + '</div>';
     }
@@ -738,20 +743,56 @@ const PANEL = {
     this.renderResumen();
   },
 
+  // ── Utilidades de fecha/animación ──────────────
   // BD_OFERTAS.FECHA / BD_PROYECTOS.FECHA_CREACION llegan como "dd/MM/yyyy"
   // o "dd/MM/yyyy HH:mm" (Sheets autoconvierte fechas al escribir) —
   // new Date(str) con ese formato la interpretaría como MM/dd/yyyy y daría
   // el mes equivocado, así que se parsea a mano. Todos los datos actuales
   // son de 2026 — cuando exista un segundo año, esto se extiende con un
   // selector de año además del de mes.
-  _coincideConPeriodo(fechaStr) {
+  _partesFecha(fechaStr) {
     const p = String(fechaStr||'').split(' ')[0].split('/');
-    if (p.length !== 3) return false;
-    const anio = parseInt(p[2],10);
-    if (anio !== new Date().getFullYear()) return false;
+    if (p.length !== 3) return null;
+    return { dia: parseInt(p[0],10), mes: parseInt(p[1],10)-1, anio: parseInt(p[2],10) };
+  },
+
+  _coincideConPeriodo(fechaStr) {
+    const f = this._partesFecha(fechaStr);
+    if (!f || f.anio !== new Date().getFullYear()) return false;
     if (this.periodo === 'ANIO') return true;
     const mesObjetivo = this.periodo === null ? new Date().getMonth() : this.periodo;
-    return (parseInt(p[1],10) - 1) === mesObjetivo;
+    return f.mes === mesObjetivo;
+  },
+
+  // Conteo animado (ease-out) para que los números del panel se sientan
+  // vivos al cargar — respeta prefers-reduced-motion en vez de forzar la
+  // animación a quien la desactivó por accesibilidad.
+  _animar(el, valorFinal, formateador) {
+    if (!el) return;
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !isFinite(valorFinal)) { el.textContent = formateador(valorFinal); return; }
+    const t0 = performance.now(), duracion = 650;
+    const paso = (t) => {
+      const p = Math.min(1, (t - t0) / duracion);
+      const ease = 1 - Math.pow(1 - p, 3);
+      el.textContent = formateador(valorFinal * ease);
+      if (p < 1) requestAnimationFrame(paso);
+    };
+    requestAnimationFrame(paso);
+  },
+
+  // Compara el valor del período elegido contra el mes inmediatamente
+  // anterior — solo tiene sentido cuando se está viendo un mes puntual
+  // (comparar "todo el año" contra "el mes anterior" no significa nada),
+  // así que en "ANIO" simplemente no se muestra badge.
+  _trendHTML(actual, anterior) {
+    if (this.periodo === 'ANIO' || anterior === null) return '';
+    if (anterior === 0) return actual > 0 ? `<div class="metric-trend up"><i class="ti ti-arrow-up-right"></i> nuevo</div>` : '';
+    const delta = ((actual - anterior) / anterior) * 100;
+    if (Math.abs(delta) < 1) return `<div class="metric-trend flat"><i class="ti ti-minus"></i> igual que antes</div>`;
+    const cls = delta > 0 ? 'up' : 'down';
+    const icon = delta > 0 ? 'ti-arrow-up-right' : 'ti-arrow-down-right';
+    return `<div class="metric-trend ${cls}"><i class="ti ${icon}"></i> ${Math.abs(delta).toFixed(0)}% vs. mes anterior</div>`;
   },
 
   renderResumen() {
@@ -774,12 +815,32 @@ const PANEL = {
     const rechazadas = delPeriodo.filter(h => h.ESTADO === 'RECHAZADA').length;
     const valor = delPeriodo.reduce((s,h) => s + OFERTAS.parseTotalOferta(h.TOTAL), 0);
 
+    // Mes anterior, para las flechitas de tendencia — solo se calcula si
+    // hay un mes puntual seleccionado (ver _trendHTML).
+    let deltaTotal = null, deltaAprobadas = null, deltaValor = null;
+    if (this.periodo !== 'ANIO') {
+      const mesActual = this.periodo === null ? new Date().getMonth() : this.periodo;
+      const mesAnterior = (mesActual + 11) % 12;
+      const delMesAnterior = historial.filter(h => {
+        const f = this._partesFecha(h.FECHA);
+        return f && f.anio === new Date().getFullYear() && f.mes === mesAnterior;
+      });
+      deltaTotal = delMesAnterior.length;
+      deltaAprobadas = delMesAnterior.filter(h => h.ESTADO === 'APROBADA').length;
+      deltaValor = delMesAnterior.reduce((s,h) => s + OFERTAS.parseTotalOferta(h.TOTAL), 0);
+    }
+
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set('panel-of-total',      delPeriodo.length);
+    this._animar(document.getElementById('panel-of-total'), delPeriodo.length, v => Math.round(v));
     set('panel-of-generadas',  generadas);
-    set('panel-of-aprobadas',  aprobadas);
+    this._animar(document.getElementById('panel-of-aprobadas'), aprobadas, v => Math.round(v));
     set('panel-of-rechazadas', rechazadas);
-    set('panel-of-valor',      UI.moneda(valor));
+    this._animar(document.getElementById('panel-of-valor'), valor, v => UI.moneda(v));
+
+    const trendEl = (id, v) => { const el = document.getElementById(id); if (el) el.innerHTML = v; };
+    trendEl('panel-of-total-trend',     this._trendHTML(delPeriodo.length, deltaTotal));
+    trendEl('panel-of-aprobadas-trend', this._trendHTML(aprobadas, deltaAprobadas));
+    trendEl('panel-of-valor-trend',     this._trendHTML(valor, deltaValor));
   },
 
   renderResumenProyectos(proyectos) {
@@ -789,29 +850,116 @@ const PANEL = {
     const enProgreso = delPeriodo.filter(p => p.ESTADO === 'EN_PROGRESO').length;
     const valor = delPeriodo.reduce((s,p) => s + (parseFloat(p.VALOR)||0), 0);
 
+    this._animar(document.getElementById('panel-pry-activos'), activos.length, v => Math.round(v));
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set('panel-pry-activos',    activos.length);
     set('panel-pry-porIniciar', porIniciar);
     set('panel-pry-enProgreso', enProgreso);
-    set('panel-pry-valor',      UI.moneda(valor));
+    this._animar(document.getElementById('panel-pry-valor'), valor, v => UI.moneda(v));
+  },
+
+  // El número que abre la conversación con la junta — deliberadamente
+  // histórico completo (no depende del selector de período), porque
+  // responde a "¿cómo va el negocio en general?", no "¿cómo va este mes?".
+  renderHero(erp) {
+    const hist = erp.historial || [], proy = erp.proyectos || [], cli = erp.clientes || [];
+    const pipelineTotal = hist.reduce((s,h) => s + OFERTAS.parseTotalOferta(h.TOTAL), 0);
+    const aprobadas  = hist.filter(h => h.ESTADO === 'APROBADA').length;
+    const rechazadas = hist.filter(h => h.ESTADO === 'RECHAZADA').length;
+    const decididas  = aprobadas + rechazadas;
+    const winRate = decididas > 0 ? (aprobadas / decididas * 100) : 0;
+    const proyectosActivos = proy.filter(p => !['TERMINADO','FACTURADO','COBRADO'].includes(p.ESTADO)).length;
+
+    this._animar(document.getElementById('panel-hero-pipeline'), pipelineTotal, v => UI.moneda(v));
+    const sub = document.getElementById('panel-hero-sub');
+    if (sub) sub.textContent = `${hist.length} oferta${hist.length===1?'':'s'} registrada${hist.length===1?'':'s'} desde el inicio`;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('panel-hero-winrate', decididas > 0 ? winRate.toFixed(0) + '%' : '—');
+    set('panel-hero-proyectos', proyectosActivos);
+    set('panel-hero-clientes', cli.length);
   },
 
   renderKPIs(kpis) {
     if (!kpis) return;
+    this._animar(document.getElementById('panel-ventas'),   kpis.ventas   || 0, v => UI.moneda(v));
+    this._animar(document.getElementById('panel-gastos'),   kpis.gastos   || 0, v => UI.moneda(v));
+    this._animar(document.getElementById('panel-utilidad'), kpis.utilidad || 0, v => UI.moneda(v));
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set('panel-ventas',   UI.moneda(kpis.ventas   || 0));
-    set('panel-gastos',   UI.moneda(kpis.gastos   || 0));
-    set('panel-utilidad', UI.moneda(kpis.utilidad || 0));
     set('panel-margen',   (kpis.margen || 0).toFixed(1) + '%');
-    set('panel-cartera',  UI.moneda(kpis.cartera  || 0));
+    this._animar(document.getElementById('panel-cartera'), kpis.cartera || 0, v => UI.moneda(v));
+  },
+
+  // Evolución del año completo (independiente del selector de período) —
+  // cotizado vs. aprobado, mes a mes, para ver la tendencia real del
+  // negocio de un vistazo en vez de un solo número puntual.
+  renderTendenciaOfertas(historial) {
+    if (typeof Chart === 'undefined') return;
+    const ctx = document.getElementById('panel-chart-tendencia-ofertas');
+    if (!ctx) return;
+    const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const anio = new Date().getFullYear();
+    const cotizado = new Array(12).fill(0), aprobado = new Array(12).fill(0);
+    historial.forEach(h => {
+      const f = this._partesFecha(h.FECHA);
+      if (!f || f.anio !== anio) return;
+      cotizado[f.mes] += OFERTAS.parseTotalOferta(h.TOTAL);
+      if (h.ESTADO === 'APROBADA') aprobado[f.mes] += OFERTAS.parseTotalOferta(h.TOTAL);
+    });
+
+    if (this.charts.tendenciaOfertas) { try { this.charts.tendenciaOfertas.destroy(); } catch(e) {} }
+    const gCotizado = ctx.getContext('2d').createLinearGradient(0,0,0,260);
+    gCotizado.addColorStop(0, 'rgba(139,92,246,.28)'); gCotizado.addColorStop(1, 'rgba(139,92,246,0)');
+    const gAprobado = ctx.getContext('2d').createLinearGradient(0,0,0,260);
+    gAprobado.addColorStop(0, 'rgba(0,158,96,.32)'); gAprobado.addColorStop(1, 'rgba(0,158,96,0)');
+
+    this.charts.tendenciaOfertas = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: MESES,
+        datasets: [
+          { label: 'Cotizado', data: cotizado, borderColor: '#8B5CF6', backgroundColor: gCotizado, tension: .4, fill: true, pointRadius: 2, pointHoverRadius: 5 },
+          { label: 'Aprobado', data: aprobado, borderColor: '#009E60', backgroundColor: gAprobado, tension: .4, fill: true, pointRadius: 2, pointHoverRadius: 5 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#64748B', boxWidth: 10, font: { size: 11 } } },
+          tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + UI.moneda(c.parsed.y) } } },
+        scales: { y: { ticks: { color: '#94A3B8', callback: (v) => UI.moneda(v) }, grid: { color: '#E2E8F0' } }, x: { ticks: { color: '#94A3B8' }, grid: { display: false } } }
+      }
+    });
+  },
+
+  // Dona de proyectos por estado — mismos colores que las badges del
+  // módulo Proyectos, para que un mismo estado se vea siempre igual en
+  // toda la app.
+  renderProyectosPorEstado(proyectos) {
+    if (typeof Chart === 'undefined') return;
+    const ctx = document.getElementById('panel-chart-proyectos-estado');
+    if (!ctx) return;
+    const ESTADOS = ['POR_INICIAR','EN_PROGRESO','PAUSADO','TERMINADO','FACTURADO','COBRADO'];
+    const conteo = ESTADOS.map(e => proyectos.filter(p => p.ESTADO === e).length);
+    const labels = ESTADOS.filter((e,i) => conteo[i] > 0);
+    const data   = conteo.filter(c => c > 0);
+    const colores = labels.map(e => this.ESTADO_HEX[e]);
+
+    if (this.charts.proyectosEstado) { try { this.charts.proyectosEstado.destroy(); } catch(e) {} }
+    if (!data.length) return;
+    this.charts.proyectosEstado = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data, backgroundColor: colores, borderWidth: 2, borderColor: '#fff' }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '62%',
+        plugins: { legend: { position: 'right', labels: { color: '#64748B', boxWidth: 10, font: { size: 11 } } } }
+      }
+    });
   },
 
   renderCharts(charts) {
     if (!charts || typeof Chart === 'undefined') return;
 
-    // Destruir anteriores si existen
-    Object.values(this.charts).forEach(c => { try { c.destroy(); } catch(e) {} });
-    this.charts = {};
+    // Destruir anteriores si existen (solo las de Contabilidad — las de
+    // Ofertas/Proyectos se manejan en sus propias funciones)
+    ['linea','clientes','servicios'].forEach(k => { if (this.charts[k]) { try { this.charts[k].destroy(); } catch(e) {} } });
 
     const defaults = {
       responsive: true, maintainAspectRatio: false,

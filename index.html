@@ -583,9 +583,26 @@
           <span>Cargando datos...</span>
         </div>
         <div id="panel-content" style="display:none;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-            <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;" id="panel-periodo-label">Ofertas y Proyectos</div>
-            <select id="panel-periodo" onchange="PANEL.cambiarPeriodo()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;">
+
+          <!-- ── HERO — el número que abre la conversación con la junta ── -->
+          <div class="panel-hero">
+            <div class="panel-hero-grid">
+              <div class="panel-hero-main">
+                <div class="eyebrow">Pipeline total cotizado — histórico</div>
+                <div class="big" id="panel-hero-pipeline">$ 0</div>
+                <div class="sub" id="panel-hero-sub">0 ofertas registradas</div>
+              </div>
+              <div class="panel-hero-mini">
+                <div class="item"><div class="k">Tasa de cierre</div><div class="v" id="panel-hero-winrate">0%</div></div>
+                <div class="item"><div class="k">Proyectos activos</div><div class="v" id="panel-hero-proyectos">0</div></div>
+                <div class="item"><div class="k">Clientes</div><div class="v" id="panel-hero-clientes">0</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel-section-head">
+            <h4><span class="dot"></span><span id="panel-periodo-label">Ofertas y Proyectos</span></h4>
+            <select id="panel-periodo" onchange="PANEL.cambiarPeriodo()" class="period-select">
               <option value="ANIO">Todo el año</option>
               <option value="0">Enero</option>
               <option value="1">Febrero</option>
@@ -601,35 +618,41 @@
               <option value="11">Diciembre</option>
             </select>
           </div>
-          <div class="kpi-grid-5" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;">
-            <div class="kpi-card" style="border-top-color:#64748B"><div class="kpi-label">Ofertas creadas</div><div class="kpi-val" id="panel-of-total">0</div></div>
-            <div class="kpi-card" style="border-top-color:#3B82F6"><div class="kpi-label">Generadas (pendientes)</div><div class="kpi-val" id="panel-of-generadas">0</div></div>
-            <div class="kpi-card" style="border-top-color:#009E60"><div class="kpi-label">Aprobadas</div><div class="kpi-val" id="panel-of-aprobadas">0</div></div>
-            <div class="kpi-card" style="border-top-color:#D32F2F"><div class="kpi-label">Rechazadas</div><div class="kpi-val" id="panel-of-rechazadas">0</div></div>
-            <div class="kpi-card" style="border-top-color:#8B5CF6"><div class="kpi-label">Valor cotizado</div><div class="kpi-val" id="panel-of-valor">$ 0</div></div>
+          <div class="metric-grid">
+            <div class="metric-card" style="--mc:#64748B;--mc-soft:#EDF1F5;"><div class="metric-icon"><i class="ti ti-file-text"></i></div><div class="metric-label">Ofertas creadas</div><div class="metric-val" id="panel-of-total">0</div><div id="panel-of-total-trend"></div></div>
+            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon"><i class="ti ti-clock"></i></div><div class="metric-label">Generadas (pendientes)</div><div class="metric-val" id="panel-of-generadas">0</div></div>
+            <div class="metric-card" style="--mc:#009E60;--mc-soft:var(--primary-light);"><div class="metric-icon"><i class="ti ti-check"></i></div><div class="metric-label">Aprobadas</div><div class="metric-val" id="panel-of-aprobadas">0</div><div id="panel-of-aprobadas-trend"></div></div>
+            <div class="metric-card" style="--mc:#D32F2F;--mc-soft:#FBEAEA;"><div class="metric-icon"><i class="ti ti-x"></i></div><div class="metric-label">Rechazadas</div><div class="metric-val" id="panel-of-rechazadas">0</div></div>
+            <div class="metric-card" style="--mc:#8B5CF6;--mc-soft:#F1EBFC;"><div class="metric-icon"><i class="ti ti-coin"></i></div><div class="metric-label">Valor cotizado</div><div class="metric-val" id="panel-of-valor">$ 0</div><div id="panel-of-valor-trend"></div></div>
           </div>
 
-          <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Proyectos creados en el período</div>
-          <div class="kpi-grid-5" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
-            <div class="kpi-card" style="border-top-color:#1D9E75"><div class="kpi-label">Proyectos activos</div><div class="kpi-val" id="panel-pry-activos">0</div></div>
-            <div class="kpi-card" style="border-top-color:#64748B"><div class="kpi-label">Por iniciar</div><div class="kpi-val" id="panel-pry-porIniciar">0</div></div>
-            <div class="kpi-card" style="border-top-color:#3B82F6"><div class="kpi-label">En progreso</div><div class="kpi-val" id="panel-pry-enProgreso">0</div></div>
-            <div class="kpi-card" style="border-top-color:#F59E0B"><div class="kpi-label">Valor proyectos activos</div><div class="kpi-val" id="panel-pry-valor">$ 0</div></div>
+          <div class="panel-section-head"><h4><span class="dot"></span>Proyectos creados en el período</h4></div>
+          <div class="metric-grid">
+            <div class="metric-card" style="--mc:#1D9E75;--mc-soft:var(--primary-light);"><div class="metric-icon"><i class="ti ti-briefcase"></i></div><div class="metric-label">Proyectos activos</div><div class="metric-val" id="panel-pry-activos">0</div></div>
+            <div class="metric-card" style="--mc:#64748B;--mc-soft:#EDF1F5;"><div class="metric-icon"><i class="ti ti-hourglass"></i></div><div class="metric-label">Por iniciar</div><div class="metric-val" id="panel-pry-porIniciar">0</div></div>
+            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon"><i class="ti ti-progress"></i></div><div class="metric-label">En progreso</div><div class="metric-val" id="panel-pry-enProgreso">0</div></div>
+            <div class="metric-card" style="--mc:#F59E0B;--mc-soft:#FEF3E0;"><div class="metric-icon"><i class="ti ti-cash"></i></div><div class="metric-label">Valor proyectos activos</div><div class="metric-val" id="panel-pry-valor">$ 0</div></div>
           </div>
 
-          <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Contabilidad (histórico documentos)</div>
-          <div class="kpi-grid-5" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;">
-            <div class="kpi-card" style="border-top-color:#009E60"><div class="kpi-label">Ventas</div><div class="kpi-val" id="panel-ventas">$ 0</div></div>
-            <div class="kpi-card" style="border-top-color:#EF4444"><div class="kpi-label">Gastos</div><div class="kpi-val" id="panel-gastos">$ 0</div></div>
-            <div class="kpi-card" style="border-top-color:#3B82F6"><div class="kpi-label">Utilidad</div><div class="kpi-val" id="panel-utilidad">$ 0</div></div>
-            <div class="kpi-card" style="border-top-color:#8B5CF6"><div class="kpi-label">Margen</div><div class="kpi-val" id="panel-margen">0%</div></div>
-            <div class="kpi-card" style="border-top-color:#F59E0B"><div class="kpi-label">Cartera</div><div class="kpi-val" id="panel-cartera">$ 0</div></div>
+          <div class="panel-section-head"><h4><span class="dot"></span>Evolución del año</h4></div>
+          <div class="charts-grid-2fr1fr" style="display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="chart-card panel-chart"><div class="kpi-label" style="margin-bottom:10px;">Ofertas por mes — cotizado vs. aprobado</div><div style="height:270px;"><canvas id="panel-chart-tendencia-ofertas"></canvas></div></div>
+            <div class="chart-card panel-chart"><div class="kpi-label" style="margin-bottom:10px;">Proyectos por estado</div><div style="height:270px;"><canvas id="panel-chart-proyectos-estado"></canvas></div></div>
+          </div>
+
+          <div class="panel-section-head"><h4><span class="dot"></span>Contabilidad — histórico de documentos</h4></div>
+          <div class="metric-grid">
+            <div class="metric-card" style="--mc:#009E60;--mc-soft:var(--primary-light);"><div class="metric-icon"><i class="ti ti-trending-up"></i></div><div class="metric-label">Ventas</div><div class="metric-val" id="panel-ventas">$ 0</div></div>
+            <div class="metric-card" style="--mc:#EF4444;--mc-soft:#FDECEC;"><div class="metric-icon"><i class="ti ti-trending-down"></i></div><div class="metric-label">Gastos</div><div class="metric-val" id="panel-gastos">$ 0</div></div>
+            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon"><i class="ti ti-report-money"></i></div><div class="metric-label">Utilidad</div><div class="metric-val" id="panel-utilidad">$ 0</div></div>
+            <div class="metric-card" style="--mc:#8B5CF6;--mc-soft:#F1EBFC;"><div class="metric-icon"><i class="ti ti-percentage"></i></div><div class="metric-label">Margen</div><div class="metric-val" id="panel-margen">0%</div></div>
+            <div class="metric-card" style="--mc:#F59E0B;--mc-soft:#FEF3E0;"><div class="metric-icon"><i class="ti ti-wallet"></i></div><div class="metric-label">Cartera</div><div class="metric-val" id="panel-cartera">$ 0</div></div>
           </div>
           <div class="charts-grid-2fr1fr" style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;">
-            <div class="chart-card"><div class="kpi-label" style="margin-bottom:10px;">Tendencia mensual</div><div style="height:260px;"><canvas id="panel-chart-linea"></canvas></div></div>
-            <div class="chart-card"><div class="kpi-label" style="margin-bottom:10px;">Top 5 clientes</div><div style="height:260px;"><canvas id="panel-chart-clientes"></canvas></div></div>
+            <div class="chart-card panel-chart"><div class="kpi-label" style="margin-bottom:10px;">Tendencia mensual</div><div style="height:260px;"><canvas id="panel-chart-linea"></canvas></div></div>
+            <div class="chart-card panel-chart"><div class="kpi-label" style="margin-bottom:10px;">Top 5 clientes</div><div style="height:260px;"><canvas id="panel-chart-clientes"></canvas></div></div>
           </div>
-          <div class="chart-card"><div class="kpi-label" style="margin-bottom:10px;">Top servicios vendidos</div><div style="height:200px;"><canvas id="panel-chart-servicios"></canvas></div></div>
+          <div class="chart-card panel-chart"><div class="kpi-label" style="margin-bottom:10px;">Top servicios vendidos</div><div style="height:200px;"><canvas id="panel-chart-servicios"></canvas></div></div>
         </div>
       </div>
 
@@ -1355,6 +1378,45 @@
   .kpi-label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
   .kpi-val{font-size:20px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .chart-card{background:var(--surface);padding:18px;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);}
+
+  /* ── Panel ejecutivo ── */
+  .panel-hero{background:linear-gradient(135deg,var(--primary-dark) 0%,#02714A 55%,var(--primary) 100%);border-radius:18px;padding:30px 32px;color:#fff;margin-bottom:26px;position:relative;overflow:hidden;box-shadow:var(--shadow-md);}
+  .panel-hero::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 88% -15%,rgba(255,255,255,.18),transparent 55%);pointer-events:none;}
+  .panel-hero-grid{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-end;position:relative;z-index:1;}
+  .panel-hero-main .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.78;margin-bottom:8px;font-weight:700;}
+  .panel-hero-main .big{font-size:clamp(30px,4vw,42px);font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1;}
+  .panel-hero-main .sub{font-size:13px;opacity:.85;margin-top:8px;}
+  .panel-hero-mini{display:flex;gap:28px;flex-wrap:wrap;}
+  .panel-hero-mini .item .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;opacity:.72;margin-bottom:4px;font-weight:600;}
+  .panel-hero-mini .item .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;}
+
+  .panel-section-head{display:flex;justify-content:space-between;align-items:center;margin:30px 0 12px;flex-wrap:wrap;gap:10px;}
+  .panel-section-head h4{font-size:12.5px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.05em;margin:0;display:flex;align-items:center;gap:8px;}
+  .panel-section-head h4 .dot{width:7px;height:7px;border-radius:50%;background:var(--primary);display:inline-block;flex-shrink:0;}
+
+  .period-select{appearance:none;-webkit-appearance:none;background:var(--surface) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%2364748B'/></svg>") no-repeat right 14px center;border:1px solid var(--border);border-radius:999px;padding:7px 34px 7px 16px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;box-shadow:var(--shadow);}
+  .period-select:hover{border-color:var(--primary);}
+
+  .metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:14px;margin-bottom:10px;}
+  .metric-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;box-shadow:var(--shadow);transition:transform .18s ease,box-shadow .18s ease;}
+  .metric-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+  .metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--mc,var(--primary)),transparent 140%);}
+  .metric-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--mc-soft,var(--primary-light));color:var(--mc,var(--primary));font-size:16px;margin-bottom:12px;}
+  .metric-label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+  .metric-val{font-size:25px;font-weight:800;color:var(--text);letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .metric-trend{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;margin-top:9px;padding:2px 7px;border-radius:999px;}
+  .metric-trend.up{background:#E7F7EF;color:#0C8A4B;}
+  .metric-trend.down{background:#FDEDEC;color:#C0392B;}
+  .metric-trend.flat{background:#F1F5F9;color:#64748B;}
+
+  @keyframes panelFadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .metric-card,.panel-chart{animation:panelFadeUp .45s ease both;}
+  .metric-grid .metric-card:nth-child(1){animation-delay:.02s}.metric-grid .metric-card:nth-child(2){animation-delay:.06s}
+  .metric-grid .metric-card:nth-child(3){animation-delay:.10s}.metric-grid .metric-card:nth-child(4){animation-delay:.14s}
+  .metric-grid .metric-card:nth-child(5){animation-delay:.18s}
+  @media(prefers-reduced-motion:reduce){.metric-card,.panel-chart{animation:none;}.metric-card:hover{transform:none;}}
+  .panel-chart{border-radius:14px;}
+
   /* Doc type grid */
   .doc-type-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
   .doc-card{background:white;border:2px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:all .15s;}
