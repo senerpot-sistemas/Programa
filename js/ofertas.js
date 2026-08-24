@@ -229,43 +229,96 @@ const OFERTAS = {
     });
   },
 
+  // Número final del consecutivo (DIV-26-005 -> 5) — null si el ID no
+  // termina en dígitos (p.ej. los sufijos "B" que se usan para marcar un
+  // número duplicado histórico, ver agregarOfertasLote en Oferta.gs).
+  numeroDeOferta(idOferta) {
+    const m = String(idOferta||'').match(/(\d+)$/);
+    return m ? parseInt(m[1], 10) : null;
+  },
+
   renderTablaHistorial() {
     const tbody = document.getElementById('of-tbody-hist');
     tbody.innerHTML = '';
-    let hist = [...(this.DB.historial || [])].reverse();
     const filtroTipo = document.getElementById('of-filtro-tipo')?.value || '';
-    if (filtroTipo) hist = hist.filter(h => this.tipoDeOferta(h.ID_OFERTA) === filtroTipo);
     const badgeClass = { BORRADOR: 'badge-gray', GENERADA: 'badge-blue', APROBADA: 'badge-green', RECHAZADA: 'badge-red' };
-    hist.forEach(h => {
-      const tr = document.createElement('tr');
-      const botonesDecision = h.ESTADO === 'GENERADA' ? `
-          <button class="btn-icon" style="color:#009E60" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','APROBADA')" title="Aprobar"><i class="ti ti-check"></i></button>
-          <button class="btn-icon" style="color:#D32F2F" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','RECHAZADA')" title="Rechazar"><i class="ti ti-x"></i></button>` : '';
-      // "Ver": prioriza el documento real generado (URL_DOC); si no hay
-      // (ofertas de antes de este cambio, o históricas cargadas a mano),
-      // cae al resumen leído de DATA_JSON; si tampoco hay eso, no muestra
-      // nada — no hay ningún detalle guardado que mostrar.
-      let botonVer = '';
-      if (h.URL_DOC) {
-        botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="window.open('${h.URL_DOC}','_blank')" title="Ver documento"><i class="ti ti-file-text"></i></button>`;
-      } else if (h.DATA_JSON) {
-        botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="OFERTAS.verResumenOferta('${h.ID_OFERTA}')" title="Ver resumen"><i class="ti ti-eye"></i></button>`;
-      }
-      const tipo = this.tipoDeOferta(h.ID_OFERTA);
-      tr.innerHTML = `
-        <td>${h.ID_OFERTA}</td>
-        <td><span class="badge ${this.TIPO_BADGE[tipo]}" style="font-size:10px;">${tipo}</span></td>
-        <td>${h.FECHA}</td>
-        <td>${h.CLIENTE}</td>
-        <td>${h.TOTAL}</td>
-        <td><span class="badge ${badgeClass[h.ESTADO] || 'badge-gray'}">${h.ESTADO}</span></td>
-        <td style="white-space:nowrap;">${botonVer}
-          <button class="btn-icon btn-icon-edit" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CARGAR')" title="Editar"><i class="ti ti-edit"></i></button>
-          <button class="btn-icon" style="color:#1976D2" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CLONAR')" title="Clonar"><i class="ti ti-copy"></i></button>${botonesDecision}
-          <button class="btn-icon btn-icon-del" onclick="OFERTAS.eliminarOfertaUI('${h.ID_OFERTA}')" title="Eliminar"><i class="ti ti-trash"></i></button>
-        </td>`;
-      tbody.appendChild(tr);
+
+    // Agrupadas por tipo y ordenadas por número de consecutivo (no por
+    // fecha de creación) — así, dentro de cada serie (DIV/INSP/MTTO/
+    // OTROS), un hueco en la numeración salta a la vista en vez de
+    // quedar perdido entre ofertas de otras series.
+    const porTipo = {};
+    (this.DB.historial || []).forEach(h => {
+      const t = this.tipoDeOferta(h.ID_OFERTA);
+      (porTipo[t] = porTipo[t] || []).push(h);
     });
+
+    const tiposAMostrar = filtroTipo ? [filtroTipo] : this.TIPOS_OFERTA;
+    let huboFilas = false;
+
+    tiposAMostrar.forEach(tipo => {
+      const lista = (porTipo[tipo] || []).slice().sort((a,b) => {
+        const na = this.numeroDeOferta(a.ID_OFERTA), nb = this.numeroDeOferta(b.ID_OFERTA);
+        return (na === null ? Infinity : na) - (nb === null ? Infinity : nb);
+      });
+      if (!lista.length) return;
+      huboFilas = true;
+
+      const trHeader = document.createElement('tr');
+      trHeader.innerHTML = `<td colspan="7" style="background:#F1F5F9;font-weight:700;font-size:11px;text-transform:uppercase;color:#64748B;padding:6px 10px;">
+        <span class="badge ${this.TIPO_BADGE[tipo]}" style="font-size:10px;">${tipo}</span> — ${lista.length} oferta${lista.length===1?'':'s'}
+      </td>`;
+      tbody.appendChild(trHeader);
+
+      let anterior = null;
+      lista.forEach(h => {
+        const numActual = this.numeroDeOferta(h.ID_OFERTA);
+        // Salto en la numeración dentro de esta serie — exactamente lo
+        // que se pidió: ver de un vistazo si "se voló" un consecutivo.
+        if (anterior !== null && numActual !== null && numActual - anterior > 1) {
+          const faltantes = [];
+          for (let n = anterior + 1; n < numActual; n++) faltantes.push(String(n).padStart(3,'0'));
+          const trGap = document.createElement('tr');
+          trGap.innerHTML = `<td colspan="7" style="background:#FEF3C7;color:#92400E;font-size:11.5px;padding:5px 10px;">
+            ⚠️ Falta${faltantes.length===1?'':'n'} el número${faltantes.length===1?'':'s'} ${faltantes.join(', ')} en ${tipo} (salta de #${String(anterior).padStart(3,'0')} a #${String(numActual).padStart(3,'0')})
+          </td>`;
+          tbody.appendChild(trGap);
+        }
+        if (numActual !== null) anterior = numActual;
+
+        const tr = document.createElement('tr');
+        const botonesDecision = h.ESTADO === 'GENERADA' ? `
+            <button class="btn-icon" style="color:#009E60" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','APROBADA')" title="Aprobar"><i class="ti ti-check"></i></button>
+            <button class="btn-icon" style="color:#D32F2F" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','RECHAZADA')" title="Rechazar"><i class="ti ti-x"></i></button>` : '';
+        // "Ver": prioriza el documento real generado (URL_DOC); si no hay
+        // (ofertas de antes de este cambio, o históricas cargadas a mano),
+        // cae al resumen leído de DATA_JSON; si tampoco hay eso, no muestra
+        // nada — no hay ningún detalle guardado que mostrar.
+        let botonVer = '';
+        if (h.URL_DOC) {
+          botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="window.open('${h.URL_DOC}','_blank')" title="Ver documento"><i class="ti ti-file-text"></i></button>`;
+        } else if (h.DATA_JSON) {
+          botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="OFERTAS.verResumenOferta('${h.ID_OFERTA}')" title="Ver resumen"><i class="ti ti-eye"></i></button>`;
+        }
+        tr.innerHTML = `
+          <td>${h.ID_OFERTA}</td>
+          <td><span class="badge ${this.TIPO_BADGE[tipo]}" style="font-size:10px;">${tipo}</span></td>
+          <td>${h.FECHA}</td>
+          <td>${h.CLIENTE}</td>
+          <td>${h.TOTAL}</td>
+          <td><span class="badge ${badgeClass[h.ESTADO] || 'badge-gray'}">${h.ESTADO}</span></td>
+          <td style="white-space:nowrap;">${botonVer}
+            <button class="btn-icon btn-icon-edit" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CARGAR')" title="Editar"><i class="ti ti-edit"></i></button>
+            <button class="btn-icon" style="color:#1976D2" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CLONAR')" title="Clonar"><i class="ti ti-copy"></i></button>${botonesDecision}
+            <button class="btn-icon btn-icon-del" onclick="OFERTAS.eliminarOfertaUI('${h.ID_OFERTA}')" title="Eliminar"><i class="ti ti-trash"></i></button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    });
+
+    if (!huboFilas) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">Sin ofertas registradas.</td></tr>';
+    }
   },
 
   // Resumen de solo lectura para ofertas que no tienen URL_DOC guardado
