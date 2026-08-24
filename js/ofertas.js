@@ -11,6 +11,20 @@ const OFERTAS = {
 
   _chartEmbudo: null,
 
+  // SENERPOT lleva un consecutivo INDEPENDIENTE por tipo de oferta — DIV,
+  // INSP, MTTO — y todo lo que no encaje ahí cae en OTROS. No es una
+  // columna aparte en la hoja: el tipo se lee directo del prefijo del
+  // N° de oferta (DIV-26-005 -> tipo DIV), así que nunca se puede
+  // desincronizar de la fuente real de datos.
+  TIPOS_OFERTA: ['DIV','INSP','MTTO','OTROS'],
+  TIPO_BADGE: { DIV:'badge-blue', INSP:'badge-purple', MTTO:'badge-orange', OTROS:'badge-gray' },
+
+  tipoDeOferta(idOferta) {
+    const m = String(idOferta||'').toUpperCase().match(/^([A-Z]+)/);
+    const prefijo = m ? m[1] : '';
+    return this.TIPOS_OFERTA.includes(prefijo) ? prefijo : 'OTROS';
+  },
+
   // ──────────────────────────────────────────
   //  INICIALIZACIÓN
   // ──────────────────────────────────────────
@@ -34,7 +48,7 @@ const OFERTAS = {
     this.renderTablaHistorial();
     this.renderSelectKits();
     this.poblarCatalogo();
-    this.sugerirConsecutivo();
+    this.sugerirConsecutivoPorTipo();
     this.renderDashboardOfertas();
   },
 
@@ -218,7 +232,9 @@ const OFERTAS = {
   renderTablaHistorial() {
     const tbody = document.getElementById('of-tbody-hist');
     tbody.innerHTML = '';
-    const hist = [...(this.DB.historial || [])].reverse();
+    let hist = [...(this.DB.historial || [])].reverse();
+    const filtroTipo = document.getElementById('of-filtro-tipo')?.value || '';
+    if (filtroTipo) hist = hist.filter(h => this.tipoDeOferta(h.ID_OFERTA) === filtroTipo);
     const badgeClass = { BORRADOR: 'badge-gray', GENERADA: 'badge-blue', APROBADA: 'badge-green', RECHAZADA: 'badge-red' };
     hist.forEach(h => {
       const tr = document.createElement('tr');
@@ -235,8 +251,10 @@ const OFERTAS = {
       } else if (h.DATA_JSON) {
         botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="OFERTAS.verResumenOferta('${h.ID_OFERTA}')" title="Ver resumen"><i class="ti ti-eye"></i></button>`;
       }
+      const tipo = this.tipoDeOferta(h.ID_OFERTA);
       tr.innerHTML = `
         <td>${h.ID_OFERTA}</td>
+        <td><span class="badge ${this.TIPO_BADGE[tipo]}" style="font-size:10px;">${tipo}</span></td>
         <td>${h.FECHA}</td>
         <td>${h.CLIENTE}</td>
         <td>${h.TOTAL}</td>
@@ -372,17 +390,26 @@ const OFERTAS = {
     });
   },
 
-  sugerirConsecutivo() {
+  // Cada tipo (DIV/INSP/MTTO/OTROS) lleva su propio consecutivo — sugerir
+  // "el siguiente número" ya no puede mirar solo la última oferta de TODO
+  // el historial (eso mezclaba las series), sino la última de ESE tipo.
+  // forzar=true sobreescribe aunque ya haya algo escrito (se usa cuando
+  // la persona cambia el selector de tipo a propósito); si no, respeta
+  // lo que ya esté en el campo, igual que el comportamiento original.
+  sugerirConsecutivoPorTipo(forzar = false) {
     const input = document.getElementById('of-consecutivo');
-    if (input.value.trim()) return;
-    if (!this.DB.historial?.length) return;
-    const ultimo = this.DB.historial[this.DB.historial.length - 1].ID_OFERTA;
-    if (!ultimo) return;
-    const m = ultimo.match(/^(.*?)(\d+)$/);
-    if (m) {
-      const next = String(parseInt(m[2]) + 1).padStart(m[2].length, '0');
-      input.value = m[1] + next;
+    if (!input) return;
+    if (!forzar && input.value.trim()) return;
+    const tipo = document.getElementById('of-tipo-oferta')?.value || 'OTROS';
+    const delTipo = (this.DB.historial || []).filter(h => this.tipoDeOferta(h.ID_OFERTA) === tipo);
+    if (!delTipo.length) {
+      const anio = String(new Date().getFullYear()).slice(-2);
+      input.value = `${tipo}-${anio}-001`;
+      return;
     }
+    const ultimo = delTipo[delTipo.length - 1].ID_OFERTA;
+    const m = ultimo.match(/^(.*?)(\d+)$/);
+    input.value = m ? m[1] + String(parseInt(m[2],10) + 1).padStart(m[2].length, '0') : ultimo;
   },
 
   mostrarFecha() {
@@ -671,15 +698,24 @@ const OFERTAS = {
     const oferta = this.DB.historial.find(h => String(h.ID_OFERTA) === String(id));
     if (!oferta) { UI.toast('Oferta no encontrada', 'err'); return; }
     if (accion === 'CARGAR') this.cargarDesdeHistorial(oferta);
-    else if (accion === 'CLONAR') { const clon = {...oferta}; clon.ID_OFERTA = ''; this.cargarDesdeHistorial(clon, true); }
+    else if (accion === 'CLONAR') {
+      const tipoOriginal = this.tipoDeOferta(oferta.ID_OFERTA); // se pierde en cuanto se vacíe ID_OFERTA
+      const clon = {...oferta}; clon.ID_OFERTA = '';
+      this.cargarDesdeHistorial(clon, true, tipoOriginal);
+    }
   },
 
-  cargarDesdeHistorial(h, esClon = false) {
+  cargarDesdeHistorial(h, esClon = false, tipoOriginal = null) {
     if (!h.DATA_JSON) { UI.toast('Sin datos de oferta', 'err'); return; }
     const data = JSON.parse(h.DATA_JSON);
     this.rellenarFormulario(data);
     document.getElementById('of-consecutivo').value = esClon ? '' : h.ID_OFERTA;
-    if (esClon) this.sugerirConsecutivo();
+    if (esClon) {
+      // Al clonar, seguimos en la misma serie (DIV/INSP/MTTO/OTROS) que
+      // la oferta original — solo cambia el consecutivo, no el tipo.
+      if (tipoOriginal) document.getElementById('of-tipo-oferta').value = tipoOriginal;
+      this.sugerirConsecutivoPorTipo(true);
+    }
     this.tab('generador');
   },
 

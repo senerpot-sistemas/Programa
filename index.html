@@ -327,6 +327,7 @@
     .badge-blue   { background:#1976D2; }
     .badge-red    { background:#D32F2F; }
     .badge-gray   { background:#64748B; }
+    .badge-purple { background:#8B5CF6; }
 
     /* Modal */
     .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center; }
@@ -628,7 +629,15 @@
             <div class="offer-header">
               <div>
                 <div class="mod-title">Oferta Económica</div>
-                <input type="text" id="of-consecutivo" class="consecutivo-input" placeholder="N° Oferta (Ej: OF-25-001)">
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <select id="of-tipo-oferta" onchange="OFERTAS.sugerirConsecutivoPorTipo(true)" style="padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;">
+                    <option value="DIV">DIV</option>
+                    <option value="INSP">INSP</option>
+                    <option value="MTTO">MTTO</option>
+                    <option value="OTROS">OTROS</option>
+                  </select>
+                  <input type="text" id="of-consecutivo" class="consecutivo-input" placeholder="N° Oferta (Ej: DIV-26-001)">
+                </div>
                 <input type="hidden" id="of-current-id">
               </div>
               <input type="text" id="of-fecha" class="fecha-display" readonly>
@@ -729,11 +738,18 @@
         <div id="ov-historial" class="subview">
           <div class="module-toolbar">
             <input type="text" class="search-bar" placeholder="Buscar por cliente o N° oferta..." onkeyup="OFERTAS.filtrar('of-tbl-hist',this.value)">
+            <select id="of-filtro-tipo" onchange="OFERTAS.renderTablaHistorial()" style="padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+              <option value="">Todos los tipos</option>
+              <option value="DIV">DIV</option>
+              <option value="INSP">INSP</option>
+              <option value="MTTO">MTTO</option>
+              <option value="OTROS">OTROS</option>
+            </select>
             <button class="btn-secondary-sm" onclick="OFERTAS.modalOfertaManual()">+ Agregar histórica</button>
           </div>
           <div class="table-scroll">
           <table class="data-tbl" id="of-tbl-hist">
-            <thead><tr><th>N° Oferta</th><th>Fecha</th><th>Cliente</th><th>Total</th><th style="width:90px">Estado</th><th style="width:200px"></th></tr></thead>
+            <thead><tr><th>N° Oferta</th><th style="width:70px">Tipo</th><th>Fecha</th><th>Cliente</th><th>Total</th><th style="width:90px">Estado</th><th style="width:200px"></th></tr></thead>
             <tbody id="of-tbody-hist"></tbody>
           </table>
           </div>
