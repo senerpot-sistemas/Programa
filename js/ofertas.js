@@ -275,7 +275,11 @@ const OFERTAS = {
         const numActual = this.numeroDeOferta(h.ID_OFERTA);
         // Salto en la numeración dentro de esta serie — exactamente lo
         // que se pidió: ver de un vistazo si "se voló" un consecutivo.
-        if (anterior !== null && numActual !== null && numActual - anterior > 1) {
+        // Tope de 1000: algunas ofertas viejas (categoría OTROS) tienen
+        // IDs tipo "OF-1771364127214" (timestamp, no un consecutivo real)
+        // — sin este tope, la diferencia entre esos números generaría un
+        // aviso de "faltan miles de números" sin ningún sentido.
+        if (anterior !== null && numActual !== null && numActual - anterior > 1 && numActual - anterior <= 1000) {
           const faltantes = [];
           for (let n = anterior + 1; n < numActual; n++) faltantes.push(String(n).padStart(3,'0'));
           const trGap = document.createElement('tr');
