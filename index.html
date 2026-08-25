@@ -297,6 +297,12 @@
     /* Conditions grid */
     .conditions-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 
+    /* Par de campos lado a lado dentro de un modal (Compras, Contabilidad) —
+       reemplaza los style="display:grid;grid-template-columns:1fr 1fr" que
+       antes estaban repetidos inline y por eso no los alcanzaba ninguna
+       regla móvil (una regla externa no le gana a un style inline). */
+    .field-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+
     /* Catalog add row */
     .cat-add-row { display:flex; gap:10px; align-items:center; margin:8px 0 6px; background:#e8f5e9; padding:8px 10px; border-radius:6px; border:1px solid #c8e6c9; }
     .cat-add-row select { flex:1; min-width:0; max-width:100%; padding:7px; border:1px solid #ccc; border-radius:4px; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -381,6 +387,27 @@
       .client-grid { grid-template-columns: 1fr; }
       .span-full { grid-column: span 1; }
       .conditions-grid { grid-template-columns: 1fr; }
+      .field-grid-2 { grid-template-columns: 1fr; }
+      /* Grids de Contabilidad (Operación/Reportes) con proporciones fijas
+         (1fr 2fr 1fr..., repeat(4,1fr) auto, etc.) definidas inline — se
+         necesita !important porque una regla externa no le gana a un
+         style inline sin él. */
+      .field-grid-auto { grid-template-columns: 1fr !important; }
+
+      /* Formulario de "agregar línea" de Presupuesto (Proyectos): la
+         descripción ocupa su propia fila completa; cantidad/unidad/costo
+         se reparten el ancho debajo en vez de apretarse a sus width en px
+         fijos, que en un teléfono se vuelven ilegibles/inoperables. */
+      .pry-pres-desc-input { flex-basis: 100% !important; min-width: 0 !important; }
+      .pry-pres-num-input { flex: 1 !important; width: auto !important; min-width: 0 !important; }
+      .pry-pres-btn { flex-basis: 100% !important; }
+
+      /* Encabezado de Nueva Oferta: título+tipo+consecutivo a la izquierda,
+         fecha a la derecha, sin wrap, se apretaban en pantallas angostas —
+         se apilan en columna y la fecha pasa a alinearse a la izquierda. */
+      .offer-header { flex-direction: column; align-items: flex-start !important; gap: 10px; }
+      .offer-header .fecha-display { text-align: left; }
+      .consecutivo-input { max-width: none !important; width: 100%; }
       .cat-add-row { flex-direction: column; align-items: stretch; }
       .input-with-btn { flex-direction: column; }
       .action-row { flex-direction: column; }
@@ -447,14 +474,12 @@
       </button>
       <button class="nav-item" id="nav-proyectos" data-modulo="proyectos" onclick="navegarA('proyectos')">
         <i class="ti ti-briefcase"></i> Proyectos
-        <span class="nav-badge nuevo">Nuevo</span>
       </button>
       <button class="nav-item" id="nav-contabilidad" data-modulo="contabilidad" onclick="navegarA('contabilidad')">
         <i class="ti ti-calculator"></i> Contabilidad
       </button>
       <button class="nav-item" id="nav-almacen" data-modulo="almacen" onclick="navegarA('almacen')">
         <i class="ti ti-shopping-cart"></i> Compras
-        <span class="nav-badge nuevo">Nuevo</span>
       </button>
       <button class="nav-item" id="nav-reportes" data-modulo="reportes" onclick="navegarA('reportes')">
         <i class="ti ti-chart-bar"></i> Reportes
@@ -528,7 +553,7 @@
             <div class="module-name">Proyectos</div>
             <div class="module-desc">Órdenes de trabajo y seguimiento de servicios</div>
             <div class="module-footer">
-              <span class="status-badge nuevo">Nuevo</span>
+              <span class="status-badge">Activo</span>
               <i class="ti ti-arrow-right module-arrow"></i>
             </div>
           </div>
@@ -548,7 +573,7 @@
             <div class="module-name">Compras</div>
             <div class="module-desc">Compras, proveedores y costos por proyecto</div>
             <div class="module-footer">
-              <span class="status-badge nuevo">Nuevo</span>
+              <span class="status-badge">Activo</span>
               <i class="ti ti-arrow-right module-arrow"></i>
             </div>
           </div>
@@ -687,7 +712,7 @@
             <div class="offer-header">
               <div>
                 <div class="mod-title">Oferta Económica</div>
-                <div style="display:flex;gap:6px;align-items:center;">
+                <div class="of-consecutivo-row" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                   <select id="of-tipo-oferta" onchange="OFERTAS.sugerirConsecutivoPorTipo(true)" style="padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;">
                     <option value="DIV">DIV</option>
                     <option value="INSP">INSP</option>
@@ -986,7 +1011,7 @@
             <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="NCR" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon"><i class="ti ti-trending-down"></i></div><div class="doc-card-name">Nota Crédito</div></label>
             <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="NC" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon"><i class="ti ti-notebook"></i></div><div class="doc-card-name">Nota Contable</div></label>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 2fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div class="field-grid-auto" style="display:grid;grid-template-columns:1fr 2fr 1fr 1fr;gap:12px;margin-bottom:14px;">
             <div class="field-group"><label>Fecha</label><input type="date" id="ct-fecha" onchange="CONTABILIDAD.calcularVencimiento()"></div>
             <div class="field-group">
               <label id="ct-lbl-tercero">Tercero</label>
@@ -999,7 +1024,7 @@
             <div class="field-group"><label>Plazo (días)</label><input type="number" id="ct-plazo" value="0" onchange="CONTABILIDAD.calcularVencimiento()"><div id="ct-venc-info" style="font-size:11px;color:#888;margin-top:3px;"></div></div>
             <div class="field-group"><label>Consecutivo</label><input type="text" value="AUTOMÁTICO" disabled style="background:#eee;text-align:center;color:#888;font-weight:700;"></div>
           </div>
-          <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;">
+          <div class="field-grid-auto" style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;">
             <div class="field-group"><label>Concepto</label><input type="text" id="ct-concepto" placeholder="Descripción automática o manual..."></div>
             <div class="field-group"><label>Centro de Costo</label><input type="text" id="ct-cc" placeholder="Proyecto / Obra"></div>
           </div>
@@ -1034,7 +1059,7 @@
               </div>
               <div id="ct-panel-aiu" style="display:none;margin-top:12px;background:#FFFDE7;padding:12px;border-radius:6px;border:1px solid #FBC02D;">
                 <div style="font-size:11px;font-weight:700;color:#F57F17;margin-bottom:8px;">A.I.U. — ADMINISTRACIÓN, IMPREVISTOS, UTILIDAD</div>
-                <div style="display:grid;grid-template-columns:1fr 2fr 1fr 2fr 1fr 2fr;gap:8px;align-items:center;">
+                <div class="field-grid-auto" style="display:grid;grid-template-columns:1fr 2fr 1fr 2fr 1fr 2fr;gap:8px;align-items:center;">
                   <div class="field-group"><label>Adm (%)</label><input type="number" id="ct-p-a" value="10"></div>
                   <div class="field-group"><label>Cta Adm</label><input list="ct-dl-puc" id="ct-cta-a"></div>
                   <div class="field-group"><label>Impr (%)</label><input type="number" id="ct-p-i" value="5"></div>
@@ -1094,7 +1119,7 @@
 
         <!-- REPORTES NIIF -->
         <div id="ctv-reportes" class="subview">
-          <div style="display:grid;grid-template-columns:repeat(4,1fr) auto;gap:10px;align-items:flex-end;background:#f8fafc;padding:14px;border-radius:8px;margin-bottom:16px;">
+          <div class="field-grid-auto" style="display:grid;grid-template-columns:repeat(4,1fr) auto;gap:10px;align-items:flex-end;background:#f8fafc;padding:14px;border-radius:8px;margin-bottom:16px;">
             <div class="field-group"><label>Tipo</label><select id="ct-rep-tipo"><option value="BALANCE">Balance de Prueba</option><option value="PYG">Estado Resultados</option><option value="GENERAL">Balance General</option><option value="AUXILIAR">Auxiliar</option><option value="CARTERA">Cartera</option><option value="EXOGENA">Exógena DIAN</option></select></div>
             <div class="field-group"><label>Desde</label><input type="date" id="ct-rep-ini"></div>
             <div class="field-group"><label>Hasta</label><input type="date" id="ct-rep-fin"></div>
@@ -1138,12 +1163,12 @@
         <div id="ct-modal-prod" class="modal-overlay">
           <div class="modal-box">
             <div class="modal-header"><span>Nuevo Producto / Servicio</span><button class="modal-close" onclick="CONTABILIDAD.cerrarModal('ct-modal-prod')">×</button></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div class="field-grid-2">
               <div class="field-group"><label>Código</label><input type="text" id="ct-s-cod"></div>
               <div class="field-group"><label>Tipo</label><select id="ct-s-tipo"><option>Servicio</option><option>Producto</option></select></div>
             </div>
             <div class="field-group mb10"><label>Nombre</label><input type="text" id="ct-s-nom"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div class="field-grid-2">
               <div class="field-group"><label>Cta. Ingreso/Inv</label><input list="ct-dl-puc" id="ct-s-cta-inv"></div>
               <div class="field-group"><label>Cta. Gasto</label><input list="ct-dl-puc" id="ct-s-cta-gas"></div>
               <div class="field-group"><label>% IVA</label><input type="number" id="ct-s-iva" value="19"></div>
@@ -1178,12 +1203,12 @@
             <input type="hidden" id="alm-edit-idx">
             <div class="field-group mb10"><label>Categoría</label><select id="alm-cat-modal"></select></div>
             <div class="field-group mb10"><label>Descripción *</label><textarea id="alm-desc" rows="2" placeholder="Nombre completo del material o servicio"></textarea></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div class="field-grid-2">
               <div class="field-group"><label>Unidad</label><input type="text" id="alm-unidad" value="UN"></div>
               <div class="field-group"><label>Cantidad</label><input type="number" id="alm-cantidad" value="1"></div>
             </div>
             <div class="field-group mb10"><label>Proveedor</label><input type="text" id="alm-proveedor" placeholder="Nombre del proveedor"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div class="field-grid-2">
               <div class="field-group"><label>Precio Compra (unitario)</label><input type="number" id="alm-precio-c" value="0"></div>
               <div class="field-group"><label>Precio Venta (unitario)</label><input type="number" id="alm-precio-v" value="0"></div>
             </div>

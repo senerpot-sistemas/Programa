@@ -150,7 +150,7 @@ const PROYECTOS = {
     const panel = document.getElementById('pry-detalle');
     if (!panel) return;
     panel.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div class="field-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Proyecto</div><div style="font-weight:500">${p.ID_PROYECTO}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Estado</div><div><span class="badge ${this.ESTADO_COLORS[p.ESTADO]||'badge-gray'}">${p.ESTADO}</span></div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Nombre</div><div>${p.NOMBRE||'-'}</div></div>
@@ -175,13 +175,13 @@ const PROYECTOS = {
           ${p.ID_OFERTA ? `<button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.copiarDeOferta('${id}')" title="Copiar ítems de la oferta ${p.ID_OFERTA}"><i class="ti ti-copy"></i></button>` : ''}
         </div>
         <div id="pry-presupuesto-lista" style="font-size:12.5px;">Cargando…</div>
-        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
-          <input type="text" id="pry-pres-desc" list="pry-pres-dl" placeholder="Descripción (busca en compras ya hechas)" style="flex:2;min-width:160px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;" oninput="PROYECTOS.sugerirDesdeCompra(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();PROYECTOS.agregarLineaLocal('${id}');}">
+        <div class="pry-pres-form" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+          <input type="text" id="pry-pres-desc" class="pry-pres-desc-input" list="pry-pres-dl" placeholder="Descripción (busca en compras ya hechas)" style="flex:2;min-width:160px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;" oninput="PROYECTOS.sugerirDesdeCompra(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();PROYECTOS.agregarLineaLocal('${id}');}">
           <datalist id="pry-pres-dl"></datalist>
-          <input type="number" id="pry-pres-cant" placeholder="Cant." value="1" style="width:55px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;" onkeydown="if(event.key==='Enter'){event.preventDefault();PROYECTOS.agregarLineaLocal('${id}');}">
-          <input type="text" id="pry-pres-unidad" placeholder="UN" value="UN" style="width:45px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
-          <input type="number" id="pry-pres-costo" placeholder="Costo unit." style="width:90px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;" onkeydown="if(event.key==='Enter'){event.preventDefault();PROYECTOS.agregarLineaLocal('${id}');}">
-          <button class="btn-primary-sm" onclick="PROYECTOS.agregarLineaLocal('${id}')">+ Agregar a la lista</button>
+          <input type="number" id="pry-pres-cant" class="pry-pres-num-input" placeholder="Cant." value="1" style="width:55px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;" onkeydown="if(event.key==='Enter'){event.preventDefault();PROYECTOS.agregarLineaLocal('${id}');}">
+          <input type="text" id="pry-pres-unidad" class="pry-pres-num-input" placeholder="UN" value="UN" style="width:45px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;">
+          <input type="number" id="pry-pres-costo" class="pry-pres-num-input" placeholder="Costo unit." style="width:90px;padding:6px;border:1px solid #ccc;border-radius:4px;font-size:12px;" onkeydown="if(event.key==='Enter'){event.preventDefault();PROYECTOS.agregarLineaLocal('${id}');}">
+          <button class="btn-primary-sm pry-pres-btn" onclick="PROYECTOS.agregarLineaLocal('${id}')">+ Agregar a la lista</button>
         </div>
         <div id="pry-pres-hint" style="font-size:11px;color:#888;margin-top:4px;"></div>
         <div id="pry-pres-guardar-wrap" style="display:none;margin-top:10px;">
