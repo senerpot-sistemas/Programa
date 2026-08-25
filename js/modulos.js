@@ -150,7 +150,7 @@ const PROYECTOS = {
     const panel = document.getElementById('pry-detalle');
     if (!panel) return;
     panel.innerHTML = `
-      <div class="field-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div class="field-grid-2" style="margin-bottom:14px;">
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Proyecto</div><div style="font-weight:500">${p.ID_PROYECTO}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Estado</div><div><span class="badge ${this.ESTADO_COLORS[p.ESTADO]||'badge-gray'}">${p.ESTADO}</span></div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Nombre</div><div>${p.NOMBRE||'-'}</div></div>
