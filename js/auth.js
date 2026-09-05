@@ -196,7 +196,16 @@ const USUARIOS = {
     document.getElementById('usr-usuario').disabled = !!u; // el nombre de usuario no se cambia una vez creado
     set('usr-nombre', u?.NOMBRE);
     set('usr-password', '');
-    document.getElementById('usr-password').placeholder = u ? 'Dejar en blanco para no cambiarla' : 'Contraseña (mínimo 6 caracteres)';
+    // La contraseña actual nunca se puede mostrar (se guarda como hash, no
+    // en texto plano — ver hashPassword en Auth.gs) — este campo, al editar,
+    // es para RESTABLECER a una contraseña nueva, no para ver ni corregir la
+    // que ya tiene. El label y la ayuda dejan eso explícito para que no se
+    // confunda con "aquí está en blanco por un error".
+    document.getElementById('usr-password').placeholder = u ? 'Nueva contraseña (dejar en blanco para no cambiarla)' : 'Contraseña (mínimo 6 caracteres)';
+    const lblPassword = document.getElementById('usr-password-label');
+    if (lblPassword) lblPassword.textContent = u ? 'Restablecer contraseña' : 'Contraseña';
+    const hintPassword = document.getElementById('usr-password-hint');
+    if (hintPassword) hintPassword.style.display = u ? 'block' : 'none';
     const selRol = document.getElementById('usr-rol');
     if (selRol) selRol.value = u?.ROL || 'COMERCIAL';
     const chkActivo = document.getElementById('usr-activo');

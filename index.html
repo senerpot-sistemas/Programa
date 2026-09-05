@@ -1246,11 +1246,12 @@
             <div class="modal-header"><span id="usr-modal-title">Nuevo Usuario</span><button class="modal-close" onclick="USUARIOS.cerrarModal()">×</button></div>
             <div class="field-group mb10"><label>Usuario *</label><input type="text" id="usr-usuario" placeholder="ej: jperez"></div>
             <div class="field-group mb10"><label>Nombre completo</label><input type="text" id="usr-nombre" placeholder="Ej: Juan Pérez"></div>
-            <div class="field-group mb10"><label>Contraseña</label>
+            <div class="field-group mb10"><label id="usr-password-label">Contraseña</label>
               <div class="password-wrap">
                 <input type="password" id="usr-password" placeholder="Contraseña (mínimo 6 caracteres)">
                 <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
               </div>
+              <div id="usr-password-hint" style="font-size:11px;color:#888;margin-top:3px;display:none;">Por seguridad, la contraseña actual no se puede ver — nunca se guarda en texto plano. Escribe aquí solo si quieres reemplazarla por una nueva.</div>
             </div>
             <div class="field-group mb10">
               <label>Rol</label>
