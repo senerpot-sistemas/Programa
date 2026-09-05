@@ -8,7 +8,6 @@ const CONTABILIDAD = {
 
   DB:           { config:{}, puc:[], terceros:[], productos:[], cartera:[], memoria:[] },
   MOVS:         [],
-  ID_EDITANDO:  null,
   abonosTemp:   [],
 
   // ──────────────────────────────────────────
@@ -312,16 +311,21 @@ const CONTABILIDAD = {
         <div><div style="font-weight:500">${p.id}</div><div style="font-size:11px;color:#888">${p.fecha}</div></div>
         <div style="text-align:right">
           <div style="font-weight:700;color:#D32F2F">${UI.moneda(p.saldo)}</div>
-          <button class="btn-primary-sm" style="font-size:11px;padding:3px 8px;margin-top:3px" onclick="CONTABILIDAD.agregarPago('${p.id}',${p.saldo})">PAGAR</button>
+          <button class="btn-primary-sm" style="font-size:11px;padding:3px 8px;margin-top:3px" onclick="CONTABILIDAD.agregarPago('${p.id}',${p.saldo},'${p.cuentaCartera||'130505'}')">PAGAR</button>
         </div>
       </div>`).join('');
   },
 
-  agregarPago(idDoc, saldo) {
+  // cuentaCartera: cuenta real de cartera de ESA factura (viene del backend,
+  // ver obtenerDatosIniciales en Datos.gs) — no siempre es 130505, algunas
+  // facturas pueden quedar en otra cuenta según el tipo de crédito. Cae en
+  // '130505' solo si el backend no pudo determinarla (documento sin
+  // movimiento de cartera detectable).
+  agregarPago(idDoc, saldo, cuentaCartera = '130505') {
     const abono = parseFloat(prompt(`Saldo: ${UI.moneda(saldo)}\nIngrese valor a abonar:`, saldo));
     if (!abono || abono <= 0) return;
     if (abono > saldo) { UI.toast('Abono mayor al saldo', 'warn'); return; }
-    this.addRow('130505', 'Abono a Factura ' + idDoc, 0, abono);
+    this.addRow(cuentaCartera, 'Abono a Factura ' + idDoc, 0, abono);
     const esBanco = confirm('¿Entró al BANCO?\nAceptar = Banco (111005)\nCancelar = Caja (110505)');
     this.addRow(esBanco ? '111005' : '110505', 'Ingreso Pago Factura ' + idDoc, abono, 0);
     this.abonosTemp.push({ idDoc, valor: abono });
@@ -355,7 +359,7 @@ const CONTABILIDAD = {
       document.getElementById('ct-concepto').value = 'Pago Factura ' + ref;
       const factura = (this.DB.cartera || []).find(f => f.id === ref);
       if (factura && confirm(`¿Generar asiento automático por ${UI.moneda(factura.saldo)}?`)) {
-        this.agregarPago(ref, factura.saldo);
+        this.agregarPago(ref, factura.saldo, factura.cuentaCartera || '130505');
       }
     }
   },
@@ -378,8 +382,6 @@ const CONTABILIDAD = {
       movimientos: this.MOVS,
       centroCosto: document.getElementById('ct-cc')?.value || '',
       abonos:      this.abonosTemp,
-      esEdicion:   this.ID_EDITANDO !== null,
-      idOriginal:  this.ID_EDITANDO,
       refFactura:  document.getElementById('ct-ref-factura')?.value || ''
     };
     try {
@@ -396,24 +398,14 @@ const CONTABILIDAD = {
   },
 
   resetForm() {
-    this.MOVS = []; this.abonosTemp = []; this.ID_EDITANDO = null;
+    this.MOVS = []; this.abonosTemp = [];
     const ids = ['ct-tercero','ct-concepto','ct-cc','ct-ref-factura','ct-val-base','ct-sel-prod'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     document.getElementById('ct-plazo').value = 0;
     this.actualizarTabla();
-    document.getElementById('ct-edit-banner').style.display = 'none';
-    document.getElementById('ct-btn-save').textContent = '💾 PROCESAR DOCUMENTO';
     this.setFechaHoy();
     // Reload ERP data
     API.call('obtenerDatosERP').then(data => { this.DB = data; this.renderUI(); }).catch(() => {});
-  },
-
-  cancelarEdicion() {
-    this.ID_EDITANDO = null;
-    document.getElementById('ct-edit-banner').style.display = 'none';
-    document.getElementById('ct-btn-save').textContent = '💾 PROCESAR DOCUMENTO';
-    this.MOVS = []; this.actualizarTabla();
-    UI.toast('Edición cancelada', 'info');
   },
 
   // ──────────────────────────────────────────
@@ -448,44 +440,31 @@ const CONTABILIDAD = {
       tbody.innerHTML = '';
       res.movimientos.forEach(m => {
         const tr = document.createElement('tr');
+        const esReversion = m.doc.startsWith('ANU-'); // reversión generada por anular — no se edita ni se vuelve a anular
+        const botonVer = m.urlDoc ? `<button class="btn-icon" style="color:#8B5CF6" onclick="window.open('${m.urlDoc}','_blank')" title="Ver documento"><i class="ti ti-file-text"></i></button>` : '';
+        const botonAnular = esReversion ? '' : `<button class="btn-icon" style="color:#D32F2F" onclick="CONTABILIDAD.anularDocumentoUI('${m.doc}')" title="Anular documento"><i class="ti ti-file-off"></i></button>`;
         tr.innerHTML = `
           <td>${m.fecha}</td><td><b>${m.doc}</b></td><td>${m.cuenta}</td><td>${m.detalle}</td>
           <td class="text-right">${m.debito  > 0 ? UI.moneda(m.debito)  : '-'}</td>
           <td class="text-right">${m.credito > 0 ? UI.moneda(m.credito) : '-'}</td>
-          <td style="text-align:center;">
-            <button class="btn-icon btn-icon-edit" onclick="CONTABILIDAD.cargarDocEdicion('${m.doc}')" title="Editar"><i class="ti ti-edit"></i></button>
-          </td>`;
+          <td style="text-align:center;white-space:nowrap;">${botonVer}${botonAnular}</td>`;
         tbody.appendChild(tr);
       });
     } catch(e) { UI.toast(e.message, 'err'); }
   },
 
-  async cargarDocEdicion(idDoc) {
-    if (!confirm('¿Editar ' + idDoc + '?')) return;
+  // Anular un documento posteado — el backend genera la reversión (débito↔
+  // crédito invertidos) y marca el original ANULADO, nunca borra ni edita
+  // los movimientos originales. Es el único mecanismo de corrección "fuerte"
+  // disponible (junto con NCR/ND) — editar in-place quedó deshabilitado a
+  // propósito para no perder el rastro de auditoría.
+  async anularDocumentoUI(idDoc) {
+    if (!confirm(`¿Anular el documento ${idDoc}? Se registrará una reversión contable; el original queda marcado como anulado y no se puede deshacer.`)) return;
     try {
-      const res = await API.call('cargarDocEdicion', { idDoc });
+      const res = await API.call('anularDocumento', { id: idDoc });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
-      this.ID_EDITANDO = res.header.id;
-      this.tab('operacion');
-
-      document.getElementById('ct-edit-banner').style.display = 'block';
-      document.getElementById('ct-edit-id').textContent = this.ID_EDITANDO;
-      document.getElementById('ct-btn-save').textContent = '💾 ACTUALIZAR';
-
-      // Activar tipo de documento
-      const radioTipo = document.querySelector(`input[name="ct-td"][value="${res.header.tipo}"]`);
-      if (radioTipo) { radioTipo.parentElement.click(); }
-
-      document.getElementById('ct-fecha').value    = res.header.fecha;
-      document.getElementById('ct-concepto').value = res.header.concepto;
-      document.getElementById('ct-cc').value       = res.header.centroCosto || '';
-
-      // Tercero
-      const tercObj = (this.DB.terceros || []).find(t => t.nit === res.header.nit);
-      document.getElementById('ct-tercero').value  = tercObj ? tercObj.texto : (res.header.nit + ' - ' + res.header.nombre);
-
-      this.MOVS = res.movimientos;
-      this.actualizarTabla();
+      UI.toast(res.mensaje, 'ok');
+      this.buscarHistorial();
     } catch(e) { UI.toast(e.message, 'err'); }
   },
 
