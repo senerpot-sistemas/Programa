@@ -1056,8 +1056,10 @@
                 </div>
                 <button class="btn-primary-sm" onclick="CONTABILIDAD.addAuto()">Agregar</button>
               </div>
+              <div style="font-size:11px;color:#888;margin-top:6px;">💡 Un ítem a la vez: elige el servicio, escribe el valor base (sin IVA) y dale <b>Agregar</b> — se crea la línea de venta y, si dejas marcado IVA/Rete, también sus líneas automáticamente, según lo configurado en ese producto. Repite para cada ítem de la factura; cuando el total cuadre, guarda el documento.</div>
               <div id="ct-panel-aiu" style="display:none;margin-top:12px;background:#FFFDE7;padding:12px;border-radius:6px;border:1px solid #FBC02D;">
-                <div style="font-size:11px;font-weight:700;color:#F57F17;margin-bottom:8px;">A.I.U. — ADMINISTRACIÓN, IMPREVISTOS, UTILIDAD</div>
+                <div style="font-size:11px;font-weight:700;color:#F57F17;margin-bottom:4px;">A.I.U. — ADMINISTRACIÓN, IMPREVISTOS, UTILIDAD</div>
+                <div style="font-size:11px;color:#8D6E00;margin-bottom:8px;">Para contratos de obra o servicios que se facturan por AIU: define el % de cada componente y en qué cuenta PUC se contabiliza. El sistema calcula automáticamente los tres valores sobre el valor base.</div>
                 <div class="field-grid-auto" style="display:grid;grid-template-columns:1fr 2fr 1fr 2fr 1fr 2fr;gap:8px;align-items:center;">
                   <div class="field-group"><label>Adm (%)</label><input type="number" id="ct-p-a" value="10"></div>
                   <div class="field-group"><label>Cta Adm</label><input list="ct-dl-puc" id="ct-cta-a"></div>
@@ -1134,6 +1136,14 @@
             <div class="field-group"><label>Filtro</label><input type="text" id="ct-rep-filtro" placeholder="Cuenta o NIT"></div>
             <button class="btn-primary-sm" onclick="CONTABILIDAD.generarReporte()">Generar</button>
           </div>
+          <div style="font-size:11.5px;color:#888;background:#f8fafc;padding:10px 14px;border-radius:8px;margin-bottom:16px;line-height:1.7;">
+            💡 <b>Balance de Prueba</b>: todas las cuentas con movimiento en el rango, débito/crédito/saldo. &nbsp;|&nbsp;
+            <b>Estado Resultados</b>: solo ingresos y gastos (cuentas 4-7) — muestra la utilidad del período. &nbsp;|&nbsp;
+            <b>Balance General</b>: solo activos, pasivos y patrimonio (cuentas 1-3) — la foto de la empresa a esa fecha. &nbsp;|&nbsp;
+            <b>Auxiliar</b>: el detalle completo de una cuenta o tercero (usa el campo Filtro). &nbsp;|&nbsp;
+            <b>Cartera</b>: qué facturas de venta siguen pendientes de cobro y hace cuánto vencieron. &nbsp;|&nbsp;
+            <b>Exógena DIAN</b>: totales por tercero para el reporte fiscal anual.
+          </div>
           <div style="overflow-x:auto;">
             <table class="data-tbl" id="ct-tbl-reporte"><thead></thead><tbody></tbody></table>
           </div>
@@ -1141,10 +1151,11 @@
 
         <!-- BANCOS -->
         <div id="ctv-bancos" class="subview">
-          <div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">
+          <div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
             <button class="btn-primary-sm" onclick="CONTABILIDAD.cargarBancos()"><i class="ti ti-refresh"></i> Refrescar</button>
             <span style="font-size:13px;color:#64748B;">Marque los movimientos ya conciliados con el extracto bancario.</span>
           </div>
+          <div style="font-size:11.5px;color:#888;margin-bottom:12px;">💡 Esta lista muestra los movimientos de cuentas de banco (111...) que aún no se han marcado como conciliados. Al marcar el ✓, comparas ese movimiento con tu extracto bancario real — no cambia ni corrige el asiento contable, solo deja constancia de que ya revisaste que coincide con el banco.</div>
           <div class="table-scroll">
           <table class="data-tbl">
             <thead><tr><th style="width:40px;">✓</th><th>Fecha</th><th>Documento</th><th>Detalle</th><th class="text-right">Débito</th><th class="text-right">Crédito</th></tr></thead>
@@ -1177,13 +1188,14 @@
             </div>
             <div class="field-group mb10"><label>Nombre</label><input type="text" id="ct-s-nom"></div>
             <div class="field-grid-2">
-              <div class="field-group"><label>Cta. Ingreso/Inv</label><input list="ct-dl-puc" id="ct-s-cta-inv"></div>
+              <div class="field-group"><label>Cta. Ingreso/Inv</label><div class="input-with-btn"><input list="ct-dl-puc" id="ct-s-cta-inv"><button onclick="CONTABILIDAD.abrirModalCuentaPUC()" title="Crear cuenta PUC nueva">+</button></div></div>
               <div class="field-group"><label>Cta. Gasto</label><input list="ct-dl-puc" id="ct-s-cta-gas"></div>
               <div class="field-group"><label>% IVA</label><input type="number" id="ct-s-iva" value="19"></div>
               <div class="field-group"><label>Cta. IVA</label><input type="text" id="ct-s-cta-iva" value="240801"></div>
               <div class="field-group"><label>% Rete</label><input type="number" id="ct-s-rete" value="2.5"></div>
               <div class="field-group mb15"><label>Cta. Rete</label><input type="text" id="ct-s-cta-rete" value="236540"></div>
             </div>
+            <div style="font-size:11px;color:#888;margin-bottom:10px;">¿No aparece el código que buscas en las cuentas? Créalo con el botón + junto a "Cta. Ingreso/Inv", o desde Operación → Cuenta Manual.</div>
             <button class="btn-generate" onclick="CONTABILIDAD.crearProducto()">Guardar</button>
           </div>
         </div>
