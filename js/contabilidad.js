@@ -236,9 +236,22 @@ const CONTABILIDAD = {
     }
   },
 
+  // El nombre de la cuenta nunca se recibe como parámetro — antes quedaba
+  // fijo en '' sin importar de dónde viniera la fila (catálogo, AIU o
+  // manual), así que Data_Movimientos nunca tuvo el nombre guardado. Ahora
+  // se resuelve aquí mismo, buscando el código en el PUC (+ memoria) que ya
+  // está cargado en DB — un solo lugar que cubre los tres caminos.
   addRow(c, d, db, cr) {
-    this.MOVS.push({ cuenta: c, nombreCuenta: '', detalle: d, debito: db, credito: cr });
+    this.MOVS.push({ cuenta: c, nombreCuenta: this.resolverNombreCuenta(c), detalle: d, debito: db, credito: cr });
     this.actualizarTabla();
+  },
+
+  resolverNombreCuenta(cuenta) {
+    const codigo = String(cuenta || '').trim();
+    if (!codigo) return '';
+    const listaPUC = [...(this.DB.puc || []), ...(this.DB.memoria || [])];
+    const match = listaPUC.find(entry => entry.split(' - ')[0].trim() === codigo);
+    return match ? match.split(' - ').slice(1).join(' - ').trim() : '';
   },
 
   editarLinea(idx) {
@@ -263,8 +276,9 @@ const CONTABILIDAD = {
     this.MOVS.forEach((m, i) => {
       sDb += m.debito; sCr += m.credito;
       const tr = document.createElement('tr');
+      const cuentaMostrar = m.nombreCuenta ? `${m.cuenta} <span style="color:#888;font-size:11px;">— ${m.nombreCuenta}</span>` : `${m.cuenta} <span style="color:#D32F2F;font-size:11px;" title="No se encontró ese código en el PUC — revisa que esté bien escrito o créalo con el botón +">⚠ sin nombre</span>`;
       tr.innerHTML = `
-        <td>${m.cuenta}</td><td>${m.detalle}</td>
+        <td>${cuentaMostrar}</td><td>${m.detalle}</td>
         <td class="text-right">${UI.moneda(m.debito)}</td>
         <td class="text-right">${UI.moneda(m.credito)}</td>
         <td style="text-align:center;white-space:nowrap;">
@@ -551,6 +565,30 @@ const CONTABILIDAD = {
       await API.call('obtenerDatosERP').then(d => { this.DB = d; this.renderUI(); });
       document.getElementById('ct-modal-prod').classList.remove('open');
       UI.toast('Producto creado', 'ok');
+    } catch(e) { UI.toast(e.message, 'err'); }
+  },
+
+  abrirModalCuentaPUC() {
+    ['ct-puc-cod','ct-puc-nom'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('ct-modal-puc')?.classList.add('open');
+  },
+
+  async crearCuentaPUC() {
+    const codigo = document.getElementById('ct-puc-cod')?.value?.trim();
+    const nombre = document.getElementById('ct-puc-nom')?.value?.trim();
+    if (!codigo || !nombre) { UI.toast('Código y nombre son requeridos', 'warn'); return; }
+    try {
+      const res = await API.call('crearCuentaPUC', { codigo, nombre });
+      if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      this.DB.puc = this.DB.puc || [];
+      this.DB.puc.push(res.data.texto);
+      this.renderUI();
+      // Deja el código recién creado listo para usar en el campo donde
+      // probablemente se estaba trabajando cuando se dio cuenta de que faltaba.
+      const campoManual = document.getElementById('ct-m-cta');
+      if (campoManual && document.getElementById('ct-p-manual').style.display !== 'none') campoManual.value = res.data.texto;
+      document.getElementById('ct-modal-puc')?.classList.remove('open');
+      UI.toast('Cuenta PUC creada', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
   },
 
