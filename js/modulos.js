@@ -108,8 +108,29 @@ const PROYECTOS = {
       const num = parseFloat(String(oferta.TOTAL).replace(/[^0-9]/g, ''));
       if (!isNaN(num)) valInput.value = num;
     }
+    // El objeto de la oferta (qué es el trabajo, no solo quién es el
+    // cliente) es lo que de verdad distingue un proyecto de otro cuando un
+    // mismo cliente tiene varias ofertas — antes el nombre sugerido era
+    // siempre "Proyecto <Cliente>", igual para las tres, sin forma de
+    // saber cuál proyecto correspondía a cuál oferta. Se saca del
+    // DATA_JSON de la oferta (el mismo campo que se ve en "Ver resumen"
+    // del historial de Ofertas).
+    let objeto = '';
+    if (oferta.DATA_JSON) {
+      try { objeto = JSON.parse(oferta.DATA_JSON)?.textos?.objeto || ''; } catch(e) {}
+    }
+    const objetoCorto = objeto.length > 50 ? objeto.slice(0, 47) + '...' : objeto;
+
     const nomInput = document.getElementById('pry-nombre');
-    if (nomInput && !nomInput.value) nomInput.value = 'Proyecto ' + oferta.CLIENTE;
+    if (nomInput && !nomInput.value) {
+      nomInput.value = 'Proyecto ' + oferta.CLIENTE + (objetoCorto ? ' — ' + objetoCorto : '');
+    }
+    // El objeto completo (sin truncar) queda también en Notas, para que no
+    // se pierda aunque el nombre del proyecto se recorte o se edite luego.
+    const notasInput = document.getElementById('pry-notas');
+    if (notasInput && !notasInput.value && objeto) {
+      notasInput.value = 'Objeto de la oferta ' + idOferta + ': ' + objeto;
+    }
   },
 
   async crearProyecto() {
@@ -149,6 +170,17 @@ const PROYECTOS = {
     if (!p) return;
     const panel = document.getElementById('pry-detalle');
     if (!panel) return;
+    // Objeto de la oferta vinculada — se busca en vivo aquí (no depende de
+    // que el proyecto ya tenga NOTAS con el objeto guardado), así que esto
+    // también sirve para proyectos creados antes de este cambio, donde el
+    // nombre no bastaba para distinguir cuál oferta era cuál.
+    let objetoOferta = '';
+    if (p.ID_OFERTA) {
+      const ofertaLigada = (this.DB.historial || []).find(h => h.ID_OFERTA === p.ID_OFERTA);
+      if (ofertaLigada?.DATA_JSON) {
+        try { objetoOferta = JSON.parse(ofertaLigada.DATA_JSON)?.textos?.objeto || ''; } catch(e) {}
+      }
+    }
     panel.innerHTML = `
       <div class="field-grid-2" style="margin-bottom:14px;">
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Proyecto</div><div style="font-weight:500">${p.ID_PROYECTO}</div></div>
@@ -156,7 +188,7 @@ const PROYECTOS = {
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Nombre</div><div>${p.NOMBRE||'-'}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Cliente</div><div>${p.CLIENTE||'-'}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Valor</div><div style="font-weight:700;color:var(--primary)">${UI.moneda(p.VALOR||0)}</div></div>
-        <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Oferta</div><div>${p.ID_OFERTA||'—'}</div></div>
+        <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Oferta</div><div>${p.ID_OFERTA||'—'}${objetoOferta ? `<div style="font-size:11.5px;color:#64748B;font-weight:400;margin-top:2px;">${objetoOferta}</div>` : ''}</div></div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Ref. Factura SIGO</div><div>${p.REF_FACTURA_SIGO||'—'}</div></div>
         <div>
           <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Responsable</div>
