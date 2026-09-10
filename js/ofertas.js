@@ -582,14 +582,52 @@ const OFERTAS = {
 
   borrarFila(btn) { btn.closest('tr').remove(); this.calcularTotales(); },
 
+  toggleAIU() {
+    const on = document.getElementById('of-aiu-check').checked;
+    document.getElementById('of-aiu-fields').style.display = on ? 'grid' : 'none';
+    document.querySelectorAll('.aiu-line').forEach(el => el.style.display = on ? '' : 'none');
+    document.getElementById('of-subtotal-label').textContent = on ? 'Costo Directo:' : 'Subtotal:';
+    document.getElementById('of-iva-label').textContent = on ? 'IVA 19% (sobre Utilidad):' : 'IVA 19%:';
+    this.calcularTotales();
+  },
+
+  // Contratos por AIU: el IVA solo aplica sobre el componente de Utilidad,
+  // no sobre el costo directo ni sobre Administración/Imprevistos — así
+  // quedaron ya las cuentas del PUC (41652001/02/03 y 24080211 "IVA 19%
+  // AIU"), este cálculo solo refleja ese mismo criterio en la oferta.
   calcularTotales() {
     let sub = 0;
     document.querySelectorAll('.inp-total').forEach(i => sub += parseFloat(i.value || 0));
-    const iva   = sub * 0.19;
-    const total = sub + iva;
     document.getElementById('of-subtotal').textContent = UI.moneda(sub);
-    document.getElementById('of-iva').textContent      = UI.moneda(iva);
-    document.getElementById('of-total').textContent    = UI.moneda(total);
+
+    const aiuOn = document.getElementById('of-aiu-check')?.checked;
+    let iva, total;
+
+    if (aiuOn) {
+      const pA = parseFloat(document.getElementById('of-aiu-a').value) || 0;
+      const pI = parseFloat(document.getElementById('of-aiu-i').value) || 0;
+      const pU = parseFloat(document.getElementById('of-aiu-u').value) || 0;
+      const vA = sub * pA / 100;
+      const vI = sub * pI / 100;
+      const vU = sub * pU / 100;
+      const subAIU = sub + vA + vI + vU;
+      iva   = vU * 0.19;
+      total = subAIU + iva;
+
+      document.getElementById('of-aiu-row-a').textContent = `Administración (${pA}%):`;
+      document.getElementById('of-aiu-row-i').textContent = `Imprevistos (${pI}%):`;
+      document.getElementById('of-aiu-row-u').textContent = `Utilidad (${pU}%):`;
+      document.getElementById('of-aiu-val-a').textContent   = UI.moneda(vA);
+      document.getElementById('of-aiu-val-i').textContent   = UI.moneda(vI);
+      document.getElementById('of-aiu-val-u').textContent   = UI.moneda(vU);
+      document.getElementById('of-aiu-val-sub').textContent = UI.moneda(subAIU);
+    } else {
+      iva   = sub * 0.19;
+      total = sub + iva;
+    }
+
+    document.getElementById('of-iva').textContent   = UI.moneda(iva);
+    document.getElementById('of-total').textContent = UI.moneda(total);
   },
 
   // ──────────────────────────────────────────
@@ -704,7 +742,13 @@ const OFERTAS = {
         responsabilidades_cliente: document.getElementById('of-cond-resp').value,
         cond_garantia:           document.getElementById('of-cond-garantia').value
       },
-      items: itemsData
+      items: itemsData,
+      aiu: {
+        activo:         document.getElementById('of-aiu-check')?.checked || false,
+        pctAdmin:       document.getElementById('of-aiu-a')?.value || 0,
+        pctImprevistos: document.getElementById('of-aiu-i')?.value || 0,
+        pctUtilidad:    document.getElementById('of-aiu-u')?.value || 0
+      }
     };
   },
 
@@ -802,6 +846,13 @@ const OFERTAS = {
     data.textos.alcance_act_lista?.forEach(t => this.addAlcance(t));
     document.getElementById('of-tbody-items').innerHTML = '';
     data.items?.forEach(it => this.addFila({ cod: it.codigo, desc: it.descripcion, val: it.unitario, cant: it.cantidad }));
+
+    const aiu = data.aiu || {};
+    document.getElementById('of-aiu-check').checked = !!aiu.activo;
+    set('of-aiu-a', aiu.pctAdmin       ?? 9);
+    set('of-aiu-i', aiu.pctImprevistos ?? 6);
+    set('of-aiu-u', aiu.pctUtilidad    ?? 4);
+    this.toggleAIU();
   },
 
   // ──────────────────────────────────────────

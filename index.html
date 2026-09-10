@@ -791,10 +791,27 @@
             </table>
             </div>
             <button class="btn-add-row" onclick="OFERTAS.addFila()">+ Fila en blanco</button>
+
+            <div class="field-group" style="margin:14px 0 6px;">
+              <label style="display:flex;align-items:center;gap:6px;margin:0;font-weight:600;">
+                <input type="checkbox" id="of-aiu-check" onchange="OFERTAS.toggleAIU()" style="width:auto;">
+                Manejar por AIU (Administración, Imprevistos y Utilidad)
+              </label>
+            </div>
+            <div id="of-aiu-fields" class="conditions-grid" style="display:none;margin-bottom:10px;">
+              <div class="field-group"><label>Administración %</label><input type="number" id="of-aiu-a" value="9" step="0.01" onchange="OFERTAS.calcularTotales()"></div>
+              <div class="field-group"><label>Imprevistos %</label><input type="number" id="of-aiu-i" value="6" step="0.01" onchange="OFERTAS.calcularTotales()"></div>
+              <div class="field-group"><label>Utilidad %</label><input type="number" id="of-aiu-u" value="4" step="0.01" onchange="OFERTAS.calcularTotales()"></div>
+            </div>
+
             <div class="totals-section">
               <div class="totals-grid">
-                <span>Subtotal:</span><span id="of-subtotal">$ 0</span>
-                <span>IVA 19%:</span><span id="of-iva">$ 0</span>
+                <span id="of-subtotal-label">Subtotal:</span><span id="of-subtotal">$ 0</span>
+                <span class="aiu-line" id="of-aiu-row-a" style="display:none;">Administración:</span><span class="aiu-line" id="of-aiu-val-a" style="display:none;">$ 0</span>
+                <span class="aiu-line" id="of-aiu-row-i" style="display:none;">Imprevistos:</span><span class="aiu-line" id="of-aiu-val-i" style="display:none;">$ 0</span>
+                <span class="aiu-line" id="of-aiu-row-u" style="display:none;">Utilidad:</span><span class="aiu-line" id="of-aiu-val-u" style="display:none;">$ 0</span>
+                <span class="aiu-line" id="of-aiu-row-sub" style="display:none;">Subtotal AIU:</span><span class="aiu-line" id="of-aiu-val-sub" style="display:none;">$ 0</span>
+                <span id="of-iva-label">IVA 19%:</span><span id="of-iva">$ 0</span>
                 <span class="total-label">Total:</span><span class="total-value" id="of-total">$ 0</span>
               </div>
             </div>
