@@ -1105,15 +1105,17 @@
 
         <!-- CONSULTAS -->
         <div id="ctv-consultas" class="subview">
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;background:#f8fafc;padding:14px;border-radius:8px;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;background:#f8fafc;padding:14px;border-radius:8px;">
+            <div class="field-group" style="flex:1;min-width:150px;"><label>N° de Documento</label><input type="text" id="ct-cons-doc" placeholder="Ej: ND-5"></div>
             <div class="field-group" style="flex:2;min-width:200px;"><label>Tercero</label><input list="ct-dl-terceros-cons" id="ct-cons-tercero" placeholder="Nombre o NIT..."><datalist id="ct-dl-terceros-cons"></datalist></div>
             <div class="field-group" style="flex:1;min-width:130px;"><label>Desde</label><input type="date" id="ct-cons-ini"></div>
             <div class="field-group" style="flex:1;min-width:130px;"><label>Hasta</label><input type="date" id="ct-cons-fin"></div>
             <div class="field-group" style="flex:1;min-width:130px;"><label>Tipo Doc</label><select id="ct-cons-tipo"><option value="">TODOS</option><option value="FV">Fact. Venta</option><option value="CC">Cta. Cobro</option><option value="RC">Recibo Caja</option><option value="FC">Fact. Compra</option><option value="CE">Comp. Egreso</option><option value="NCR">Nota Crédito</option><option value="ND">Nota Débito</option></select></div>
-            <div style="display:flex;align-items:flex-end;"><button class="btn-primary-sm" onclick="CONTABILIDAD.buscarHistorial()"><i class="ti ti-search"></i> Consultar</button></div>
+            <div style="display:flex;align-items:flex-end;"><button class="btn-primary-sm" onclick="CONTABILIDAD.buscarHistorial()">🔍 Consultar</button></div>
           </div>
+          <div style="font-size:11px;color:#888;margin-bottom:16px;">💡 Tres formas de buscar: escribe un <b>N° de Documento</b> exacto para ir directo a ese documento (sin importar el tercero) — o deja ese campo vacío y busca por <b>Tercero</b> (te trae todo su historial con saldo), o por <b>Tipo de documento</b> solo, para ver todos los de ese tipo (por ejemplo, todas las Notas Débito).</div>
           <div id="ct-result-cons" style="display:none;">
-            <div style="background:linear-gradient(135deg,#00593E,#009E60);color:white;padding:18px 22px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div id="ct-res-header" style="background:linear-gradient(135deg,#00593E,#009E60);color:white;padding:18px 22px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
               <div><div id="ct-res-nombre" style="font-size:18px;font-weight:700;">CLIENTE</div><div id="ct-res-nit" style="font-size:12px;opacity:0.8;">NIT: 000</div></div>
               <div style="text-align:right;"><div style="font-size:11px;opacity:0.8;">Saldo pendiente</div><div id="ct-res-saldo" style="font-size:24px;font-weight:700;">$ 0</div><div id="ct-res-estado" style="font-size:11px;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:10px;display:inline-block;">—</div></div>
             </div>

@@ -463,29 +463,48 @@ const CONTABILIDAD = {
   // ──────────────────────────────────────────
   //  CONSULTAS
   // ──────────────────────────────────────────
+  // Tres formas de buscar, en este orden de prioridad: por N° de Documento
+  // exacto (encuentra ESE documento sin importar de qué tercero es — para
+  // "cómo veo la ND-5 sin acordarme del cliente"), por Tercero (el
+  // historial completo de ese cliente/proveedor, con su saldo), o por Tipo
+  // de documento solo (todas las notas débito, todas las facturas de venta,
+  // etc., sin filtrar por tercero — para "ver todas las ND que he hecho").
+  // El saldo con deudor/a favor solo tiene sentido cuando se buscó por
+  // tercero puntual, así que el encabezado se oculta en los otros dos modos.
   async buscarHistorial() {
-    const input = document.getElementById('ct-cons-tercero')?.value || '';
-    if (!input) { UI.toast('Ingrese nombre o NIT', 'warn'); return; }
-    const nit    = input.split(' - ')[0];
-    const nombre = input.split(' - ')[1] || input;
-    const fIni   = document.getElementById('ct-cons-ini')?.value;
-    const fFin   = document.getElementById('ct-cons-fin')?.value;
-    const tDoc   = document.getElementById('ct-cons-tipo')?.value;
+    const docBuscado = document.getElementById('ct-cons-doc')?.value?.trim() || '';
+    const input       = document.getElementById('ct-cons-tercero')?.value || '';
+    const nit         = input.split(' - ')[0];
+    const nombre      = input.split(' - ')[1] || input;
+    const fIni        = document.getElementById('ct-cons-ini')?.value;
+    const fFin        = document.getElementById('ct-cons-fin')?.value;
+    const tDoc        = document.getElementById('ct-cons-tipo')?.value;
+
+    if (!docBuscado && !input && !tDoc) {
+      UI.toast('Escribe un N° de documento, un tercero, o elige un tipo de documento', 'warn');
+      return;
+    }
 
     const tbody = document.getElementById('ct-tbody-hist');
     if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">⏳ Consultando...</td></tr>';
     const result = document.getElementById('ct-result-cons');
     if (result) result.style.display = 'block';
+    const header = document.getElementById('ct-res-header');
 
     try {
-      const res = await API.call('consultarHistorial', { nit, fIni, fFin, tipoDoc: tDoc });
+      const res = await API.call('consultarHistorial', { nit: docBuscado ? '' : nit, fIni, fFin, tipoDoc: tDoc, idDoc: docBuscado });
       if (!res.exito) { UI.toast('Error: ' + res.error, 'err'); return; }
 
-      document.getElementById('ct-res-nombre').textContent = nombre;
-      document.getElementById('ct-res-nit').textContent    = 'NIT: ' + nit;
-      document.getElementById('ct-res-saldo').textContent  = UI.moneda(res.saldo);
-      document.getElementById('ct-res-saldo').style.color  = res.saldo >= 0 ? '#D32F2F' : '#009E60';
-      document.getElementById('ct-res-estado').textContent = res.saldo === 0 ? 'PAZ Y SALVO' : res.saldo > 0 ? 'DEUDOR' : 'A FAVOR';
+      if (res.tieneSaldo) {
+        if (header) header.style.display = 'flex';
+        document.getElementById('ct-res-nombre').textContent = nombre;
+        document.getElementById('ct-res-nit').textContent    = 'NIT: ' + nit;
+        document.getElementById('ct-res-saldo').textContent  = UI.moneda(res.saldo);
+        document.getElementById('ct-res-saldo').style.color  = res.saldo >= 0 ? '#D32F2F' : '#009E60';
+        document.getElementById('ct-res-estado').textContent = res.saldo === 0 ? 'PAZ Y SALVO' : res.saldo > 0 ? 'DEUDOR' : 'A FAVOR';
+      } else if (header) {
+        header.style.display = 'none';
+      }
 
       if (!tbody) return;
       if (!res.movimientos.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Sin movimientos en el período</td></tr>'; return; }
