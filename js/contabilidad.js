@@ -91,7 +91,14 @@ const CONTABILIDAD = {
     }
 
     if (compOpts)    compOpts.style.display    = ['FC','CE'].includes(td) ? 'flex' : 'none';
-    if (carteraPanel) carteraPanel.style.display = td === 'RC'  ? 'block' : 'none';
+    // El panel de "facturas pendientes" sirve en los dos sentidos: en un
+    // Recibo de Caja son las facturas de venta que el cliente todavía debe
+    // (para cobrar), en un Comprobante de Egreso son las facturas de compra
+    // que todavía se le deben al proveedor (para pagar) — mostrarCartera()
+    // ya distingue cuál es cuál según el tipo de documento activo.
+    if (carteraPanel) carteraPanel.style.display = ['RC','CE'].includes(td) ? 'block' : 'none';
+    const carteraTitulo = document.getElementById('ct-cartera-titulo');
+    if (carteraTitulo) carteraTitulo.textContent = td === 'CE' ? 'Facturas pendientes de pago a este proveedor' : 'Facturas pendientes del cliente';
     if (refDiv)      refDiv.style.display       = ['RC','NCR'].includes(td) ? 'block' : 'none';
 
     if (tabAuto) {
@@ -105,7 +112,7 @@ const CONTABILIDAD = {
     }
 
     this.autoCompletarConcepto();
-    if (td === 'RC') this.mostrarCartera();
+    if (['RC','CE'].includes(td)) this.mostrarCartera();
     if (['RC','NCR'].includes(td)) this.actualizarListaRef();
   },
 
@@ -115,7 +122,7 @@ const CONTABILIDAD = {
   cambioTercero() {
     this.autoCompletarConcepto();
     const td = this.getTipoDoc();
-    if (td === 'RC') this.mostrarCartera();
+    if (['RC','CE'].includes(td)) this.mostrarCartera();
     if (['RC','NCR'].includes(td)) this.actualizarListaRef();
   },
 
@@ -313,11 +320,18 @@ const CONTABILIDAD = {
   // ──────────────────────────────────────────
   //  CARTERA
   // ──────────────────────────────────────────
+  // El mismo panel sirve para las dos direcciones de cartera: en Recibo de
+  // Caja son facturas de venta por cobrar (botón PAGAR = agregarPago, quien
+  // paga es el cliente); en Comprobante de Egreso son facturas de compra
+  // por pagar (botón PAGAR = agregarPagoProveedor, quien paga es la
+  // empresa). El filtro por NIT ya trae lo correcto en cada caso porque
+  // cliente y proveedor casi nunca comparten NIT.
   mostrarCartera() {
     const input  = document.getElementById('ct-tercero')?.value || '';
     const nit    = input.split(' - ')[0];
     const div    = document.getElementById('ct-lista-cartera');
     if (!div) return;
+    const esEgreso = this.getTipoDoc() === 'CE';
     const pendientes = (this.DB.cartera || []).filter(c => c.nit === nit);
     if (!pendientes.length) { div.innerHTML = '<small style="color:var(--primary)">¡Paz y Salvo!</small>'; return; }
     div.innerHTML = pendientes.map(p => `
@@ -325,7 +339,7 @@ const CONTABILIDAD = {
         <div><div style="font-weight:500">${p.id}</div><div style="font-size:11px;color:#888">${p.fecha}</div></div>
         <div style="text-align:right">
           <div style="font-weight:700;color:#D32F2F">${UI.moneda(p.saldo)}</div>
-          <button class="btn-primary-sm" style="font-size:11px;padding:3px 8px;margin-top:3px" onclick="CONTABILIDAD.agregarPago('${p.id}',${p.saldo},'${p.cuentaCartera||'130505'}')">PAGAR</button>
+          <button class="btn-primary-sm" style="font-size:11px;padding:3px 8px;margin-top:3px" onclick="CONTABILIDAD.${esEgreso ? 'agregarPagoProveedor' : 'agregarPago'}('${p.id}',${p.saldo},'${p.cuentaCartera||(esEgreso?'220501':'130505')}')">PAGAR</button>
         </div>
       </div>`).join('');
   },
@@ -342,6 +356,20 @@ const CONTABILIDAD = {
     this.addRow(cuentaCartera, 'Abono a Factura ' + idDoc, 0, abono);
     const esBanco = confirm('¿Entró al BANCO?\nAceptar = Banco (111005)\nCancelar = Caja (110505)');
     this.addRow(esBanco ? '111005' : '110505', 'Ingreso Pago Factura ' + idDoc, abono, 0);
+    this.abonosTemp.push({ idDoc, valor: abono });
+  },
+
+  // Espejo de agregarPago pero para pagar una factura de COMPRA pendiente
+  // (Comprobante de Egreso): se debita la cuenta por pagar del proveedor
+  // (reduce lo que se le debe) y se acredita banco o caja (sale el dinero),
+  // justo al revés que un recibo de caja.
+  agregarPagoProveedor(idDoc, saldo, cuentaCartera = '220501') {
+    const abono = parseFloat(prompt(`Saldo: ${UI.moneda(saldo)}\nIngrese valor a pagar:`, saldo));
+    if (!abono || abono <= 0) return;
+    if (abono > saldo) { UI.toast('Pago mayor al saldo', 'warn'); return; }
+    this.addRow(cuentaCartera, 'Pago Factura ' + idDoc, abono, 0);
+    const esBanco = confirm('¿Salió del BANCO?\nAceptar = Banco (111005)\nCancelar = Caja (110505)');
+    this.addRow(esBanco ? '111005' : '110505', 'Egreso Pago Factura ' + idDoc, 0, abono);
     this.abonosTemp.push({ idDoc, valor: abono });
   },
 
