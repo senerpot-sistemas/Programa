@@ -465,8 +465,13 @@ const CONTABILIDAD = {
       res.movimientos.forEach(m => {
         const tr = document.createElement('tr');
         const esReversion = m.doc.startsWith('ANU-'); // reversión generada por anular — no se edita ni se vuelve a anular
-        const botonVer = m.urlDoc ? `<button class="btn-icon" style="color:#8B5CF6" onclick="window.open('${m.urlDoc}','_blank')" title="Ver documento"><i class="ti ti-file-text"></i></button>` : '';
-        const botonAnular = esReversion ? '' : `<button class="btn-icon" style="color:#D32F2F" onclick="CONTABILIDAD.anularDocumentoUI('${m.doc}', this)" title="Anular documento"><i class="ti ti-file-off"></i></button>`;
+        // Se usa el emoji directo (📄 / 🚫) en vez del ícono de la fuente
+        // web, para que se vea claro aunque esa fuente no cargue bien en el
+        // equipo de quien lo esté usando (antivirus, firewall corporativo,
+        // navegador viejo) — el emoji lo dibuja el sistema operativo, no
+        // depende de ningún archivo externo.
+        const botonVer = m.urlDoc ? `<button class="btn-icon" style="color:#8B5CF6;font-size:15px;" onclick="window.open('${m.urlDoc}','_blank')" title="Ver documento">📄 Ver</button>` : '';
+        const botonAnular = esReversion ? '' : `<button class="btn-icon" style="color:#D32F2F;font-size:15px;" onclick="CONTABILIDAD.anularDocumentoUI('${m.doc}', this)" title="Anular documento">🚫 Anular</button>`;
         tr.innerHTML = `
           <td>${m.fecha}</td><td><b>${m.doc}</b></td><td>${m.cuenta}</td><td>${m.detalle}</td>
           <td class="text-right">${m.debito  > 0 ? UI.moneda(m.debito)  : '-'}</td>
