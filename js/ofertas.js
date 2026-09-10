@@ -204,8 +204,8 @@ const OFERTAS = {
         <td>${c.ATENCION_A || c.ATENCION || '-'}</td>
         <td>${c.TELEFONO || '-'}</td>
         <td>
-          <button class="btn-icon btn-icon-edit" onclick='OFERTAS.editarClienteUI(${JSON.stringify(c).replace(/'/g,"&#39;")})' title="Editar"><i class="ti ti-edit"></i></button>
-          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarClienteUI(${JSON.stringify(c).replace(/'/g,"&#39;")})' title="Eliminar"><i class="ti ti-trash"></i></button>
+          <button class="btn-icon btn-icon-edit" onclick='OFERTAS.editarClienteUI(${JSON.stringify(c).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
+          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarClienteUI(${JSON.stringify(c).replace(/'/g,"&#39;")})' title="Eliminar">🗑️</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -222,8 +222,8 @@ const OFERTAS = {
         <td>${i.UNIDAD || 'UN'}</td>
         <td>${UI.moneda(i.PRECIO_VENTA_LISTA || i.PRECIO || 0)}</td>
         <td>
-          <button class="btn-icon btn-icon-edit" onclick='OFERTAS.editarServicioUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Editar"><i class="ti ti-edit"></i></button>
-          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarServicioUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Eliminar"><i class="ti ti-trash"></i></button>
+          <button class="btn-icon btn-icon-edit" onclick='OFERTAS.editarServicioUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
+          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarServicioUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Eliminar">🗑️</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -292,17 +292,17 @@ const OFERTAS = {
 
         const tr = document.createElement('tr');
         const botonesDecision = h.ESTADO === 'GENERADA' ? `
-            <button class="btn-icon" style="color:#009E60" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','APROBADA')" title="Aprobar"><i class="ti ti-check"></i></button>
-            <button class="btn-icon" style="color:#D32F2F" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','RECHAZADA')" title="Rechazar"><i class="ti ti-x"></i></button>` : '';
+            <button class="btn-icon" style="color:#009E60" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','APROBADA')" title="Aprobar">✓</button>
+            <button class="btn-icon" style="color:#D32F2F" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','RECHAZADA')" title="Rechazar">✕</button>` : '';
         // "Ver": prioriza el documento real generado (URL_DOC); si no hay
         // (ofertas de antes de este cambio, o históricas cargadas a mano),
         // cae al resumen leído de DATA_JSON; si tampoco hay eso, no muestra
         // nada — no hay ningún detalle guardado que mostrar.
         let botonVer = '';
         if (h.URL_DOC) {
-          botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="window.open('${h.URL_DOC}','_blank')" title="Ver documento"><i class="ti ti-file-text"></i></button>`;
+          botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="window.open('${h.URL_DOC}','_blank')" title="Ver documento">📄</button>`;
         } else if (h.DATA_JSON) {
-          botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="OFERTAS.verResumenOferta('${h.ID_OFERTA}')" title="Ver resumen"><i class="ti ti-eye"></i></button>`;
+          botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="OFERTAS.verResumenOferta('${h.ID_OFERTA}')" title="Ver resumen">👁️</button>`;
         }
         tr.innerHTML = `
           <td>${h.ID_OFERTA}</td>
@@ -312,9 +312,9 @@ const OFERTAS = {
           <td>${h.TOTAL}</td>
           <td><span class="badge ${badgeClass[h.ESTADO] || 'badge-gray'}">${h.ESTADO}</span></td>
           <td style="white-space:nowrap;">${botonVer}
-            <button class="btn-icon btn-icon-edit" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CARGAR')" title="Editar"><i class="ti ti-edit"></i></button>
-            <button class="btn-icon" style="color:#1976D2" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CLONAR')" title="Clonar"><i class="ti ti-copy"></i></button>${botonesDecision}
-            <button class="btn-icon btn-icon-del" onclick="OFERTAS.eliminarOfertaUI('${h.ID_OFERTA}')" title="Eliminar"><i class="ti ti-trash"></i></button>
+            <button class="btn-icon btn-icon-edit" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CARGAR')" title="Editar">✏️</button>
+            <button class="btn-icon" style="color:#1976D2" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CLONAR')" title="Clonar">📋</button>${botonesDecision}
+            <button class="btn-icon btn-icon-del" onclick="OFERTAS.eliminarOfertaUI('${h.ID_OFERTA}')" title="Eliminar">🗑️</button>
           </td>`;
         tbody.appendChild(tr);
       });
@@ -509,7 +509,7 @@ const OFERTAS = {
       <td><input type="text" class="act-serie" value="${data?.serie || ''}" placeholder="Serie"></td>
       <td><input type="text" class="act-volt"  value="${data?.voltaje || ''}" placeholder="Voltaje"></td>
       <td style="text-align:center;">
-        <button class="btn-icon btn-icon-del" onclick="this.closest('tr').remove()" title="Eliminar"><i class="ti ti-x"></i></button>
+        <button class="btn-icon btn-icon-del" onclick="this.closest('tr').remove()" title="Eliminar">✕</button>
       </td>`;
     tbody.appendChild(tr);
   },
@@ -546,8 +546,8 @@ const OFERTAS = {
       <td style="text-align:center;white-space:nowrap;">
         <button class="btn-icon" style="color:#888" onclick="OFERTAS.moverFila(this,-1)">↑</button>
         <button class="btn-icon" style="color:#888" onclick="OFERTAS.moverFila(this,1)">↓</button>
-        <button class="btn-icon" style="color:var(--primary)" onclick="OFERTAS.guardarItemUI(this)" title="Guardar al catálogo"><i class="ti ti-device-floppy"></i></button>
-        <button class="btn-icon btn-icon-del" onclick="OFERTAS.borrarFila(this)"><i class="ti ti-x"></i></button>
+        <button class="btn-icon" style="color:var(--primary)" onclick="OFERTAS.guardarItemUI(this)" title="Guardar al catálogo">💾</button>
+        <button class="btn-icon btn-icon-del" onclick="OFERTAS.borrarFila(this)">✕</button>
       </td>`;
     tbody.appendChild(tr);
     this.calcularTotales();
@@ -642,7 +642,7 @@ const OFERTAS = {
     const tr   = btn.closest('tr');
     const desc = tr.querySelector('.inp-desc').value.trim();
     if (!desc) { UI.toast('Falta descripción', 'warn'); return; }
-    btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i>';
+    btn.disabled = true; btn.innerHTML = '⏳';
     try {
       const res = await API.call('guardarServicio', {
         codigo:      tr.querySelector('.inp-cod').value,
@@ -653,9 +653,9 @@ const OFERTAS = {
       Store.upsert(this.DB.items, res.data);
       this.renderTablaServicios();
       this.poblarCatalogo();
-      btn.innerHTML = '<i class="ti ti-check"></i>';
-      setTimeout(() => { btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i>'; }, 2000);
-    } catch(e) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i>'; UI.toast(e.message, 'err'); }
+      btn.innerHTML = '✓';
+      setTimeout(() => { btn.disabled = false; btn.innerHTML = '💾'; }, 2000);
+    } catch(e) { btn.disabled = false; btn.innerHTML = '💾'; UI.toast(e.message, 'err'); }
   },
 
   // ──────────────────────────────────────────

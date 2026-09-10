@@ -59,8 +59,8 @@ const PROYECTOS = {
         <td><span class="badge ${badgeClass}">${p.ESTADO || '-'}</span></td>
         <td>${p.REF_FACTURA_SIGO || '<span style="color:#ccc">—</span>'}</td>
         <td style="text-align:center;white-space:nowrap;">
-          <button class="btn-icon btn-icon-edit" onclick="PROYECTOS.abrirDetalle('${p.ID_PROYECTO}')" title="Ver detalle"><i class="ti ti-eye"></i></button>
-          <button class="btn-icon" style="color:#639922" onclick="PROYECTOS.cambiarEstado('${p.ID_PROYECTO}')" title="Actualizar estado"><i class="ti ti-refresh"></i></button>
+          <button class="btn-icon btn-icon-edit" onclick="PROYECTOS.abrirDetalle('${p.ID_PROYECTO}')" title="Ver detalle">👁️</button>
+          <button class="btn-icon" style="color:#639922" onclick="PROYECTOS.cambiarEstado('${p.ID_PROYECTO}')" title="Actualizar estado">🔄</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -194,7 +194,7 @@ const PROYECTOS = {
           <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Responsable</div>
           <div style="display:flex;gap:6px;">
             <input type="text" id="pry-responsable-input" value="${p.TECNICO||''}" placeholder="Sin asignar" style="flex:1;min-width:0;padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;" onkeydown="if(event.key==='Enter')PROYECTOS.guardarResponsable('${id}')">
-            <button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.guardarResponsable('${id}')" title="Guardar responsable"><i class="ti ti-check"></i></button>
+            <button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.guardarResponsable('${id}')" title="Guardar responsable">✓</button>
           </div>
         </div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Inicio</div><div>${p.FECHA_INICIO||'—'}</div></div>
@@ -204,7 +204,7 @@ const PROYECTOS = {
       <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Presupuesto del proyecto</div>
-          ${p.ID_OFERTA ? `<button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.copiarDeOferta('${id}')" title="Copiar ítems de la oferta ${p.ID_OFERTA}"><i class="ti ti-copy"></i></button>` : ''}
+          ${p.ID_OFERTA ? `<button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.copiarDeOferta('${id}')" title="Copiar ítems de la oferta ${p.ID_OFERTA}">📋</button>` : ''}
         </div>
         <div id="pry-presupuesto-lista" style="font-size:12.5px;">Cargando…</div>
         <div class="pry-pres-form" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
@@ -353,7 +353,7 @@ const PROYECTOS = {
           <td>${l.DESCRIPCION||''}</td>
           <td style="text-align:right;">${l.CANTIDAD||1} ${l.UNIDAD||'UN'}</td>
           <td style="text-align:right;">${UI.moneda((parseFloat(l.COSTO_UNITARIO)||0) * (parseFloat(l.CANTIDAD)||1))}</td>
-          <td style="text-align:center;"><button class="btn-icon btn-icon-del" onclick="PROYECTOS.eliminarLineaPresupuestoUI('${l.ID}','${id}')" title="Eliminar"><i class="ti ti-trash"></i></button></td>
+          <td style="text-align:center;"><button class="btn-icon btn-icon-del" onclick="PROYECTOS.eliminarLineaPresupuestoUI('${l.ID}','${id}')" title="Eliminar">🗑️</button></td>
         </tr>`).join('');
       // Las líneas "sin guardar" viven solo en memoria (this._presupuestoPendiente)
       // hasta que se aprieta "Guardar presupuesto" — se ven marcadas en naranja
@@ -363,7 +363,7 @@ const PROYECTOS = {
           <td>${l.descripcion} <span class="badge badge-orange" style="font-size:9px;">sin guardar</span></td>
           <td style="text-align:right;">${l.cantidad} ${l.unidad}</td>
           <td style="text-align:right;">${UI.moneda((l.costoUnitario||0) * (l.cantidad||1))}</td>
-          <td style="text-align:center;"><button class="btn-icon btn-icon-del" onclick="PROYECTOS.quitarLineaPendiente('${id}','${l._tempId}')" title="Quitar de la lista"><i class="ti ti-x"></i></button></td>
+          <td style="text-align:center;"><button class="btn-icon btn-icon-del" onclick="PROYECTOS.quitarLineaPendiente('${id}','${l._tempId}')" title="Quitar de la lista">✕</button></td>
         </tr>`).join('');
       lista.innerHTML = `<table style="width:100%;font-size:12.5px;border-collapse:collapse;"><tbody>${filasGuardadas}${filasPendientes}</tbody></table>`;
     }
@@ -609,8 +609,8 @@ const ALMACEN = {
         <td class="text-right">${UI.moneda(i.PRECIO_COMPRA||0)}</td>
         <td style="font-size:12px;">${this.nombreProyecto(i.ID_PROYECTO)}</td>
         <td style="text-align:center;white-space:nowrap;">
-          <button class="btn-icon btn-icon-edit" onclick='ALMACEN.editarUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Editar"><i class="ti ti-edit"></i></button>
-          <button class="btn-icon btn-icon-del" onclick='ALMACEN.eliminar(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Eliminar"><i class="ti ti-trash"></i></button>
+          <button class="btn-icon btn-icon-edit" onclick='ALMACEN.editarUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
+          <button class="btn-icon btn-icon-del" onclick='ALMACEN.eliminar(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Eliminar">🗑️</button>
         </td>`;
       tbody.appendChild(tr);
     });

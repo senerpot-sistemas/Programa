@@ -289,8 +289,8 @@ const CONTABILIDAD = {
         <td class="text-right">${UI.moneda(m.debito)}</td>
         <td class="text-right">${UI.moneda(m.credito)}</td>
         <td style="text-align:center;white-space:nowrap;">
-          <button class="btn-icon btn-icon-edit" onclick="CONTABILIDAD.editarLinea(${i})"><i class="ti ti-edit"></i></button>
-          <button class="btn-icon btn-icon-del"  onclick="CONTABILIDAD.borrarLinea(${i})"><i class="ti ti-x"></i></button>
+          <button class="btn-icon btn-icon-edit" onclick="CONTABILIDAD.editarLinea(${i})">✏️</button>
+          <button class="btn-icon btn-icon-del"  onclick="CONTABILIDAD.borrarLinea(${i})">✕</button>
         </td>`;
       tbody.appendChild(tr);
     });
