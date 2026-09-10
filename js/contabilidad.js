@@ -382,7 +382,17 @@ const CONTABILIDAD = {
   //  GUARDAR DOCUMENTO
   // ──────────────────────────────────────────
   async guardar() {
+    // Guardarrail contra doble registro: procesarDocumento genera el PDF y
+    // lo sube a Drive como parte de la misma petición, así que puede tardar
+    // varios segundos — si alguien piensa que "no cargó" y vuelve a darle
+    // clic mientras la primera petición sigue en curso, sin esto se
+    // procesarían las dos. El botón deshabilitado (UI.spin) ya ayuda, pero
+    // esta bandera cubre también el caso de un segundo clic disparado antes
+    // de que el navegador termine de pintar el botón como deshabilitado.
+    if (this._guardando) return;
     if (!confirm('¿Procesar documento?')) return;
+    if (this._guardando) return;
+    this._guardando = true;
     const btn = document.getElementById('ct-btn-save');
     UI.spin(btn, true);
     const tercRaw = document.getElementById('ct-tercero')?.value || '';
@@ -408,7 +418,7 @@ const CONTABILIDAD = {
         UI.toast('Error: ' + r.error, 'err');
       }
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { UI.spin(btn, false); }
+    finally { this._guardando = false; UI.spin(btn, false); }
   },
 
   resetForm() {
@@ -456,7 +466,7 @@ const CONTABILIDAD = {
         const tr = document.createElement('tr');
         const esReversion = m.doc.startsWith('ANU-'); // reversión generada por anular — no se edita ni se vuelve a anular
         const botonVer = m.urlDoc ? `<button class="btn-icon" style="color:#8B5CF6" onclick="window.open('${m.urlDoc}','_blank')" title="Ver documento"><i class="ti ti-file-text"></i></button>` : '';
-        const botonAnular = esReversion ? '' : `<button class="btn-icon" style="color:#D32F2F" onclick="CONTABILIDAD.anularDocumentoUI('${m.doc}')" title="Anular documento"><i class="ti ti-file-off"></i></button>`;
+        const botonAnular = esReversion ? '' : `<button class="btn-icon" style="color:#D32F2F" onclick="CONTABILIDAD.anularDocumentoUI('${m.doc}', this)" title="Anular documento"><i class="ti ti-file-off"></i></button>`;
         tr.innerHTML = `
           <td>${m.fecha}</td><td><b>${m.doc}</b></td><td>${m.cuenta}</td><td>${m.detalle}</td>
           <td class="text-right">${m.debito  > 0 ? UI.moneda(m.debito)  : '-'}</td>
@@ -472,14 +482,19 @@ const CONTABILIDAD = {
   // los movimientos originales. Es el único mecanismo de corrección "fuerte"
   // disponible (junto con NCR/ND) — editar in-place quedó deshabilitado a
   // propósito para no perder el rastro de auditoría.
-  async anularDocumentoUI(idDoc) {
+  async anularDocumentoUI(idDoc, btn) {
+    if (this._anulando) return;
     if (!confirm(`¿Anular el documento ${idDoc}? Se registrará una reversión contable; el original queda marcado como anulado y no se puede deshacer.`)) return;
+    if (this._anulando) return;
+    this._anulando = true;
+    if (btn) btn.disabled = true;
     try {
       const res = await API.call('anularDocumento', { id: idDoc });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
       UI.toast(res.mensaje, 'ok');
       this.buscarHistorial();
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._anulando = false; if (btn) btn.disabled = false; }
   },
 
   // ──────────────────────────────────────────
@@ -508,10 +523,12 @@ const CONTABILIDAD = {
   async conciliar(chk, uuid) {
     if (!chk.checked) return;
     if (!confirm('¿Marcar como conciliado?')) { chk.checked = false; return; }
+    chk.disabled = true;
     try {
       const ok = await API.call('marcarConciliado', { uuid });
       if (ok) chk.closest('tr').style.opacity = '0.4';
     } catch(e) { chk.checked = false; UI.toast(e.message, 'err'); }
+    finally { chk.disabled = false; }
   },
 
   // ──────────────────────────────────────────
@@ -522,7 +539,8 @@ const CONTABILIDAD = {
     document.getElementById('ct-modal-tercero').classList.add('open');
   },
 
-  async crearTercero() {
+  async crearTercero(btn) {
+    if (this._guardandoTercero) return;
     const obj = {
       nit:       document.getElementById('ct-n-nit')?.value,
       nombre:    document.getElementById('ct-n-nom')?.value,
@@ -532,6 +550,8 @@ const CONTABILIDAD = {
       regimen:   document.getElementById('ct-n-reteiva')?.value || 'Responsable de IVA'
     };
     if (!obj.nit || !obj.nombre) { UI.toast('NIT y nombre son requeridos', 'warn'); return; }
+    this._guardandoTercero = true;
+    if (btn) UI.spin(btn, true);
     try {
       const res = await API.call('crearTercero', obj);
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -540,13 +560,15 @@ const CONTABILIDAD = {
       document.getElementById('ct-modal-tercero').classList.remove('open');
       UI.toast('Tercero creado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._guardandoTercero = false; if (btn) UI.spin(btn, false); }
   },
 
   abrirModalProducto() {
     document.getElementById('ct-modal-prod').classList.add('open');
   },
 
-  async crearProducto() {
+  async crearProducto(btn) {
+    if (this._guardandoProducto) return;
     const obj = {
       codigo:       document.getElementById('ct-s-cod')?.value,
       nombre:       document.getElementById('ct-s-nom')?.value,
@@ -559,6 +581,8 @@ const CONTABILIDAD = {
       ctaRete:      document.getElementById('ct-s-cta-rete')?.value
     };
     if (!obj.nombre) { UI.toast('Falta nombre', 'warn'); return; }
+    this._guardandoProducto = true;
+    if (btn) UI.spin(btn, true);
     try {
       const res = await API.call('crearProducto', obj);
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -566,6 +590,7 @@ const CONTABILIDAD = {
       document.getElementById('ct-modal-prod').classList.remove('open');
       UI.toast('Producto creado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._guardandoProducto = false; if (btn) UI.spin(btn, false); }
   },
 
   abrirModalCuentaPUC() {
@@ -573,10 +598,13 @@ const CONTABILIDAD = {
     document.getElementById('ct-modal-puc')?.classList.add('open');
   },
 
-  async crearCuentaPUC() {
+  async crearCuentaPUC(btn) {
+    if (this._guardandoPUC) return;
     const codigo = document.getElementById('ct-puc-cod')?.value?.trim();
     const nombre = document.getElementById('ct-puc-nom')?.value?.trim();
     if (!codigo || !nombre) { UI.toast('Código y nombre son requeridos', 'warn'); return; }
+    this._guardandoPUC = true;
+    if (btn) UI.spin(btn, true);
     try {
       const res = await API.call('crearCuentaPUC', { codigo, nombre });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -590,6 +618,7 @@ const CONTABILIDAD = {
       document.getElementById('ct-modal-puc')?.classList.remove('open');
       UI.toast('Cuenta PUC creada', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._guardandoPUC = false; if (btn) UI.spin(btn, false); }
   },
 
   cerrarModal(id) { document.getElementById(id)?.classList.remove('open'); },

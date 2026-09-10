@@ -1174,7 +1174,7 @@
             <div class="field-group mb10"><label>Ciudad</label><input type="text" id="ct-n-ciu" value="Barranquilla"></div>
             <div class="field-group mb10"><label>Teléfono</label><input type="text" id="ct-n-tel"></div>
             <div class="field-group mb15"><label>Régimen</label><select id="ct-n-reteiva"><option value="Responsable de IVA">Régimen Común</option><option value="Gran Contribuyente">Gran Contribuyente</option></select></div>
-            <button class="btn-generate" onclick="CONTABILIDAD.crearTercero()">Guardar</button>
+            <button class="btn-generate" onclick="CONTABILIDAD.crearTercero(this)">Guardar</button>
           </div>
         </div>
 
@@ -1196,7 +1196,7 @@
               <div class="field-group mb15"><label>Cta. Rete</label><input type="text" id="ct-s-cta-rete" value="236540"></div>
             </div>
             <div style="font-size:11px;color:#888;margin-bottom:10px;">¿No aparece el código que buscas en las cuentas? Créalo con el botón + junto a "Cta. Ingreso/Inv", o desde Operación → Cuenta Manual.</div>
-            <button class="btn-generate" onclick="CONTABILIDAD.crearProducto()">Guardar</button>
+            <button class="btn-generate" onclick="CONTABILIDAD.crearProducto(this)">Guardar</button>
           </div>
         </div>
 
@@ -1207,7 +1207,7 @@
             <div class="field-group mb10"><label>Código *</label><input type="text" id="ct-puc-cod" placeholder="Ej: 513540"></div>
             <div class="field-group mb15"><label>Nombre *</label><input type="text" id="ct-puc-nom" placeholder="Ej: Servicios de mantenimiento"></div>
             <div style="font-size:11px;color:#888;margin-bottom:14px;">Usa el mismo código de tu plan de cuentas (PUC) real, para que coincida con lo que ya manejas en tu contabilidad.</div>
-            <button class="btn-generate" onclick="CONTABILIDAD.crearCuentaPUC()">Guardar</button>
+            <button class="btn-generate" onclick="CONTABILIDAD.crearCuentaPUC(this)">Guardar</button>
           </div>
         </div>
       </div>
