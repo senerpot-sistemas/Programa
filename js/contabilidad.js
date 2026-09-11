@@ -537,11 +537,12 @@ const CONTABILIDAD = {
   async anularDocumentoUI(idDoc, btn) {
     if (this._anulando) return;
     if (!confirm(`¿Anular el documento ${idDoc}? Se registrará una reversión contable; el original queda marcado como anulado y no se puede deshacer.`)) return;
+    const motivo = prompt('Motivo de la anulación (queda en la bitácora):') || '';
     if (this._anulando) return;
     this._anulando = true;
     if (btn) btn.disabled = true;
     try {
-      const res = await API.call('anularDocumento', { id: idDoc });
+      const res = await API.call('anularDocumento', { id: idDoc, motivo });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
       UI.toast(res.mensaje, 'ok');
       this.buscarHistorial();
