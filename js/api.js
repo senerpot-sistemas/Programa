@@ -64,6 +64,41 @@ const API = {
       console.error('[API]', action, err.message);
       throw err;
     }
+  },
+
+  // ── CACHÉ LOCAL, solo para lecturas pesadas ──────────────
+  // obtenerDatos/obtenerDatosERP/getDashboard traen listados completos
+  // (el PUC solo ya son ~2.400 cuentas) — pedirlos de cero cada vez que se
+  // abre una pestaña nueva o se recarga la página es la causa real de que
+  // el Panel (y en general, entrar a cualquier módulo por primera vez) se
+  // sienta lento. Si ya se pidió lo mismo hace poco, se devuelve al
+  // instante desde localStorage sin tocar la red; si no, se pide normal y
+  // se guarda para la próxima. NUNCA se usa para acciones que escriben
+  // datos (guardar, anular, crear, eliminar...) — esas siempre van
+  // directo al servidor, sin caché de por medio.
+  _clavesCache(action, params) {
+    return 'senerpot_cache_' + action + ':' + JSON.stringify(params || {});
+  },
+
+  async callCached(action, params = {}, ttlSegundos = 180) {
+    const clave = this._clavesCache(action, params);
+    try {
+      const raw = localStorage.getItem(clave);
+      if (raw) {
+        const { t, data } = JSON.parse(raw);
+        if (Date.now() - t < ttlSegundos * 1000) return data;
+      }
+    } catch(e) {}
+    const data = await this.call(action, params);
+    try { localStorage.setItem(clave, JSON.stringify({ t: Date.now(), data })); } catch(e) {}
+    return data;
+  },
+
+  // Borra una entrada específica de la caché — usar después de cualquier
+  // acción que cambie los datos que esa consulta trae, para que la
+  // próxima vez que se pida no devuelva algo desactualizado.
+  clearCache(action, params = {}) {
+    try { localStorage.removeItem(this._clavesCache(action, params)); } catch(e) {}
   }
 };
 
@@ -117,12 +152,14 @@ const Store = {
 const DatosERP = {
   _promesa: null,
   obtener() {
-    if (!this._promesa) this._promesa = API.call('obtenerDatos');
+    if (!this._promesa) this._promesa = API.callCached('obtenerDatos', {}, 180);
     return this._promesa;
   },
   // Para recargas explícitas (p. ej. OFERTAS.recargar()) — el próximo
-  // obtener() vuelve a pedir datos frescos en vez de reusar la caché.
-  invalidar() { this._promesa = null; }
+  // obtener() vuelve a pedir datos frescos en vez de reusar la caché (ni
+  // la de memoria de esta pestaña, ni la de localStorage que sobrevive a
+  // un F5).
+  invalidar() { this._promesa = null; API.clearCache('obtenerDatos', {}); }
 };
 
 // ─────────────────────────────────────────────

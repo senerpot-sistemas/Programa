@@ -752,7 +752,7 @@ const PANEL = {
       // DatosERP ya está cacheada si Ofertas/Proyectos se visitaron antes
       // en esta sesión (ver DatosERP en api.js), así que esto puede no
       // costar ninguna llamada nueva de red.
-      const [data, erp] = await Promise.all([API.call('getDashboard'), DatosERP.obtener()]);
+      const [data, erp] = await Promise.all([API.callCached('getDashboard', {}, 180), DatosERP.obtener()]);
       if (el) el.style.display = 'none';
       document.getElementById('panel-content').style.display = 'block';
       this.renderKPIs(data.kpis);

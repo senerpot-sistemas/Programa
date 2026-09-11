@@ -17,7 +17,7 @@ const CONTABILIDAD = {
     this.setFechaHoy();
     this.setFechasReporte();
     try {
-      const data = await API.call('obtenerDatosERP');
+      const data = await API.callCached('obtenerDatosERP', {}, 180);
       this.DB = data;
       this.renderUI();
     } catch(e) { UI.toast('Error cargando datos: ' + e.message, 'err'); }
@@ -443,6 +443,7 @@ const CONTABILIDAD = {
     try {
       const r = await API.call('procesarDocumento', pkg);
       if (r.exito) {
+        API.clearCache('obtenerDatosERP', {}); // la cartera cambió — que la próxima carga la traiga fresca
         UI.toast('✅ Guardado: ' + r.consecutivo, 'ok');
         if (r.url) window.open(r.url, '_blank');
         this.resetForm();
@@ -548,6 +549,7 @@ const CONTABILIDAD = {
     try {
       const res = await API.call('anularDocumento', { id: idDoc, motivo });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      API.clearCache('obtenerDatosERP', {}); // la cartera cambió — que la próxima carga la traiga fresca
       UI.toast(res.mensaje, 'ok');
       this.buscarHistorial();
     } catch(e) { UI.toast(e.message, 'err'); }
@@ -612,6 +614,7 @@ const CONTABILIDAD = {
     try {
       const res = await API.call('crearTercero', obj);
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      API.clearCache('obtenerDatosERP', {});
       this.DB.terceros.push(res.data);
       this.renderUI();
       document.getElementById('ct-modal-tercero').classList.remove('open');
@@ -643,6 +646,7 @@ const CONTABILIDAD = {
     try {
       const res = await API.call('crearProducto', obj);
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      API.clearCache('obtenerDatosERP', {});
       await API.call('obtenerDatosERP').then(d => { this.DB = d; this.renderUI(); });
       document.getElementById('ct-modal-prod').classList.remove('open');
       UI.toast('Producto creado', 'ok');
@@ -665,6 +669,7 @@ const CONTABILIDAD = {
     try {
       const res = await API.call('crearCuentaPUC', { codigo, nombre });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      API.clearCache('obtenerDatosERP', {});
       this.DB.puc = this.DB.puc || [];
       this.DB.puc.push(res.data.texto);
       this.renderUI();
