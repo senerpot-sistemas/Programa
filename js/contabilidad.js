@@ -24,23 +24,28 @@ const CONTABILIDAD = {
   },
 
   renderUI() {
-    // PUC + Memoria
+    // PUC + Memoria (el PUC llegó a ~2.400 cuentas tras la importación
+    // masiva — armar cada <option> con createElement+appendChild, uno por
+    // uno, se notaba como demora real al entrar a Contabilidad. Construir
+    // el HTML como texto y asignarlo una sola vez es muchísimo más rápido
+    // para listas grandes, con el mismo resultado en el DOM.
+    const esc = v => String(v).replace(/"/g, '&quot;');
     const listaPUC = [...(this.DB.puc || []), ...(this.DB.memoria || [])];
     this.fillDatalist('ct-dl-puc', listaPUC);
 
     // Terceros
     const dlTerc = document.getElementById('ct-dl-terceros');
-    if (dlTerc) { dlTerc.innerHTML = ''; (this.DB.terceros || []).forEach(t => { const o = document.createElement('option'); o.value = t.texto; dlTerc.appendChild(o); }); }
+    if (dlTerc) dlTerc.innerHTML = (this.DB.terceros || []).map(t => `<option value="${esc(t.texto)}">`).join('');
     const dlTerc2 = document.getElementById('ct-dl-terceros-cons');
-    if (dlTerc2) { dlTerc2.innerHTML = dlTerc?.innerHTML || ''; }
+    if (dlTerc2) dlTerc2.innerHTML = dlTerc?.innerHTML || '';
 
     // Productos
     const dlProd = document.getElementById('ct-dl-prod');
-    if (dlProd) { dlProd.innerHTML = ''; (this.DB.productos || []).forEach(p => { const o = document.createElement('option'); o.value = p.codigo + ' — ' + p.nombre; dlProd.appendChild(o); }); }
+    if (dlProd) dlProd.innerHTML = (this.DB.productos || []).map(p => `<option value="${esc(p.codigo + ' — ' + p.nombre)}">`).join('');
 
     // Cartera para datalist
     const dlRef = document.getElementById('ct-dl-ref');
-    if (dlRef) { dlRef.innerHTML = ''; (this.DB.cartera || []).forEach(f => { const o = document.createElement('option'); o.value = f.id; o.label = 'Saldo: ' + UI.moneda(f.saldo); dlRef.appendChild(o); }); }
+    if (dlRef) dlRef.innerHTML = (this.DB.cartera || []).map(f => `<option value="${esc(f.id)}" label="Saldo: ${esc(UI.moneda(f.saldo))}">`).join('');
 
     this.cambiarContexto();
   },
@@ -48,8 +53,7 @@ const CONTABILIDAD = {
   fillDatalist(id, arr) {
     const dl = document.getElementById(id);
     if (!dl) return;
-    dl.innerHTML = '';
-    arr.forEach(v => { const o = document.createElement('option'); o.value = v; dl.appendChild(o); });
+    dl.innerHTML = arr.map(v => `<option value="${String(v).replace(/"/g, '&quot;')}">`).join('');
   },
 
   // ──────────────────────────────────────────

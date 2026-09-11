@@ -213,7 +213,12 @@ const USUARIOS = {
     document.getElementById('usr-modal')?.classList.add('open');
   },
 
-  async guardar() {
+  async guardar(btn) {
+    // Sin esto, el botón se queda con el mismo texto "Guardar" mientras
+    // espera la respuesta del servidor (puede tardar varios segundos) —
+    // se siente como que la app se congeló, aunque solo esté cargando, y
+    // un clic repetido mientras tanto dispararía un segundo envío.
+    if (this._guardando) return;
     const usuario  = document.getElementById('usr-usuario')?.value?.trim();
     const nombre   = document.getElementById('usr-nombre')?.value?.trim();
     const password = document.getElementById('usr-password')?.value;
@@ -224,6 +229,8 @@ const USUARIOS = {
     if (!usuario || !rol) { UI.toast('Usuario y rol son requeridos', 'warn'); return; }
     if (!esEdicion && (!password || password.length < 6)) { UI.toast('La contraseña debe tener al menos 6 caracteres', 'warn'); return; }
 
+    this._guardando = true;
+    if (btn) UI.spin(btn, true);
     try {
       let res;
       if (esEdicion) {
@@ -239,6 +246,7 @@ const USUARIOS = {
       document.getElementById('usr-modal')?.classList.remove('open');
       UI.toast('Usuario guardado', 'ok');
     } catch (e) { UI.toast(e.message, 'err'); }
+    finally { this._guardando = false; if (btn) UI.spin(btn, false); }
   },
 
   cerrarModal() { document.getElementById('usr-modal')?.classList.remove('open'); },
