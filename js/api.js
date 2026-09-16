@@ -39,31 +39,53 @@ const API = {
       UI.toast('⚠️ Falta CONFIG.apiKey — la API rechazará la petición', 'warn');
     }
 
-    try {
-      // GET con parámetros en URL — evita problemas de CORS con GAS
-      const paramsStr = encodeURIComponent(JSON.stringify(params));
-      const fullUrl   = `${url}?action=${encodeURIComponent(action)}&params=${paramsStr}&key=${encodeURIComponent(this.key)}&token=${encodeURIComponent(this.token)}`;
+    // Google a veces falla al abrir el archivo de Sheets del lado de
+    // ellos y devuelve una página de error HTML en vez de JSON (el fetch
+    // falla, o res.json() truena con "Unexpected token '<'") — confirmado
+    // que es intermitente y del lado de Google (se reprodujo igual en dos
+    // deployments distintos, sin relación con nuestro código). Reintentar
+    // una vez con una pausa corta suele resolverlo solo. Nunca reintenta
+    // errores de negocio reales (permiso denegado, validación, etc.) —
+    // esos ya llegan como JSON válido con json.ok===false, no entran aquí.
+    const MAX_INTENTOS = 2;
+    let ultimoError;
 
-      const res  = await fetch(fullUrl, { redirect: 'follow' });
-      const json = await res.json();
+    for (let intento = 1; intento <= MAX_INTENTOS; intento++) {
+      try {
+        // GET con parámetros en URL — evita problemas de CORS con GAS
+        const paramsStr = encodeURIComponent(JSON.stringify(params));
+        const fullUrl   = `${url}?action=${encodeURIComponent(action)}&params=${paramsStr}&key=${encodeURIComponent(this.key)}&token=${encodeURIComponent(this.token)}`;
 
-      if (!json.ok) {
-        if (json.codigo === 401 && action !== 'login') {
-          // Sesión inválida/expirada: forzar de vuelta a la pantalla de
-          // login en vez de dejar la app en un estado a medias.
-          if (typeof AUTH !== 'undefined') AUTH.sesionExpirada();
+        const res  = await fetch(fullUrl, { redirect: 'follow' });
+        const json = await res.json();
+
+        if (!json.ok) {
+          if (json.codigo === 401 && action !== 'login') {
+            // Sesión inválida/expirada: forzar de vuelta a la pantalla de
+            // login en vez de dejar la app en un estado a medias.
+            if (typeof AUTH !== 'undefined') AUTH.sesionExpirada();
+          }
+          // codigo 403 (permiso denegado) no se maneja aquí a propósito:
+          // cada función que llama a la API ya tiene su propio catch que
+          // muestra el mensaje — duplicar el toast aquí solo lo repetiría.
+          throw new Error(json.error || 'Error en el servidor');
         }
-        // codigo 403 (permiso denegado) no se maneja aquí a propósito:
-        // cada función que llama a la API ya tiene su propio catch que
-        // muestra el mensaje — duplicar el toast aquí solo lo repetiría.
-        throw new Error(json.error || 'Error en el servidor');
-      }
-      return json.data;
+        return json.data;
 
-    } catch (err) {
-      console.error('[API]', action, err.message);
-      throw err;
+      } catch (err) {
+        ultimoError = err;
+        var esFalloTransitorioDeGoogle = err instanceof SyntaxError || err.name === 'TypeError';
+        if (intento < MAX_INTENTOS && esFalloTransitorioDeGoogle) {
+          console.warn(`[API] ${action} falló (intento ${intento}/${MAX_INTENTOS}) — reintentando:`, err.message);
+          UI.toast('Google tardó en responder, reintentando...', 'warn');
+          await new Promise(r => setTimeout(r, 1200));
+          continue;
+        }
+        console.error('[API]', action, err.message);
+        throw err;
+      }
     }
+    throw ultimoError;
   },
 
   // ── CACHÉ LOCAL, solo para lecturas pesadas ──────────────
