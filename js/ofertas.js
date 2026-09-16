@@ -301,7 +301,7 @@ const OFERTAS = {
         let botonVer = '';
         if (h.URL_DOC) {
           botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="window.open('${h.URL_DOC}','_blank')" title="Ver documento">📄</button>`;
-        } else if (h.DATA_JSON) {
+        } else if (h.TIENE_DATA_JSON || h.DATA_JSON) {
           botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="OFERTAS.verResumenOferta('${h.ID_OFERTA}')" title="Ver resumen">👁️</button>`;
         }
         tr.innerHTML = `
@@ -325,15 +325,34 @@ const OFERTAS = {
     }
   },
 
+  // DATA_JSON ya no viene en el listado masivo (this.DB.historial) — se
+  // sacó para que la caché de servidor quepa bajo el límite de 100KB (ver
+  // Datos.gs, obtenerDatosCompletos). Si el registro en memoria ya la
+  // trae (oferta recién creada/editada en esta misma sesión), se usa
+  // directo; si no (caso normal: se cargó del listado masivo), se pide
+  // puntual con obtenerDetalleOferta(). TIENE_DATA_JSON (booleano) es lo
+  // que sí viene siempre en el listado, para saber si vale la pena pedir.
+  async resolverDataJson(oferta) {
+    if (oferta.DATA_JSON) return oferta.DATA_JSON;
+    if (!oferta.TIENE_DATA_JSON) { UI.toast('Sin detalle guardado para esta oferta', 'warn'); return null; }
+    try {
+      const res = await API.call('obtenerDetalleOferta', { idOferta: oferta.ID_OFERTA });
+      if (!res.exito) { UI.toast(res.error, 'err'); return null; }
+      return res.dataJson;
+    } catch(e) { UI.toast(e.message, 'err'); return null; }
+  },
+
   // Resumen de solo lectura para ofertas que no tienen URL_DOC guardado
   // (generadas antes de este cambio) pero sí tienen DATA_JSON — evita
   // mandar a alguien que solo quiere revisar al formulario completo de
   // edición.
-  verResumenOferta(id) {
+  async verResumenOferta(id) {
     const h = (this.DB.historial || []).find(x => String(x.ID_OFERTA) === String(id));
-    if (!h || !h.DATA_JSON) { UI.toast('Sin detalle guardado para esta oferta', 'warn'); return; }
+    if (!h) { UI.toast('Oferta no encontrada', 'err'); return; }
+    const dataJson = await this.resolverDataJson(h);
+    if (!dataJson) return;
     let data;
-    try { data = JSON.parse(h.DATA_JSON); } catch(e) { UI.toast('No se pudo leer el detalle de esta oferta', 'err'); return; }
+    try { data = JSON.parse(dataJson); } catch(e) { UI.toast('No se pudo leer el detalle de esta oferta', 'err'); return; }
 
     const cliente = data.cliente?.EMPRESA_NOMBRE || data.cliente?.EMPRESA || h.CLIENTE || '—';
     const items = (data.items || []).map(it => `
@@ -795,13 +814,15 @@ const OFERTAS = {
   // ──────────────────────────────────────────
   //  CARGAR / CLONAR DESDE HISTORIAL
   // ──────────────────────────────────────────
-  gestionarOferta(id, accion) {
+  async gestionarOferta(id, accion) {
     const oferta = this.DB.historial.find(h => String(h.ID_OFERTA) === String(id));
     if (!oferta) { UI.toast('Oferta no encontrada', 'err'); return; }
-    if (accion === 'CARGAR') this.cargarDesdeHistorial(oferta);
+    const dataJson = await this.resolverDataJson(oferta);
+    if (!dataJson) return;
+    if (accion === 'CARGAR') this.cargarDesdeHistorial({ ...oferta, DATA_JSON: dataJson });
     else if (accion === 'CLONAR') {
       const tipoOriginal = this.tipoDeOferta(oferta.ID_OFERTA); // se pierde en cuanto se vacíe ID_OFERTA
-      const clon = {...oferta}; clon.ID_OFERTA = '';
+      const clon = { ...oferta, DATA_JSON: dataJson, ID_OFERTA: '' };
       this.cargarDesdeHistorial(clon, true, tipoOriginal);
     }
   },

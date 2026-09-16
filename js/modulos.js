@@ -96,7 +96,7 @@ const PROYECTOS = {
     });
   },
 
-  autoLlenarCliente() {
+  async autoLlenarCliente() {
     const idOferta = document.getElementById('pry-sel-oferta')?.value;
     if (!idOferta) return;
     const oferta = (this.DB.historial || []).find(h => h.ID_OFERTA === idOferta);
@@ -114,10 +114,19 @@ const PROYECTOS = {
     // siempre "Proyecto <Cliente>", igual para las tres, sin forma de
     // saber cuál proyecto correspondía a cuál oferta. Se saca del
     // DATA_JSON de la oferta (el mismo campo que se ve en "Ver resumen"
-    // del historial de Ofertas).
+    // del historial de Ofertas) — DATA_JSON ya no viene en el listado
+    // masivo (ver obtenerDatosCompletos en Datos.gs), así que se pide
+    // puntual si hace falta.
+    let dataJsonStr = oferta.DATA_JSON;
+    if (!dataJsonStr && oferta.TIENE_DATA_JSON) {
+      try {
+        const res = await API.call('obtenerDetalleOferta', { idOferta: oferta.ID_OFERTA });
+        if (res.exito) dataJsonStr = res.dataJson;
+      } catch(e) {}
+    }
     let objeto = '';
-    if (oferta.DATA_JSON) {
-      try { objeto = JSON.parse(oferta.DATA_JSON)?.textos?.objeto || ''; } catch(e) {}
+    if (dataJsonStr) {
+      try { objeto = JSON.parse(dataJsonStr)?.textos?.objeto || ''; } catch(e) {}
     }
     const objetoCorto = objeto.length > 50 ? objeto.slice(0, 47) + '...' : objeto;
 
@@ -165,7 +174,7 @@ const PROYECTOS = {
   },
 
   // ── DETALLE / CAMBIAR ESTADO ─────────────────
-  abrirDetalle(id) {
+  async abrirDetalle(id) {
     const p = (this.DB.proyectos || []).find(x => x.ID_PROYECTO === id);
     if (!p) return;
     const panel = document.getElementById('pry-detalle');
@@ -173,12 +182,21 @@ const PROYECTOS = {
     // Objeto de la oferta vinculada — se busca en vivo aquí (no depende de
     // que el proyecto ya tenga NOTAS con el objeto guardado), así que esto
     // también sirve para proyectos creados antes de este cambio, donde el
-    // nombre no bastaba para distinguir cuál oferta era cuál.
+    // nombre no bastaba para distinguir cuál oferta era cuál. DATA_JSON ya
+    // no viene en el listado masivo (ver obtenerDatosCompletos en
+    // Datos.gs), así que se pide puntual si hace falta.
     let objetoOferta = '';
     if (p.ID_OFERTA) {
       const ofertaLigada = (this.DB.historial || []).find(h => h.ID_OFERTA === p.ID_OFERTA);
-      if (ofertaLigada?.DATA_JSON) {
-        try { objetoOferta = JSON.parse(ofertaLigada.DATA_JSON)?.textos?.objeto || ''; } catch(e) {}
+      let dataJsonStr = ofertaLigada?.DATA_JSON;
+      if (!dataJsonStr && ofertaLigada?.TIENE_DATA_JSON) {
+        try {
+          const res = await API.call('obtenerDetalleOferta', { idOferta: ofertaLigada.ID_OFERTA });
+          if (res.exito) dataJsonStr = res.dataJson;
+        } catch(e) {}
+      }
+      if (dataJsonStr) {
+        try { objetoOferta = JSON.parse(dataJsonStr)?.textos?.objeto || ''; } catch(e) {}
       }
     }
     panel.innerHTML = `
