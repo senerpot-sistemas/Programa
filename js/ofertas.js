@@ -157,8 +157,11 @@ const OFERTAS = {
   //  DECISIÓN DEL CLIENTE (Aprobar / Rechazar)
   // ──────────────────────────────────────────
   async actualizarEstadoOfertaUI(id, nuevoEstado) {
+    if (this._actualizandoEstadoOferta) return;
     const verbo = nuevoEstado === 'APROBADA' ? 'aprobar' : 'rechazar';
     if (!UI.confirmar(`¿Marcar la oferta ${id} como ${verbo === 'aprobar' ? 'APROBADA' : 'RECHAZADA'}?`)) return;
+    if (this._actualizandoEstadoOferta) return;
+    this._actualizandoEstadoOferta = true;
     try {
       const res = await API.call('actualizarEstadoOferta', { id, estado: nuevoEstado });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -167,6 +170,7 @@ const OFERTAS = {
       this.renderDashboardOfertas();
       UI.toast('Oferta ' + id + ' marcada como ' + nuevoEstado.toLowerCase(), 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._actualizandoEstadoOferta = false; }
   },
 
   // ──────────────────────────────────────────
@@ -379,7 +383,10 @@ const OFERTAS = {
   // que no siga inflando los conteos del dashboard. Búsqueda por ID en el
   // servidor (no por posición) — ver eliminarOferta en Oferta.gs.
   async eliminarOfertaUI(id) {
+    if (this._eliminandoOferta) return;
     if (!UI.confirmar(`¿Eliminar la oferta ${id}? Esta acción no se puede deshacer.`)) return;
+    if (this._eliminandoOferta) return;
+    this._eliminandoOferta = true;
     try {
       const res = await API.call('eliminarOferta', { id });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -388,6 +395,7 @@ const OFERTAS = {
       this.renderDashboardOfertas();
       UI.toast('Oferta ' + id + ' eliminada', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._eliminandoOferta = false; }
   },
 
   // ──────────────────────────────────────────
@@ -412,6 +420,7 @@ const OFERTAS = {
   },
 
   async guardarOfertaManualForm() {
+    if (this._guardandoOfertaManual) return;
     const idOferta = document.getElementById('of-h-id')?.value?.trim();
     const cliente  = document.getElementById('of-h-cliente')?.value?.trim();
     if (!idOferta || !cliente) { UI.toast('N° de oferta y cliente son requeridos', 'warn'); return; }
@@ -421,6 +430,7 @@ const OFERTAS = {
     const total    = parseFloat(document.getElementById('of-h-total')?.value) || 0;
     const estado   = document.getElementById('of-h-estado')?.value || 'GENERADA';
 
+    this._guardandoOfertaManual = true;
     try {
       const res = await API.call('agregarOfertaManual', {
         idOferta, cliente, fecha, estado, total: UI.moneda(total)
@@ -432,6 +442,7 @@ const OFERTAS = {
       this.cerrarModal('of-modal-hist');
       UI.toast('Oferta histórica agregada', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._guardandoOfertaManual = false; }
   },
 
   renderSelectKits() {
@@ -669,6 +680,7 @@ const OFERTAS = {
   },
 
   async guardarKitUI(tipo) {
+    if (this._guardandoKit) return;
     let dataToSave;
     if (tipo === 'TEXTOS') {
       const lista = [];
@@ -684,12 +696,14 @@ const OFERTAS = {
     }
     const nombre = prompt('Nombre para este kit:');
     if (!nombre) return;
+    this._guardandoKit = true;
     try {
       const res = await API.call('guardarKit', { nombre, tipo, dataJson: JSON.stringify(dataToSave) });
       Store.upsert(this.DB.kits, res.data);
       this.renderSelectKits();
       UI.toast('Kit guardado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._guardandoKit = false; }
   },
 
   // ──────────────────────────────────────────
@@ -775,10 +789,12 @@ const OFERTAS = {
   //  GUARDAR BORRADOR
   // ──────────────────────────────────────────
   async guardarBorrador() {
+    if (this._guardandoBorrador) return;
     const datos = this.recuperarFormulario();
     if (!datos) { UI.toast('Seleccione un cliente', 'warn'); return; }
     const consec = document.getElementById('of-consecutivo').value.trim();
     if (!consec) { UI.toast('Ingrese el N° de oferta', 'warn'); return; }
+    this._guardandoBorrador = true;
     try {
       const res = await API.call('guardarHistorial', {
         idOferta: consec, clienteNombre: datos.cliente.EMPRESA_NOMBRE || datos.cliente.EMPRESA,
@@ -790,6 +806,7 @@ const OFERTAS = {
       UI.toast('Borrador guardado', 'ok');
       this.tab('historial');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._guardandoBorrador = false; }
   },
 
   // ──────────────────────────────────────────
@@ -902,7 +919,11 @@ const OFERTAS = {
 
   cerrarModal(id) { document.getElementById(id).classList.remove('open'); },
 
-  async guardarClienteForm() {
+  async guardarClienteForm(btn) {
+    // Sin esto, un doble clic (o un clic mientras Apps Script todavía
+    // responde) crea dos clientes iguales — pasó de verdad, backend no
+    // valida duplicados de nombre/NIT aquí.
+    if (this._guardandoCliente) return;
     const obj = {
       _rowIndex: document.getElementById('of-cli-edit-idx').value,
       id:        this._clienteEditId || undefined,
@@ -915,6 +936,8 @@ const OFERTAS = {
       email:     document.getElementById('of-n-email-m').value
     };
     if (!obj.empresa) { UI.toast('Falta nombre de empresa', 'warn'); return; }
+    this._guardandoCliente = true;
+    if (btn) UI.spin(btn, true);
     try {
       const accion = obj._rowIndex ? 'editarCliente' : 'guardarCliente';
       const res = await API.call(accion, obj);
@@ -923,16 +946,21 @@ const OFERTAS = {
       this.cerrarModal('of-modal-cli');
       UI.toast('Cliente guardado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._guardandoCliente = false; if (btn) UI.spin(btn, false); }
   },
 
   async eliminarClienteUI(c) {
+    if (this._eliminandoCliente) return;
     if (!UI.confirmar('¿Eliminar este cliente?')) return;
+    if (this._eliminandoCliente) return;
+    this._eliminandoCliente = true;
     try {
       const res = await API.call('eliminarCliente', { rowIndex: c._rowIndex, id: c.ID_CLIENTE });
       Store.remove(this.DB.clientes, res.rowIndex);
       this.renderSelectClientes(); this.renderTablaClientes();
       UI.toast('Cliente eliminado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._eliminandoCliente = false; }
   },
 
   // ──────────────────────────────────────────
@@ -956,7 +984,8 @@ const OFERTAS = {
 
   editarServicioUI(i) { this.modalServicio(i); },
 
-  async guardarServicioForm() {
+  async guardarServicioForm(btn) {
+    if (this._guardandoServicio) return;
     const obj = {
       _rowIndex:   document.getElementById('of-srv-edit-idx').value,
       id:          this._servicioEditId || undefined,
@@ -966,6 +995,8 @@ const OFERTAS = {
       precio:      document.getElementById('of-srv-price').value
     };
     if (!obj.descripcion) { UI.toast('Falta descripción', 'warn'); return; }
+    this._guardandoServicio = true;
+    if (btn) UI.spin(btn, true);
     try {
       const accion = obj._rowIndex ? 'editarServicio' : 'guardarServicio';
       const res = await API.call(accion, obj);
@@ -977,16 +1008,21 @@ const OFERTAS = {
       this.cerrarModal('of-modal-srv');
       UI.toast('Servicio guardado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._guardandoServicio = false; if (btn) UI.spin(btn, false); }
   },
 
   async eliminarServicioUI(i) {
+    if (this._eliminandoServicio) return;
     if (!UI.confirmar('¿Eliminar este servicio?')) return;
+    if (this._eliminandoServicio) return;
+    this._eliminandoServicio = true;
     try {
       const res = await API.call('eliminarServicio', { rowIndex: i._rowIndex, id: i.ID_SERVICIO });
       Store.remove(this.DB.items, res.rowIndex);
       this.renderTablaServicios(); this.poblarCatalogo();
       UI.toast('Servicio eliminado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._eliminandoServicio = false; }
   },
 
   async migrarHistorial() {

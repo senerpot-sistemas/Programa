@@ -125,11 +125,13 @@ const AUTH = {
   },
 
   async cambiarPasswordPropia() {
+    if (this._cambiandoPassword) return;
     const actual  = document.getElementById('pwd-actual')?.value;
     const nueva   = document.getElementById('pwd-nueva')?.value;
     const repetir = document.getElementById('pwd-repetir')?.value;
     if (!nueva || nueva.length < 6) { UI.toast('La contraseña nueva debe tener al menos 6 caracteres', 'warn'); return; }
     if (nueva !== repetir) { UI.toast('Las contraseñas nuevas no coinciden', 'warn'); return; }
+    this._cambiandoPassword = true;
     // Verificamos la contraseña actual re-logueando contra ella antes de
     // cambiarla — así no se puede cambiar la clave desde una sesión
     // abierta que alguien dejó sin cerrar en un equipo compartido.
@@ -142,6 +144,7 @@ const AUTH = {
       this.cerrarModal('modal-cambiar-password');
       ['pwd-actual','pwd-nueva','pwd-repetir'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     } catch (e) { UI.toast(e.message, 'err'); }
+    finally { this._cambiandoPassword = false; }
   },
 
   abrirModalCambiarPassword() {
@@ -252,8 +255,11 @@ const USUARIOS = {
   cerrarModal() { document.getElementById('usr-modal')?.classList.remove('open'); },
 
   async eliminarUI(usuario) {
+    if (this._eliminandoUsuario) return;
     if (usuario === AUTH.usuario) { UI.toast('No puedes eliminar tu propio usuario mientras tienes la sesión abierta', 'warn'); return; }
     if (!UI.confirmar(`¿Eliminar el usuario "${usuario}"? Esta acción no se puede deshacer.`)) return;
+    if (this._eliminandoUsuario) return;
+    this._eliminandoUsuario = true;
     try {
       const res = await API.call('eliminarUsuario', { usuario });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -261,5 +267,6 @@ const USUARIOS = {
       this.render();
       UI.toast('Usuario eliminado', 'ok');
     } catch (e) { UI.toast(e.message, 'err'); }
+    finally { this._eliminandoUsuario = false; }
   }
 };

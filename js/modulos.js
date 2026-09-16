@@ -452,7 +452,10 @@ const PROYECTOS = {
   },
 
   async eliminarLineaPresupuestoUI(lineaId, id) {
+    if (this._eliminandoLineaPresupuesto) return;
     if (!UI.confirmar('¿Eliminar esta línea del presupuesto?')) return;
+    if (this._eliminandoLineaPresupuesto) return;
+    this._eliminandoLineaPresupuesto = true;
     try {
       const res = await API.call('eliminarLineaPresupuesto', { id: lineaId });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -460,19 +463,24 @@ const PROYECTOS = {
       this.renderPresupuesto(id);
       UI.toast('Línea eliminada', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._eliminandoLineaPresupuesto = false; }
   },
 
   // El costo unitario queda en 0 (ver copiarItemsOfertaAPresupuesto en
   // Proyectos.gs) — el precio de la oferta es lo que se le cobra al
   // cliente, no lo que cuesta comprar, así que hay que completarlo a mano.
   async copiarDeOferta(id) {
+    if (this._copiandoDeOferta) return;
     if (!UI.confirmar('¿Copiar los ítems de la oferta al presupuesto? Las cantidades se copian, el costo queda en 0 para que lo completes.')) return;
+    if (this._copiandoDeOferta) return;
+    this._copiandoDeOferta = true;
     try {
       const res = await API.call('copiarItemsOfertaAPresupuesto', { idProyecto: id });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
       await this.cargarPresupuesto(id);
       UI.toast(res.cantidad + ' ítems copiados al presupuesto', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._copiandoDeOferta = false; }
   },
 
   async cargarComentarios(id) {
@@ -498,15 +506,18 @@ const PROYECTOS = {
   // (ver params._sesion en Api.gs) — nunca se envía "quién soy" desde
   // aquí, para que la bitácora no se pueda falsificar.
   async agregarComentario(id) {
+    if (this._agregandoComentario) return;
     const input = document.getElementById('pry-comentario-nuevo');
     const comentario = input?.value?.trim();
     if (!comentario) return;
+    this._agregandoComentario = true;
     try {
       const res = await API.call('agregarComentarioProyecto', { idProyecto: id, comentario });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
       input.value = '';
       this.cargarComentarios(id);
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._agregandoComentario = false; }
   },
 
   // Reutiliza actualizarEstadoProyecto mandando el mismo estado actual —
@@ -514,11 +525,13 @@ const PROYECTOS = {
   // Proyectos.gs), así que no hace falta un endpoint nuevo solo para
   // esto.
   async guardarResponsable(id) {
+    if (this._guardandoResponsable) return;
     const p = (this.DB.proyectos || []).find(x => x.ID_PROYECTO === id);
     if (!p) return;
     const input = document.getElementById('pry-responsable-input');
     const tecnico = input?.value?.trim();
     if (!tecnico) { UI.toast('Escribe un nombre para el responsable', 'warn'); return; }
+    this._guardandoResponsable = true;
     try {
       const res = await API.call('actualizarEstadoProyecto', { id, estado: p.ESTADO, tecnico });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -526,9 +539,11 @@ const PROYECTOS = {
       this.renderTabla(document.getElementById('pry-filtro-estado')?.value || '');
       UI.toast('Responsable asignado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._guardandoResponsable = false; }
   },
 
   async cambiarEstado(id) {
+    if (this._cambiandoEstadoProyecto) return;
     const p = (this.DB.proyectos || []).find(x => x.ID_PROYECTO === id);
     if (!p) return;
     const opciones = this.ESTADOS.map((e,i) => `${i+1}. ${e}`).join('\n');
@@ -538,6 +553,7 @@ const PROYECTOS = {
     if (idx < 0 || idx >= this.ESTADOS.length) { UI.toast('Opción inválida', 'warn'); return; }
     const nuevoEstado    = this.ESTADOS[idx];
     const refFacturaSigo = ['FACTURADO','COBRADO'].includes(nuevoEstado) ? (prompt('N° Factura SIGO (opcional):') || '') : '';
+    this._cambiandoEstadoProyecto = true;
     try {
       const res = await API.call('actualizarEstadoProyecto', { id, estado: nuevoEstado, refFacturaSigo });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -545,12 +561,16 @@ const PROYECTOS = {
       this.renderTabla(document.getElementById('pry-filtro-estado')?.value || '');
       UI.toast('Estado actualizado: ' + nuevoEstado, 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._cambiandoEstadoProyecto = false; }
   },
 
   async eliminarProyecto() {
+    if (this._eliminandoProyecto) return;
     const id = document.getElementById('pry-detalle-id')?.value;
     if (!id) return;
     if (!UI.confirmar(`¿Eliminar el proyecto "${id}"? Esta acción no se puede deshacer.`)) return;
+    if (this._eliminandoProyecto) return;
+    this._eliminandoProyecto = true;
     try {
       const res = await API.call('eliminarProyecto', { idProyecto: id });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -559,6 +579,7 @@ const PROYECTOS = {
       this.cerrarModal('pry-modal-detalle');
       UI.toast('Proyecto eliminado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._eliminandoProyecto = false; }
   },
 
   cerrarModal(id) {
@@ -729,13 +750,17 @@ const ALMACEN = {
   },
 
   async eliminar(i) {
+    if (this._eliminando) return;
     if (!UI.confirmar('¿Eliminar este ítem?')) return;
+    if (this._eliminando) return;
+    this._eliminando = true;
     try {
       const res = await API.call('eliminarItemAlmacen', { rowIndex: i._rowIndex, id: i.ID_ITEM });
       Store.remove(this.DB, res.rowIndex);
       this.renderTabla(document.getElementById('alm-filtro-cat')?.value || '');
       UI.toast('Ítem eliminado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
+    finally { this._eliminando = false; }
   },
 
   filtrarBusqueda(txt) {
