@@ -246,7 +246,7 @@ const OFERTAS = {
     const tbody = document.getElementById('of-tbody-hist');
     tbody.innerHTML = '';
     const filtroTipo = document.getElementById('of-filtro-tipo')?.value || '';
-    const badgeClass = { BORRADOR: 'badge-gray', GENERADA: 'badge-blue', APROBADA: 'badge-green', RECHAZADA: 'badge-red' };
+    const badgeClass = { BORRADOR: 'badge-gray', GENERADA: 'badge-blue', APROBADA: 'badge-green', RECHAZADA: 'badge-red', ERROR_GENERACION: 'badge-red' };
 
     // Agrupadas por tipo y ordenadas por número de consecutivo (no por
     // fecha de creación) — así, dentro de cada serie (DIV/INSP/MTTO/
