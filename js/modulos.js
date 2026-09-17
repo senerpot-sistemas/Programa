@@ -59,8 +59,8 @@ const PROYECTOS = {
         <td><span class="badge ${badgeClass}">${p.ESTADO || '-'}</span></td>
         <td>${p.REF_FACTURA_SIGO || '<span style="color:#ccc">—</span>'}</td>
         <td style="text-align:center;white-space:nowrap;">
-          <button class="btn-icon btn-icon-edit" onclick="PROYECTOS.abrirDetalle('${p.ID_PROYECTO}',this)" title="Ver detalle">👁️</button>
-          <button class="btn-icon" style="color:#639922" onclick="PROYECTOS.cambiarEstado('${p.ID_PROYECTO}',this)" title="Actualizar estado">🔄</button>
+          <button class="btn-row-action" onclick="PROYECTOS.abrirDetalle('${p.ID_PROYECTO}',this)">Ver</button>
+          <button class="btn-row-more" onclick="PROYECTOS.cambiarEstado('${p.ID_PROYECTO}',this)">Cambiar estado</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -659,8 +659,8 @@ const ALMACEN = {
         <td class="text-right">${UI.moneda(i.PRECIO_COMPRA||0)}</td>
         <td style="font-size:12px;">${this.nombreProyecto(i.ID_PROYECTO)}</td>
         <td style="text-align:center;white-space:nowrap;">
-          <button class="btn-icon btn-icon-edit" onclick='ALMACEN.editarUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
-          <button class="btn-icon btn-icon-del" onclick='ALMACEN.eliminar(${JSON.stringify(i).replace(/'/g,"&#39;")},this)' title="Eliminar">🗑️</button>
+          <button class="btn-icon btn-icon-edit" onclick='ALMACEN.editarUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Editar">✏️ Editar</button>
+          <button class="btn-icon btn-icon-del" onclick='ALMACEN.eliminar(${JSON.stringify(i).replace(/'/g,"&#39;")},this)' title="Eliminar">🗑️ Eliminar</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -874,12 +874,12 @@ const PANEL = {
   // así que en "ANIO" simplemente no se muestra badge.
   _trendHTML(actual, anterior) {
     if (this.periodo === 'ANIO' || anterior === null) return '';
-    if (anterior === 0) return actual > 0 ? `<div class="metric-trend up"><i class="ti ti-arrow-up-right"></i> nuevo</div>` : '';
+    if (anterior === 0) return actual > 0 ? `<div class="metric-trend up">▲ nuevo</div>` : '';
     const delta = ((actual - anterior) / anterior) * 100;
-    if (Math.abs(delta) < 1) return `<div class="metric-trend flat"><i class="ti ti-minus"></i> igual que antes</div>`;
+    if (Math.abs(delta) < 1) return `<div class="metric-trend flat">– igual que antes</div>`;
     const cls = delta > 0 ? 'up' : 'down';
-    const icon = delta > 0 ? 'ti-arrow-up-right' : 'ti-arrow-down-right';
-    return `<div class="metric-trend ${cls}"><i class="ti ${icon}"></i> ${Math.abs(delta).toFixed(0)}% vs. mes anterior</div>`;
+    const icon = delta > 0 ? '▲' : '▼';
+    return `<div class="metric-trend ${cls}">${icon} ${Math.abs(delta).toFixed(0)}% vs. mes anterior</div>`;
   },
 
   renderResumen() {

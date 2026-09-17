@@ -6,7 +6,10 @@
   <title>SENERPOT — Sistema Integral</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <!-- Fuente de íconos Tabler retirada — fallaba en algunos equipos (antivirus/
+       firewall bloqueando el CDN) y dejaba botones sin ícono visible. Todos
+       los íconos de la app ahora son emoji, que dependen del sistema
+       operativo, no de un archivo externo. -->
   <style>
     :root {
       --primary:       #009E60;
@@ -454,7 +457,7 @@
       <label>Contraseña</label>
       <div class="password-wrap">
         <input type="password" id="login-password" autocomplete="current-password" onkeydown="if(event.key==='Enter')AUTH.login()">
-        <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+        <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1">👁️</button>
       </div>
     </div>
     <button class="btn-generate" id="login-btn" style="width:100%;" onclick="AUTH.login()">Ingresar</button>
@@ -474,28 +477,28 @@
 
     <nav class="sidebar-nav">
       <button class="nav-item active" id="nav-home" data-modulo="home" onclick="navegarA('home')">
-        <i class="ti ti-home"></i> Inicio
+        🏠 Inicio
       </button>
       <button class="nav-item" id="nav-panel" data-modulo="panel" onclick="navegarA('panel')">
-        <i class="ti ti-layout-dashboard"></i> Panel
+        📊 Panel
       </button>
       <button class="nav-item" id="nav-ofertas" data-modulo="ofertas" onclick="navegarA('ofertas')">
-        <i class="ti ti-file-description"></i> Ofertas
+        📝 Ofertas
       </button>
       <button class="nav-item" id="nav-proyectos" data-modulo="proyectos" onclick="navegarA('proyectos')">
-        <i class="ti ti-briefcase"></i> Proyectos
+        💼 Proyectos
       </button>
       <button class="nav-item" id="nav-contabilidad" data-modulo="contabilidad" onclick="navegarA('contabilidad')">
-        <i class="ti ti-calculator"></i> Contabilidad
+        🧮 Contabilidad
       </button>
       <button class="nav-item" id="nav-almacen" data-modulo="almacen" onclick="navegarA('almacen')">
-        <i class="ti ti-shopping-cart"></i> Compras
+        🛒 Compras
       </button>
       <button class="nav-item" id="nav-reportes" data-modulo="reportes" onclick="navegarA('reportes')">
-        <i class="ti ti-chart-bar"></i> Reportes
+        📈 Reportes
       </button>
       <button class="nav-item" id="nav-usuarios" data-modulo="usuarios" onclick="navegarA('usuarios')">
-        <i class="ti ti-users-group"></i> Usuarios
+        👥 Usuarios
       </button>
     </nav>
 
@@ -519,7 +522,7 @@
     <!-- TOPBAR -->
     <div class="topbar">
       <button class="btn-menu" onclick="toggleSidebar()" aria-label="Abrir menú">
-        <i class="ti ti-menu-2"></i>
+        ☰
       </button>
       <div class="page-title" id="page-title">Inicio</div>
       <div class="topbar-right">
@@ -539,72 +542,72 @@
         <div class="modules-grid">
 
           <div class="module-card" data-modulo="panel" style="--accent:#1D9E75" onclick="navegarA('panel')">
-            <div class="module-icon"><i class="ti ti-layout-dashboard"></i></div>
+            <div class="module-icon">📊</div>
             <div class="module-name">Panel</div>
             <div class="module-desc">KPIs, cartera pendiente y resumen del mes</div>
             <div class="module-footer">
               <span class="status-badge">Dashboard</span>
-              <i class="ti ti-arrow-right module-arrow"></i>
+              <span class="module-arrow">→</span>
             </div>
           </div>
 
           <div class="module-card" data-modulo="ofertas" style="--accent:#639922" onclick="navegarA('ofertas')">
-            <div class="module-icon"><i class="ti ti-file-description"></i></div>
+            <div class="module-icon">📝</div>
             <div class="module-name">Ofertas</div>
             <div class="module-desc">Crear y gestionar propuestas comerciales</div>
             <div class="module-footer">
               <span class="status-badge">Activo</span>
-              <i class="ti ti-arrow-right module-arrow"></i>
+              <span class="module-arrow">→</span>
             </div>
           </div>
 
           <div class="module-card" data-modulo="proyectos" style="--accent:#185FA5" onclick="navegarA('proyectos')">
-            <div class="module-icon"><i class="ti ti-briefcase"></i></div>
+            <div class="module-icon">💼</div>
             <div class="module-name">Proyectos</div>
             <div class="module-desc">Órdenes de trabajo y seguimiento de servicios</div>
             <div class="module-footer">
               <span class="status-badge">Activo</span>
-              <i class="ti ti-arrow-right module-arrow"></i>
+              <span class="module-arrow">→</span>
             </div>
           </div>
 
           <div class="module-card" data-modulo="contabilidad" style="--accent:#BA7517" onclick="navegarA('contabilidad')">
-            <div class="module-icon"><i class="ti ti-calculator"></i></div>
+            <div class="module-icon">🧮</div>
             <div class="module-name">Contabilidad</div>
             <div class="module-desc">Documentos, cartera y soportes contables</div>
             <div class="module-footer">
               <span class="status-badge">Activo</span>
-              <i class="ti ti-arrow-right module-arrow"></i>
+              <span class="module-arrow">→</span>
             </div>
           </div>
 
           <div class="module-card" data-modulo="almacen" style="--accent:#534AB7" onclick="navegarA('almacen')">
-            <div class="module-icon"><i class="ti ti-shopping-cart"></i></div>
+            <div class="module-icon">🛒</div>
             <div class="module-name">Compras</div>
             <div class="module-desc">Compras, proveedores y costos por proyecto</div>
             <div class="module-footer">
               <span class="status-badge">Activo</span>
-              <i class="ti ti-arrow-right module-arrow"></i>
+              <span class="module-arrow">→</span>
             </div>
           </div>
 
           <div class="module-card" data-modulo="reportes" style="--accent:#993C1D" onclick="navegarA('reportes')">
-            <div class="module-icon"><i class="ti ti-chart-bar"></i></div>
+            <div class="module-icon">📈</div>
             <div class="module-name">Reportes</div>
             <div class="module-desc">Análisis financiero y reportes de gestión</div>
             <div class="module-footer">
               <span class="status-badge">Activo</span>
-              <i class="ti ti-arrow-right module-arrow"></i>
+              <span class="module-arrow">→</span>
             </div>
           </div>
 
           <div class="module-card" data-modulo="usuarios" style="--accent:#334155" onclick="navegarA('usuarios')">
-            <div class="module-icon"><i class="ti ti-users-group"></i></div>
+            <div class="module-icon">👥</div>
             <div class="module-name">Usuarios</div>
             <div class="module-desc">Cuentas de acceso y roles del equipo</div>
             <div class="module-footer">
               <span class="status-badge">Activo</span>
-              <i class="ti ti-arrow-right module-arrow"></i>
+              <span class="module-arrow">→</span>
             </div>
           </div>
 
@@ -614,7 +617,7 @@
       <!-- ── PANEL ── -->
       <div id="view-panel" class="view">
         <div id="panel-loader" style="display:flex;align-items:center;justify-content:center;min-height:300px;color:var(--primary);flex-direction:column;gap:12px;">
-          <i class="ti ti-loader" style="font-size:36px;animation:spin 1s linear infinite"></i>
+          <span style="font-size:36px;display:inline-block;animation:spin 1s linear infinite">⟳</span>
           <span>Cargando datos...</span>
         </div>
         <div id="panel-content" style="display:none;">
@@ -654,19 +657,19 @@
             </select>
           </div>
           <div class="metric-grid">
-            <div class="metric-card" style="--mc:#64748B;--mc-soft:#EDF1F5;"><div class="metric-icon"><i class="ti ti-file-text"></i></div><div class="metric-label">Ofertas creadas</div><div class="metric-val" id="panel-of-total">0</div><div id="panel-of-total-trend"></div></div>
-            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon"><i class="ti ti-clock"></i></div><div class="metric-label">Generadas (pendientes)</div><div class="metric-val" id="panel-of-generadas">0</div></div>
-            <div class="metric-card" style="--mc:#009E60;--mc-soft:var(--primary-light);"><div class="metric-icon"><i class="ti ti-check"></i></div><div class="metric-label">Aprobadas</div><div class="metric-val" id="panel-of-aprobadas">0</div><div id="panel-of-aprobadas-trend"></div></div>
-            <div class="metric-card" style="--mc:#D32F2F;--mc-soft:#FBEAEA;"><div class="metric-icon"><i class="ti ti-x"></i></div><div class="metric-label">Rechazadas</div><div class="metric-val" id="panel-of-rechazadas">0</div></div>
-            <div class="metric-card" style="--mc:#8B5CF6;--mc-soft:#F1EBFC;"><div class="metric-icon"><i class="ti ti-coin"></i></div><div class="metric-label">Valor cotizado</div><div class="metric-val" id="panel-of-valor">$ 0</div><div id="panel-of-valor-trend"></div></div>
+            <div class="metric-card" style="--mc:#64748B;--mc-soft:#EDF1F5;"><div class="metric-icon">📄</div><div class="metric-label">Ofertas creadas</div><div class="metric-val" id="panel-of-total">0</div><div id="panel-of-total-trend"></div></div>
+            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon">⏱️</div><div class="metric-label">Generadas (pendientes)</div><div class="metric-val" id="panel-of-generadas">0</div></div>
+            <div class="metric-card" style="--mc:#009E60;--mc-soft:var(--primary-light);"><div class="metric-icon">✅</div><div class="metric-label">Aprobadas</div><div class="metric-val" id="panel-of-aprobadas">0</div><div id="panel-of-aprobadas-trend"></div></div>
+            <div class="metric-card" style="--mc:#D32F2F;--mc-soft:#FBEAEA;"><div class="metric-icon">❌</div><div class="metric-label">Rechazadas</div><div class="metric-val" id="panel-of-rechazadas">0</div></div>
+            <div class="metric-card" style="--mc:#8B5CF6;--mc-soft:#F1EBFC;"><div class="metric-icon">🪙</div><div class="metric-label">Valor cotizado</div><div class="metric-val" id="panel-of-valor">$ 0</div><div id="panel-of-valor-trend"></div></div>
           </div>
 
           <div class="panel-section-head"><h4><span class="dot"></span>Proyectos creados en el período</h4></div>
           <div class="metric-grid">
-            <div class="metric-card" style="--mc:#1D9E75;--mc-soft:var(--primary-light);"><div class="metric-icon"><i class="ti ti-briefcase"></i></div><div class="metric-label">Proyectos activos</div><div class="metric-val" id="panel-pry-activos">0</div></div>
-            <div class="metric-card" style="--mc:#64748B;--mc-soft:#EDF1F5;"><div class="metric-icon"><i class="ti ti-hourglass"></i></div><div class="metric-label">Por iniciar</div><div class="metric-val" id="panel-pry-porIniciar">0</div></div>
-            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon"><i class="ti ti-progress"></i></div><div class="metric-label">En progreso</div><div class="metric-val" id="panel-pry-enProgreso">0</div></div>
-            <div class="metric-card" style="--mc:#F59E0B;--mc-soft:#FEF3E0;"><div class="metric-icon"><i class="ti ti-cash"></i></div><div class="metric-label">Valor proyectos activos</div><div class="metric-val" id="panel-pry-valor">$ 0</div></div>
+            <div class="metric-card" style="--mc:#1D9E75;--mc-soft:var(--primary-light);"><div class="metric-icon">💼</div><div class="metric-label">Proyectos activos</div><div class="metric-val" id="panel-pry-activos">0</div></div>
+            <div class="metric-card" style="--mc:#64748B;--mc-soft:#EDF1F5;"><div class="metric-icon">⏳</div><div class="metric-label">Por iniciar</div><div class="metric-val" id="panel-pry-porIniciar">0</div></div>
+            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon">⚙️</div><div class="metric-label">En progreso</div><div class="metric-val" id="panel-pry-enProgreso">0</div></div>
+            <div class="metric-card" style="--mc:#F59E0B;--mc-soft:#FEF3E0;"><div class="metric-icon">💵</div><div class="metric-label">Valor proyectos activos</div><div class="metric-val" id="panel-pry-valor">$ 0</div></div>
           </div>
 
           <div class="panel-section-head"><h4><span class="dot"></span>Evolución del año</h4></div>
@@ -677,11 +680,11 @@
 
           <div class="panel-section-head"><h4><span class="dot"></span>Contabilidad — histórico de documentos</h4></div>
           <div class="metric-grid">
-            <div class="metric-card" style="--mc:#009E60;--mc-soft:var(--primary-light);"><div class="metric-icon"><i class="ti ti-trending-up"></i></div><div class="metric-label">Ventas</div><div class="metric-val" id="panel-ventas">$ 0</div></div>
-            <div class="metric-card" style="--mc:#EF4444;--mc-soft:#FDECEC;"><div class="metric-icon"><i class="ti ti-trending-down"></i></div><div class="metric-label">Gastos</div><div class="metric-val" id="panel-gastos">$ 0</div></div>
-            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon"><i class="ti ti-report-money"></i></div><div class="metric-label">Utilidad</div><div class="metric-val" id="panel-utilidad">$ 0</div></div>
-            <div class="metric-card" style="--mc:#8B5CF6;--mc-soft:#F1EBFC;"><div class="metric-icon"><i class="ti ti-percentage"></i></div><div class="metric-label">Margen</div><div class="metric-val" id="panel-margen">0%</div></div>
-            <div class="metric-card" style="--mc:#F59E0B;--mc-soft:#FEF3E0;"><div class="metric-icon"><i class="ti ti-wallet"></i></div><div class="metric-label">Cartera</div><div class="metric-val" id="panel-cartera">$ 0</div></div>
+            <div class="metric-card" style="--mc:#009E60;--mc-soft:var(--primary-light);"><div class="metric-icon">📈</div><div class="metric-label">Ventas</div><div class="metric-val" id="panel-ventas">$ 0</div></div>
+            <div class="metric-card" style="--mc:#EF4444;--mc-soft:#FDECEC;"><div class="metric-icon">📉</div><div class="metric-label">Gastos</div><div class="metric-val" id="panel-gastos">$ 0</div></div>
+            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon">💰</div><div class="metric-label">Utilidad</div><div class="metric-val" id="panel-utilidad">$ 0</div></div>
+            <div class="metric-card" style="--mc:#8B5CF6;--mc-soft:#F1EBFC;"><div class="metric-icon">%</div><div class="metric-label">Margen</div><div class="metric-val" id="panel-margen">0%</div></div>
+            <div class="metric-card" style="--mc:#F59E0B;--mc-soft:#FEF3E0;"><div class="metric-icon">👛</div><div class="metric-label">Cartera</div><div class="metric-val" id="panel-cartera">$ 0</div></div>
           </div>
           <div class="charts-grid-2fr1fr" style="display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;">
             <div class="chart-card panel-chart"><div class="kpi-label" style="margin-bottom:10px;">Tendencia mensual</div><div style="height:260px;"><canvas id="panel-chart-linea"></canvas></div></div>
@@ -709,10 +712,10 @@
         </div>
 
         <div class="subtabs">
-          <button class="subtab active" id="ot-generador" onclick="OFERTAS.tab('generador')"><i class="ti ti-plus"></i> Nueva oferta</button>
-          <button class="subtab" id="ot-historial"  onclick="OFERTAS.tab('historial')"><i class="ti ti-history"></i> Historial</button>
-          <button class="subtab" id="ot-clientes"   onclick="OFERTAS.tab('clientes')"><i class="ti ti-users"></i> Clientes</button>
-          <button class="subtab" id="ot-servicios"  onclick="OFERTAS.tab('servicios')"><i class="ti ti-list"></i> Servicios</button>
+          <button class="subtab active" id="ot-generador" onclick="OFERTAS.tab('generador')">➕ Nueva oferta</button>
+          <button class="subtab" id="ot-historial"  onclick="OFERTAS.tab('historial')">🕘 Historial</button>
+          <button class="subtab" id="ot-clientes"   onclick="OFERTAS.tab('clientes')">👥 Clientes</button>
+          <button class="subtab" id="ot-servicios"  onclick="OFERTAS.tab('servicios')">📋 Servicios</button>
         </div>
 
         <!-- GENERADOR -->
@@ -953,7 +956,7 @@
           </div>
           <div class="table-scroll">
           <table class="data-tbl" id="of-tbl-cli">
-            <thead><tr><th>Empresa</th><th>NIT</th><th>Contacto</th><th>Teléfono</th><th style="width:90px"></th></tr></thead>
+            <thead><tr><th>Empresa</th><th>NIT</th><th>Contacto</th><th>Teléfono</th><th style="width:180px"></th></tr></thead>
             <tbody id="of-tbody-cli"></tbody>
           </table>
           </div>
@@ -968,7 +971,7 @@
           </div>
           <div class="table-scroll">
           <table class="data-tbl" id="of-tbl-srv">
-            <thead><tr><th style="width:80px">Código</th><th>Descripción</th><th style="width:50px">UN</th><th style="width:100px">Precio</th><th style="width:90px"></th></tr></thead>
+            <thead><tr><th style="width:80px">Código</th><th>Descripción</th><th style="width:50px">UN</th><th style="width:100px">Precio</th><th style="width:180px"></th></tr></thead>
             <tbody id="of-tbody-srv"></tbody>
           </table>
           </div>
@@ -1014,8 +1017,8 @@
       <!-- ── PROYECTOS ── -->
       <div id="view-proyectos" class="view">
         <div class="subtabs">
-          <button class="subtab active" id="pryt-lista"  onclick="PROYECTOS.tab('lista')"><i class="ti ti-list"></i> Lista</button>
-          <button class="subtab" id="pryt-nuevo" onclick="PROYECTOS.tab('nuevo')"><i class="ti ti-plus"></i> Nuevo proyecto</button>
+          <button class="subtab active" id="pryt-lista"  onclick="PROYECTOS.tab('lista')">📋 Lista</button>
+          <button class="subtab" id="pryt-nuevo" onclick="PROYECTOS.tab('nuevo')">➕ Nuevo proyecto</button>
         </div>
         <div id="pryv-lista" class="subview active">
           <div class="module-toolbar">
@@ -1027,7 +1030,7 @@
           </div>
           <div class="table-scroll">
           <table class="data-tbl">
-            <thead><tr><th style="width:110px">ID</th><th>Nombre</th><th>Cliente</th><th style="width:120px">Valor</th><th style="width:110px">Estado</th><th>Ref. SIGO</th><th style="width:90px"></th></tr></thead>
+            <thead><tr><th style="width:110px">ID</th><th>Nombre</th><th>Cliente</th><th style="width:120px">Valor</th><th style="width:110px">Estado</th><th>Ref. SIGO</th><th style="width:180px"></th></tr></thead>
             <tbody id="pry-tbody"></tbody>
           </table>
           </div>
@@ -1051,7 +1054,7 @@
             <input type="hidden" id="pry-detalle-id">
             <div id="pry-detalle"></div>
             <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);text-align:right;">
-              <button class="btn-danger-sm" id="pry-btn-eliminar" onclick="PROYECTOS.eliminarProyecto(this)" style="display:none;"><i class="ti ti-trash"></i> Eliminar proyecto</button>
+              <button class="btn-danger-sm" id="pry-btn-eliminar" onclick="PROYECTOS.eliminarProyecto(this)" style="display:none;">🗑️ Eliminar proyecto</button>
             </div>
           </div>
         </div>
@@ -1060,10 +1063,10 @@
       <!-- ── CONTABILIDAD ── -->
       <div id="view-contabilidad" class="view">
         <div class="subtabs">
-          <button class="subtab active" id="ctt-operacion" onclick="CONTABILIDAD.tab('operacion')"><i class="ti ti-receipt"></i> Operación</button>
-          <button class="subtab" id="ctt-consultas"  onclick="CONTABILIDAD.tab('consultas')"><i class="ti ti-search"></i> Consultas</button>
-          <button class="subtab" id="ctt-reportes"   onclick="CONTABILIDAD.tab('reportes')"><i class="ti ti-chart-bar"></i> Reportes</button>
-          <button class="subtab" id="ctt-bancos"     onclick="CONTABILIDAD.tab('bancos')"><i class="ti ti-building-bank"></i> Bancos</button>
+          <button class="subtab active" id="ctt-operacion" onclick="CONTABILIDAD.tab('operacion')">🧾 Operación</button>
+          <button class="subtab" id="ctt-consultas"  onclick="CONTABILIDAD.tab('consultas')">🔍 Consultas</button>
+          <button class="subtab" id="ctt-reportes"   onclick="CONTABILIDAD.tab('reportes')">📈 Reportes</button>
+          <button class="subtab" id="ctt-bancos"     onclick="CONTABILIDAD.tab('bancos')">🏦 Bancos</button>
         </div>
 
         <!-- OPERACIÓN -->
@@ -1072,14 +1075,14 @@
             💡 <b>Cómo funciona:</b> elige el tipo de documento, agrega las cuentas contables (del catálogo o manual) hasta que el débito y el crédito cuadren, y guarda. <b>Una vez guardado, un documento no se puede editar ni borrar</b> — así se conserva el historial contable íntegro. Si te equivocaste, ve a <b>Consultas</b>, busca el documento y usa <b>Anular</b>: eso registra la reversión automáticamente y puedes volver a crearlo bien.
           </div>
           <div class="doc-type-grid">
-            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="FV" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon"><i class="ti ti-shopping-cart"></i></div><div class="doc-card-name">Factura Venta</div></label>
-            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="FC" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon"><i class="ti ti-shopping-bag"></i></div><div class="doc-card-name">Factura Compra</div></label>
-            <label class="doc-card active" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="CE" checked onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon"><i class="ti ti-cash"></i></div><div class="doc-card-name">Comp. Egreso</div></label>
-            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="RC" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon"><i class="ti ti-coins"></i></div><div class="doc-card-name">Recibo Caja</div></label>
-            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="CC" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon"><i class="ti ti-file-invoice"></i></div><div class="doc-card-name">Cta. Cobro</div></label>
-            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="ND" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon"><i class="ti ti-trending-up"></i></div><div class="doc-card-name">Nota Débito</div></label>
-            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="NCR" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon"><i class="ti ti-trending-down"></i></div><div class="doc-card-name">Nota Crédito</div></label>
-            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="NC" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon"><i class="ti ti-notebook"></i></div><div class="doc-card-name">Nota Contable</div></label>
+            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="FV" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon">🛒</div><div class="doc-card-name">Factura Venta</div></label>
+            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="FC" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon">🛍️</div><div class="doc-card-name">Factura Compra</div></label>
+            <label class="doc-card active" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="CE" checked onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon">💵</div><div class="doc-card-name">Comp. Egreso</div></label>
+            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="RC" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon">🪙</div><div class="doc-card-name">Recibo Caja</div></label>
+            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="CC" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon">🧾</div><div class="doc-card-name">Cta. Cobro</div></label>
+            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="ND" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon">📈</div><div class="doc-card-name">Nota Débito</div></label>
+            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="NCR" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon">📉</div><div class="doc-card-name">Nota Crédito</div></label>
+            <label class="doc-card" onclick="CONTABILIDAD.activarDoc(this)"><input type="radio" name="ct-td" value="NC" onchange="CONTABILIDAD.cambiarContexto()"><div class="doc-card-icon">📓</div><div class="doc-card-name">Nota Contable</div></label>
           </div>
           <div class="field-grid-auto" style="display:grid;grid-template-columns:1fr 2fr 1fr 1fr;gap:12px;margin-bottom:14px;">
             <div class="field-group"><label>Fecha</label><input type="date" id="ct-fecha" onchange="CONTABILIDAD.calcularVencimiento()"></div>
@@ -1225,7 +1228,7 @@
         <!-- BANCOS -->
         <div id="ctv-bancos" class="subview">
           <div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <button class="btn-primary-sm" onclick="CONTABILIDAD.cargarBancos()"><i class="ti ti-refresh"></i> Refrescar</button>
+            <button class="btn-primary-sm" onclick="CONTABILIDAD.cargarBancos()">🔄 Refrescar</button>
             <span style="font-size:13px;color:#64748B;">Marque los movimientos ya conciliados con el extracto bancario.</span>
           </div>
           <div style="font-size:11.5px;color:#888;margin-bottom:12px;">💡 Esta lista muestra los movimientos de cuentas de banco (111...) que aún no se han marcado como conciliados. Al marcar el ✓, comparas ese movimiento con tu extracto bancario real — no cambia ni corrige el asiento contable, solo deja constancia de que ya revisaste que coincide con el banco.</div>
@@ -1292,11 +1295,11 @@
           <select id="alm-filtro-cat" onchange="ALMACEN.filtrar()" style="padding:9px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
             <option value="">Todas las categorías</option>
           </select>
-          <button class="btn-primary-sm" onclick="ALMACEN.abrirModal()"><i class="ti ti-plus"></i> Nueva compra</button>
+          <button class="btn-primary-sm" onclick="ALMACEN.abrirModal()">➕ Nueva compra</button>
         </div>
         <div class="table-scroll">
         <table class="data-tbl">
-          <thead><tr><th style="width:110px">Categoría</th><th>Descripción</th><th style="width:50px">UN</th><th style="width:60px" class="text-right">Cant.</th><th>Proveedor</th><th style="width:110px" class="text-right">P. Compra</th><th>Proyecto</th><th style="width:90px"></th></tr></thead>
+          <thead><tr><th style="width:110px">Categoría</th><th>Descripción</th><th style="width:50px">UN</th><th style="width:60px" class="text-right">Cant.</th><th>Proveedor</th><th style="width:110px" class="text-right">P. Compra</th><th>Proyecto</th><th style="width:180px"></th></tr></thead>
           <tbody id="alm-tbody"></tbody>
         </table>
         </div>
@@ -1327,7 +1330,7 @@
       <!-- ── REPORTES ── -->
       <div id="view-reportes" class="view">
         <div class="module-placeholder">
-          <i class="ti ti-chart-bar" style="color:#993C1D"></i>
+          <span style="font-size:52px;margin-bottom:18px;display:block;">📈</span>
           <h3>Reportes</h3>
           <p>Los reportes NIIF están disponibles dentro del módulo <b>Contabilidad → Reportes</b>.</p>
           <button class="btn-generate" style="width:auto;margin-top:20px;" onclick="navegarA('contabilidad'); setTimeout(()=>CONTABILIDAD.tab('reportes'),200);">
@@ -1340,11 +1343,11 @@
       <div id="view-usuarios" class="view">
         <div class="module-toolbar">
           <span style="font-size:13px;color:var(--text-muted);flex:1;">Cuentas de acceso y rol de cada persona. La restricción real de qué puede hacer cada rol se aplica en el servidor, no solo aquí.</span>
-          <button class="btn-primary-sm" onclick="USUARIOS.abrirModal()"><i class="ti ti-plus"></i> Nuevo usuario</button>
+          <button class="btn-primary-sm" onclick="USUARIOS.abrirModal()">➕ Nuevo usuario</button>
         </div>
         <div class="table-scroll">
         <table class="data-tbl">
-          <thead><tr><th>Usuario</th><th>Nombre</th><th style="width:130px">Rol</th><th style="width:110px">Estado</th><th style="width:90px"></th></tr></thead>
+          <thead><tr><th>Usuario</th><th>Nombre</th><th style="width:130px">Rol</th><th style="width:110px">Estado</th><th style="width:180px"></th></tr></thead>
           <tbody id="usr-tbody"></tbody>
         </table>
         </div>
@@ -1357,7 +1360,7 @@
             <div class="field-group mb10"><label id="usr-password-label">Contraseña</label>
               <div class="password-wrap">
                 <input type="password" id="usr-password" placeholder="Contraseña (mínimo 6 caracteres)">
-                <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+                <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1">👁️</button>
               </div>
               <div id="usr-password-hint" style="font-size:11px;color:#888;margin-top:3px;display:none;">Por seguridad, la contraseña actual no se puede ver — nunca se guarda en texto plano. Escribe aquí solo si quieres reemplazarla por una nueva.</div>
             </div>
@@ -1387,19 +1390,19 @@
           <div class="field-group mb10"><label>Contraseña actual</label>
             <div class="password-wrap">
               <input type="password" id="pwd-actual">
-              <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+              <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1">👁️</button>
             </div>
           </div>
           <div class="field-group mb10"><label>Contraseña nueva</label>
             <div class="password-wrap">
               <input type="password" id="pwd-nueva" placeholder="Mínimo 6 caracteres">
-              <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+              <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1">👁️</button>
             </div>
           </div>
           <div class="field-group mb15"><label>Repetir contraseña nueva</label>
             <div class="password-wrap">
               <input type="password" id="pwd-repetir">
-              <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
+              <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1">👁️</button>
             </div>
           </div>
           <button class="btn-generate" onclick="AUTH.cambiarPasswordPropia(this)">Actualizar contraseña</button>

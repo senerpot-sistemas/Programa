@@ -186,8 +186,8 @@ const USUARIOS = {
         <td><span class="badge ${activo ? 'badge-blue' : 'badge-gray'}">${NOMBRES_ROL[u.ROL] || u.ROL}</span></td>
         <td><span class="badge ${activo ? 'badge-green' : 'badge-red'}">${activo ? 'Activo' : 'Deshabilitado'}</span></td>
         <td>
-          <button class="btn-icon btn-icon-edit" onclick='USUARIOS.abrirModal(${JSON.stringify(u).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
-          <button class="btn-icon btn-icon-del" onclick="USUARIOS.eliminarUI('${u.USUARIO}',this)" title="Eliminar">🗑️</button>
+          <button class="btn-icon btn-icon-edit" onclick='USUARIOS.abrirModal(${JSON.stringify(u).replace(/'/g,"&#39;")})' title="Editar">✏️ Editar</button>
+          <button class="btn-icon btn-icon-del" onclick="USUARIOS.eliminarUI('${u.USUARIO}',this)" title="Eliminar">🗑️ Eliminar</button>
         </td>`;
       tbody.appendChild(tr);
     });

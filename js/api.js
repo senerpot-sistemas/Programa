@@ -232,15 +232,15 @@ const UI = {
   confirmar(msg) { return window.confirm(msg); },
 
   // Botón del ojo en campos de contraseña — el input es el hermano
-  // anterior del botón en el HTML (misma .password-wrap).
+  // anterior del botón en el HTML (misma .password-wrap). Emoji en vez de
+  // la fuente de íconos (ver por qué en contabilidad.js/ofertas.js — la
+  // misma fuente que fallaba en el botón de Anular).
   togglePassword(btn) {
     const input = btn.previousElementSibling;
-    const icon  = btn.querySelector('i');
-    if (!input || !icon) return;
+    if (!input) return;
     const verla = input.type === 'password';
     input.type = verla ? 'text' : 'password';
-    icon.classList.toggle('ti-eye', !verla);
-    icon.classList.toggle('ti-eye-off', verla);
+    btn.textContent = verla ? '🙈' : '👁️';
   },
 
   moneda(n) {

@@ -209,8 +209,8 @@ const OFERTAS = {
         <td>${c.ATENCION_A || c.ATENCION || '-'}</td>
         <td>${c.TELEFONO || '-'}</td>
         <td>
-          <button class="btn-icon btn-icon-edit" onclick='OFERTAS.editarClienteUI(${JSON.stringify(c).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
-          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarClienteUI(${JSON.stringify(c).replace(/'/g,"&#39;")},this)' title="Eliminar">🗑️</button>
+          <button class="btn-icon btn-icon-edit" onclick='OFERTAS.editarClienteUI(${JSON.stringify(c).replace(/'/g,"&#39;")})' title="Editar">✏️ Editar</button>
+          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarClienteUI(${JSON.stringify(c).replace(/'/g,"&#39;")},this)' title="Eliminar">🗑️ Eliminar</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -227,8 +227,8 @@ const OFERTAS = {
         <td>${i.UNIDAD || 'UN'}</td>
         <td>${UI.moneda(i.PRECIO_VENTA_LISTA || i.PRECIO || 0)}</td>
         <td>
-          <button class="btn-icon btn-icon-edit" onclick='OFERTAS.editarServicioUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
-          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarServicioUI(${JSON.stringify(i).replace(/'/g,"&#39;")},this)' title="Eliminar">🗑️</button>
+          <button class="btn-icon btn-icon-edit" onclick='OFERTAS.editarServicioUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Editar">✏️ Editar</button>
+          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarServicioUI(${JSON.stringify(i).replace(/'/g,"&#39;")},this)' title="Eliminar">🗑️ Eliminar</button>
         </td>`;
       tbody.appendChild(tr);
     });
