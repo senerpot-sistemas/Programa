@@ -812,12 +812,13 @@ const OFERTAS = {
   // ──────────────────────────────────────────
   //  GENERAR OFERTA
   // ──────────────────────────────────────────
-  async generarDocumento() {
+  async generarDocumento(btn) {
+    if (this._generandoDocumento) return;
     const datos = this.recuperarFormulario();
     if (!datos) { UI.toast('Seleccione un cliente', 'warn'); return; }
     if (!datos.consecutivo) { UI.toast('Ingrese el N° de oferta', 'warn'); return; }
     datos.total = document.getElementById('of-total').textContent;
-    const btn = document.querySelector('.btn-generate');
+    this._generandoDocumento = true;
     UI.spin(btn, true);
     try {
       const url = await API.call('procesarOferta', datos);
@@ -825,7 +826,7 @@ const OFERTAS = {
       await this.recargar();
       UI.toast('Oferta generada exitosamente', 'ok');
     } catch(e) { UI.toast('Error: ' + e.message, 'err'); }
-    finally { UI.spin(btn, false); }
+    finally { this._generandoDocumento = false; UI.spin(btn, false); }
   },
 
   // ──────────────────────────────────────────
