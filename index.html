@@ -757,7 +757,7 @@
               Alcance y Objeto
               <div style="display:flex;gap:6px;">
                 <select id="of-sel-kit-textos" onchange="OFERTAS.aplicarKit('TEXTOS',this.value)" class="mem-select"><option value="">Kit de textos...</option></select>
-                <button class="btn-save-kit" onclick="OFERTAS.guardarKitUI('TEXTOS')">Guardar</button>
+                <button class="btn-save-kit" onclick="OFERTAS.guardarKitUI('TEXTOS',this)">Guardar</button>
               </div>
             </div>
             <div class="field-group" style="margin-bottom:10px;"><label>Objeto de la oferta</label><input type="text" id="of-objeto"></div>
@@ -772,7 +772,7 @@
               Tabla Económica
               <div style="display:flex;gap:6px;">
                 <select id="of-sel-kit-items" onchange="OFERTAS.aplicarKit('ITEMS',this.value)" class="mem-select"><option value="">Kit de precios...</option></select>
-                <button class="btn-save-kit" onclick="OFERTAS.guardarKitUI('ITEMS')">Guardar</button>
+                <button class="btn-save-kit" onclick="OFERTAS.guardarKitUI('ITEMS',this)">Guardar</button>
               </div>
             </div>
             <div class="cat-add-row">
@@ -828,7 +828,7 @@
             <div class="field-group" style="margin-top:10px;"><label>Garantía técnica</label><textarea id="of-cond-garantia" rows="2">Garantía integral de doce (12) meses.</textarea></div>
 
             <div class="action-row" style="margin-top:28px;">
-              <button class="btn-draft" onclick="OFERTAS.guardarBorrador()">Guardar borrador</button>
+              <button class="btn-draft" onclick="OFERTAS.guardarBorrador(this)">Guardar borrador</button>
               <button class="btn-generate" onclick="OFERTAS.generarDocumento(this)">Generar oferta (Doc)</button>
             </div>
           </div>
@@ -876,7 +876,7 @@
                 <option value="BORRADOR">Borrador</option>
               </select>
             </div>
-            <button class="btn-generate" onclick="OFERTAS.guardarOfertaManualForm()">Guardar</button>
+            <button class="btn-generate" onclick="OFERTAS.guardarOfertaManualForm(this)">Guardar</button>
           </div>
         </div>
 
@@ -997,7 +997,7 @@
             <input type="hidden" id="pry-detalle-id">
             <div id="pry-detalle"></div>
             <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);text-align:right;">
-              <button class="btn-danger-sm" id="pry-btn-eliminar" onclick="PROYECTOS.eliminarProyecto()" style="display:none;"><i class="ti ti-trash"></i> Eliminar proyecto</button>
+              <button class="btn-danger-sm" id="pry-btn-eliminar" onclick="PROYECTOS.eliminarProyecto(this)" style="display:none;"><i class="ti ti-trash"></i> Eliminar proyecto</button>
             </div>
           </div>
         </div>
@@ -1348,7 +1348,7 @@
               <button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1"><i class="ti ti-eye"></i></button>
             </div>
           </div>
-          <button class="btn-generate" onclick="AUTH.cambiarPasswordPropia()">Actualizar contraseña</button>
+          <button class="btn-generate" onclick="AUTH.cambiarPasswordPropia(this)">Actualizar contraseña</button>
         </div>
       </div>
 

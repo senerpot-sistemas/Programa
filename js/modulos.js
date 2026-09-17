@@ -59,8 +59,8 @@ const PROYECTOS = {
         <td><span class="badge ${badgeClass}">${p.ESTADO || '-'}</span></td>
         <td>${p.REF_FACTURA_SIGO || '<span style="color:#ccc">—</span>'}</td>
         <td style="text-align:center;white-space:nowrap;">
-          <button class="btn-icon btn-icon-edit" onclick="PROYECTOS.abrirDetalle('${p.ID_PROYECTO}')" title="Ver detalle">👁️</button>
-          <button class="btn-icon" style="color:#639922" onclick="PROYECTOS.cambiarEstado('${p.ID_PROYECTO}')" title="Actualizar estado">🔄</button>
+          <button class="btn-icon btn-icon-edit" onclick="PROYECTOS.abrirDetalle('${p.ID_PROYECTO}',this)" title="Ver detalle">👁️</button>
+          <button class="btn-icon" style="color:#639922" onclick="PROYECTOS.cambiarEstado('${p.ID_PROYECTO}',this)" title="Actualizar estado">🔄</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -174,11 +174,14 @@ const PROYECTOS = {
   },
 
   // ── DETALLE / CAMBIAR ESTADO ─────────────────
-  async abrirDetalle(id) {
+  async abrirDetalle(id, btn) {
+    if (this._abriendoDetalle) return;
     const p = (this.DB.proyectos || []).find(x => x.ID_PROYECTO === id);
     if (!p) return;
     const panel = document.getElementById('pry-detalle');
     if (!panel) return;
+    this._abriendoDetalle = true;
+    if (btn) UI.spinIcon(btn, true);
     // Objeto de la oferta vinculada — se busca en vivo aquí (no depende de
     // que el proyecto ya tenga NOTAS con el objeto guardado), así que esto
     // también sirve para proyectos creados antes de este cambio, donde el
@@ -212,7 +215,7 @@ const PROYECTOS = {
           <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Responsable</div>
           <div style="display:flex;gap:6px;">
             <input type="text" id="pry-responsable-input" value="${p.TECNICO||''}" placeholder="Sin asignar" style="flex:1;min-width:0;padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;" onkeydown="if(event.key==='Enter')PROYECTOS.guardarResponsable('${id}')">
-            <button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.guardarResponsable('${id}')" title="Guardar responsable">✓</button>
+            <button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.guardarResponsable('${id}',this)" title="Guardar responsable">✓</button>
           </div>
         </div>
         <div><div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Inicio</div><div>${p.FECHA_INICIO||'—'}</div></div>
@@ -222,7 +225,7 @@ const PROYECTOS = {
       <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Presupuesto del proyecto</div>
-          ${p.ID_OFERTA ? `<button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.copiarDeOferta('${id}')" title="Copiar ítems de la oferta ${p.ID_OFERTA}">📋</button>` : ''}
+          ${p.ID_OFERTA ? `<button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.copiarDeOferta('${id}',this)" title="Copiar ítems de la oferta ${p.ID_OFERTA}">📋</button>` : ''}
         </div>
         <div id="pry-presupuesto-lista" style="font-size:12.5px;">Cargando…</div>
         <div class="pry-pres-form" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
@@ -247,7 +250,7 @@ const PROYECTOS = {
         <div id="pry-comentarios-lista" style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">Cargando…</div>
         <div style="display:flex;gap:6px;">
           <input type="text" id="pry-comentario-nuevo" placeholder="Ej: se visitó el sitio, falta el material X..." style="flex:1;padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;" onkeydown="if(event.key==='Enter')PROYECTOS.agregarComentario('${id}')">
-          <button class="btn-primary-sm" onclick="PROYECTOS.agregarComentario('${id}')">Agregar</button>
+          <button class="btn-primary-sm" onclick="PROYECTOS.agregarComentario('${id}',this)">Agregar</button>
         </div>
       </div>`;
     document.getElementById('pry-modal-detalle')?.classList.add('open');
@@ -261,6 +264,8 @@ const PROYECTOS = {
     const btnEliminar = document.getElementById('pry-btn-eliminar');
     if (btnEliminar) btnEliminar.style.display = (typeof AUTH !== 'undefined' && AUTH.rol === 'ADMINISTRADOR') ? '' : 'none';
     this.cargarComentarios(id);
+    this._abriendoDetalle = false;
+    if (btn) UI.spinIcon(btn, false);
   },
 
   // Costo real del proyecto — suma en memoria de las compras del módulo
@@ -371,7 +376,7 @@ const PROYECTOS = {
           <td>${l.DESCRIPCION||''}</td>
           <td style="text-align:right;">${l.CANTIDAD||1} ${l.UNIDAD||'UN'}</td>
           <td style="text-align:right;">${UI.moneda((parseFloat(l.COSTO_UNITARIO)||0) * (parseFloat(l.CANTIDAD)||1))}</td>
-          <td style="text-align:center;"><button class="btn-icon btn-icon-del" onclick="PROYECTOS.eliminarLineaPresupuestoUI('${l.ID}','${id}')" title="Eliminar">🗑️</button></td>
+          <td style="text-align:center;"><button class="btn-icon btn-icon-del" onclick="PROYECTOS.eliminarLineaPresupuestoUI('${l.ID}','${id}',this)" title="Eliminar">🗑️</button></td>
         </tr>`).join('');
       // Las líneas "sin guardar" viven solo en memoria (this._presupuestoPendiente)
       // hasta que se aprieta "Guardar presupuesto" — se ven marcadas en naranja
@@ -451,11 +456,12 @@ const PROYECTOS = {
     finally { this._guardandoLote = false; UI.spin(btn, false); }
   },
 
-  async eliminarLineaPresupuestoUI(lineaId, id) {
+  async eliminarLineaPresupuestoUI(lineaId, id, btn) {
     if (this._eliminandoLineaPresupuesto) return;
     if (!UI.confirmar('¿Eliminar esta línea del presupuesto?')) return;
     if (this._eliminandoLineaPresupuesto) return;
     this._eliminandoLineaPresupuesto = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('eliminarLineaPresupuesto', { id: lineaId });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -463,24 +469,25 @@ const PROYECTOS = {
       this.renderPresupuesto(id);
       UI.toast('Línea eliminada', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._eliminandoLineaPresupuesto = false; }
+    finally { this._eliminandoLineaPresupuesto = false; if (btn) UI.spinIcon(btn, false); }
   },
 
   // El costo unitario queda en 0 (ver copiarItemsOfertaAPresupuesto en
   // Proyectos.gs) — el precio de la oferta es lo que se le cobra al
   // cliente, no lo que cuesta comprar, así que hay que completarlo a mano.
-  async copiarDeOferta(id) {
+  async copiarDeOferta(id, btn) {
     if (this._copiandoDeOferta) return;
     if (!UI.confirmar('¿Copiar los ítems de la oferta al presupuesto? Las cantidades se copian, el costo queda en 0 para que lo completes.')) return;
     if (this._copiandoDeOferta) return;
     this._copiandoDeOferta = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('copiarItemsOfertaAPresupuesto', { idProyecto: id });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
       await this.cargarPresupuesto(id);
       UI.toast(res.cantidad + ' ítems copiados al presupuesto', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._copiandoDeOferta = false; }
+    finally { this._copiandoDeOferta = false; if (btn) UI.spinIcon(btn, false); }
   },
 
   async cargarComentarios(id) {
@@ -505,26 +512,27 @@ const PROYECTOS = {
   // El autor del comentario lo pone el servidor a partir de la sesión
   // (ver params._sesion en Api.gs) — nunca se envía "quién soy" desde
   // aquí, para que la bitácora no se pueda falsificar.
-  async agregarComentario(id) {
+  async agregarComentario(id, btn) {
     if (this._agregandoComentario) return;
     const input = document.getElementById('pry-comentario-nuevo');
     const comentario = input?.value?.trim();
     if (!comentario) return;
     this._agregandoComentario = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('agregarComentarioProyecto', { idProyecto: id, comentario });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
       input.value = '';
       this.cargarComentarios(id);
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._agregandoComentario = false; }
+    finally { this._agregandoComentario = false; if (btn) UI.spinIcon(btn, false); }
   },
 
   // Reutiliza actualizarEstadoProyecto mandando el mismo estado actual —
   // el backend ya acepta "tecnico" junto con el cambio de estado (ver
   // Proyectos.gs), así que no hace falta un endpoint nuevo solo para
   // esto.
-  async guardarResponsable(id) {
+  async guardarResponsable(id, btn) {
     if (this._guardandoResponsable) return;
     const p = (this.DB.proyectos || []).find(x => x.ID_PROYECTO === id);
     if (!p) return;
@@ -532,6 +540,7 @@ const PROYECTOS = {
     const tecnico = input?.value?.trim();
     if (!tecnico) { UI.toast('Escribe un nombre para el responsable', 'warn'); return; }
     this._guardandoResponsable = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('actualizarEstadoProyecto', { id, estado: p.ESTADO, tecnico });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -539,10 +548,10 @@ const PROYECTOS = {
       this.renderTabla(document.getElementById('pry-filtro-estado')?.value || '');
       UI.toast('Responsable asignado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._guardandoResponsable = false; }
+    finally { this._guardandoResponsable = false; if (btn) UI.spinIcon(btn, false); }
   },
 
-  async cambiarEstado(id) {
+  async cambiarEstado(id, btn) {
     if (this._cambiandoEstadoProyecto) return;
     const p = (this.DB.proyectos || []).find(x => x.ID_PROYECTO === id);
     if (!p) return;
@@ -554,6 +563,7 @@ const PROYECTOS = {
     const nuevoEstado    = this.ESTADOS[idx];
     const refFacturaSigo = ['FACTURADO','COBRADO'].includes(nuevoEstado) ? (prompt('N° Factura SIGO (opcional):') || '') : '';
     this._cambiandoEstadoProyecto = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('actualizarEstadoProyecto', { id, estado: nuevoEstado, refFacturaSigo });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -561,16 +571,17 @@ const PROYECTOS = {
       this.renderTabla(document.getElementById('pry-filtro-estado')?.value || '');
       UI.toast('Estado actualizado: ' + nuevoEstado, 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._cambiandoEstadoProyecto = false; }
+    finally { this._cambiandoEstadoProyecto = false; if (btn) UI.spinIcon(btn, false); }
   },
 
-  async eliminarProyecto() {
+  async eliminarProyecto(btn) {
     if (this._eliminandoProyecto) return;
     const id = document.getElementById('pry-detalle-id')?.value;
     if (!id) return;
     if (!UI.confirmar(`¿Eliminar el proyecto "${id}"? Esta acción no se puede deshacer.`)) return;
     if (this._eliminandoProyecto) return;
     this._eliminandoProyecto = true;
+    if (btn) UI.spin(btn, true);
     try {
       const res = await API.call('eliminarProyecto', { idProyecto: id });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -579,7 +590,7 @@ const PROYECTOS = {
       this.cerrarModal('pry-modal-detalle');
       UI.toast('Proyecto eliminado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._eliminandoProyecto = false; }
+    finally { this._eliminandoProyecto = false; if (btn) UI.spin(btn, false); }
   },
 
   cerrarModal(id) {
@@ -649,7 +660,7 @@ const ALMACEN = {
         <td style="font-size:12px;">${this.nombreProyecto(i.ID_PROYECTO)}</td>
         <td style="text-align:center;white-space:nowrap;">
           <button class="btn-icon btn-icon-edit" onclick='ALMACEN.editarUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
-          <button class="btn-icon btn-icon-del" onclick='ALMACEN.eliminar(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Eliminar">🗑️</button>
+          <button class="btn-icon btn-icon-del" onclick='ALMACEN.eliminar(${JSON.stringify(i).replace(/'/g,"&#39;")},this)' title="Eliminar">🗑️</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -749,18 +760,19 @@ const ALMACEN = {
     finally { this._guardando = false; UI.spin(btn, false); }
   },
 
-  async eliminar(i) {
+  async eliminar(i, btn) {
     if (this._eliminando) return;
     if (!UI.confirmar('¿Eliminar este ítem?')) return;
     if (this._eliminando) return;
     this._eliminando = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('eliminarItemAlmacen', { rowIndex: i._rowIndex, id: i.ID_ITEM });
       Store.remove(this.DB, res.rowIndex);
       this.renderTabla(document.getElementById('alm-filtro-cat')?.value || '');
       UI.toast('Ítem eliminado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._eliminando = false; }
+    finally { this._eliminando = false; if (btn) UI.spinIcon(btn, false); }
   },
 
   filtrarBusqueda(txt) {

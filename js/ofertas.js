@@ -156,12 +156,13 @@ const OFERTAS = {
   // ──────────────────────────────────────────
   //  DECISIÓN DEL CLIENTE (Aprobar / Rechazar)
   // ──────────────────────────────────────────
-  async actualizarEstadoOfertaUI(id, nuevoEstado) {
+  async actualizarEstadoOfertaUI(id, nuevoEstado, btn) {
     if (this._actualizandoEstadoOferta) return;
     const verbo = nuevoEstado === 'APROBADA' ? 'aprobar' : 'rechazar';
     if (!UI.confirmar(`¿Marcar la oferta ${id} como ${verbo === 'aprobar' ? 'APROBADA' : 'RECHAZADA'}?`)) return;
     if (this._actualizandoEstadoOferta) return;
     this._actualizandoEstadoOferta = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('actualizarEstadoOferta', { id, estado: nuevoEstado });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -170,7 +171,7 @@ const OFERTAS = {
       this.renderDashboardOfertas();
       UI.toast('Oferta ' + id + ' marcada como ' + nuevoEstado.toLowerCase(), 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._actualizandoEstadoOferta = false; }
+    finally { this._actualizandoEstadoOferta = false; if (btn) UI.spinIcon(btn, false); }
   },
 
   // ──────────────────────────────────────────
@@ -209,7 +210,7 @@ const OFERTAS = {
         <td>${c.TELEFONO || '-'}</td>
         <td>
           <button class="btn-icon btn-icon-edit" onclick='OFERTAS.editarClienteUI(${JSON.stringify(c).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
-          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarClienteUI(${JSON.stringify(c).replace(/'/g,"&#39;")})' title="Eliminar">🗑️</button>
+          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarClienteUI(${JSON.stringify(c).replace(/'/g,"&#39;")},this)' title="Eliminar">🗑️</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -227,7 +228,7 @@ const OFERTAS = {
         <td>${UI.moneda(i.PRECIO_VENTA_LISTA || i.PRECIO || 0)}</td>
         <td>
           <button class="btn-icon btn-icon-edit" onclick='OFERTAS.editarServicioUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
-          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarServicioUI(${JSON.stringify(i).replace(/'/g,"&#39;")})' title="Eliminar">🗑️</button>
+          <button class="btn-icon btn-icon-del"  onclick='OFERTAS.eliminarServicioUI(${JSON.stringify(i).replace(/'/g,"&#39;")},this)' title="Eliminar">🗑️</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -296,8 +297,8 @@ const OFERTAS = {
 
         const tr = document.createElement('tr');
         const botonesDecision = h.ESTADO === 'GENERADA' ? `
-            <button class="btn-icon" style="color:#009E60" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','APROBADA')" title="Aprobar">✓</button>
-            <button class="btn-icon" style="color:#D32F2F" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','RECHAZADA')" title="Rechazar">✕</button>` : '';
+            <button class="btn-icon" style="color:#009E60" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','APROBADA',this)" title="Aprobar">✓</button>
+            <button class="btn-icon" style="color:#D32F2F" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','RECHAZADA',this)" title="Rechazar">✕</button>` : '';
         // "Ver": prioriza el documento real generado (URL_DOC); si no hay
         // (ofertas de antes de este cambio, o históricas cargadas a mano),
         // cae al resumen leído de DATA_JSON; si tampoco hay eso, no muestra
@@ -306,7 +307,7 @@ const OFERTAS = {
         if (h.URL_DOC) {
           botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="window.open('${h.URL_DOC}','_blank')" title="Ver documento">📄</button>`;
         } else if (h.TIENE_DATA_JSON || h.DATA_JSON) {
-          botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="OFERTAS.verResumenOferta('${h.ID_OFERTA}')" title="Ver resumen">👁️</button>`;
+          botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="OFERTAS.verResumenOferta('${h.ID_OFERTA}',this)" title="Ver resumen">👁️</button>`;
         }
         tr.innerHTML = `
           <td>${h.ID_OFERTA}</td>
@@ -316,9 +317,9 @@ const OFERTAS = {
           <td>${h.TOTAL}</td>
           <td><span class="badge ${badgeClass[h.ESTADO] || 'badge-gray'}">${h.ESTADO}</span></td>
           <td style="white-space:nowrap;">${botonVer}
-            <button class="btn-icon btn-icon-edit" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CARGAR')" title="Editar">✏️</button>
-            <button class="btn-icon" style="color:#1976D2" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CLONAR')" title="Clonar">📋</button>${botonesDecision}
-            <button class="btn-icon btn-icon-del" onclick="OFERTAS.eliminarOfertaUI('${h.ID_OFERTA}')" title="Eliminar">🗑️</button>
+            <button class="btn-icon btn-icon-edit" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CARGAR',this)" title="Editar">✏️</button>
+            <button class="btn-icon" style="color:#1976D2" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CLONAR',this)" title="Clonar">📋</button>${botonesDecision}
+            <button class="btn-icon btn-icon-del" onclick="OFERTAS.eliminarOfertaUI('${h.ID_OFERTA}',this)" title="Eliminar">🗑️</button>
           </td>`;
         tbody.appendChild(tr);
       });
@@ -350,10 +351,15 @@ const OFERTAS = {
   // (generadas antes de este cambio) pero sí tienen DATA_JSON — evita
   // mandar a alguien que solo quiere revisar al formulario completo de
   // edición.
-  async verResumenOferta(id) {
+  async verResumenOferta(id, btn) {
+    if (this._viendoResumenOferta) return;
     const h = (this.DB.historial || []).find(x => String(x.ID_OFERTA) === String(id));
     if (!h) { UI.toast('Oferta no encontrada', 'err'); return; }
-    const dataJson = await this.resolverDataJson(h);
+    this._viendoResumenOferta = true;
+    if (btn) UI.spinIcon(btn, true);
+    let dataJson;
+    try { dataJson = await this.resolverDataJson(h); }
+    finally { this._viendoResumenOferta = false; if (btn) UI.spinIcon(btn, false); }
     if (!dataJson) return;
     let data;
     try { data = JSON.parse(dataJson); } catch(e) { UI.toast('No se pudo leer el detalle de esta oferta', 'err'); return; }
@@ -382,11 +388,12 @@ const OFERTAS = {
   // Borra un registro de historial por error de escritura/duplicado, para
   // que no siga inflando los conteos del dashboard. Búsqueda por ID en el
   // servidor (no por posición) — ver eliminarOferta en Oferta.gs.
-  async eliminarOfertaUI(id) {
+  async eliminarOfertaUI(id, btn) {
     if (this._eliminandoOferta) return;
     if (!UI.confirmar(`¿Eliminar la oferta ${id}? Esta acción no se puede deshacer.`)) return;
     if (this._eliminandoOferta) return;
     this._eliminandoOferta = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('eliminarOferta', { id });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -395,7 +402,7 @@ const OFERTAS = {
       this.renderDashboardOfertas();
       UI.toast('Oferta ' + id + ' eliminada', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._eliminandoOferta = false; }
+    finally { this._eliminandoOferta = false; if (btn) UI.spinIcon(btn, false); }
   },
 
   // ──────────────────────────────────────────
@@ -419,7 +426,7 @@ const OFERTAS = {
     document.getElementById('of-modal-hist')?.classList.add('open');
   },
 
-  async guardarOfertaManualForm() {
+  async guardarOfertaManualForm(btn) {
     if (this._guardandoOfertaManual) return;
     const idOferta = document.getElementById('of-h-id')?.value?.trim();
     const cliente  = document.getElementById('of-h-cliente')?.value?.trim();
@@ -431,6 +438,7 @@ const OFERTAS = {
     const estado   = document.getElementById('of-h-estado')?.value || 'GENERADA';
 
     this._guardandoOfertaManual = true;
+    if (btn) UI.spin(btn, true);
     try {
       const res = await API.call('agregarOfertaManual', {
         idOferta, cliente, fecha, estado, total: UI.moneda(total)
@@ -442,7 +450,7 @@ const OFERTAS = {
       this.cerrarModal('of-modal-hist');
       UI.toast('Oferta histórica agregada', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._guardandoOfertaManual = false; }
+    finally { this._guardandoOfertaManual = false; if (btn) UI.spin(btn, false); }
   },
 
   renderSelectKits() {
@@ -679,7 +687,7 @@ const OFERTAS = {
     }
   },
 
-  async guardarKitUI(tipo) {
+  async guardarKitUI(tipo, btn) {
     if (this._guardandoKit) return;
     let dataToSave;
     if (tipo === 'TEXTOS') {
@@ -697,13 +705,14 @@ const OFERTAS = {
     const nombre = prompt('Nombre para este kit:');
     if (!nombre) return;
     this._guardandoKit = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('guardarKit', { nombre, tipo, dataJson: JSON.stringify(dataToSave) });
       Store.upsert(this.DB.kits, res.data);
       this.renderSelectKits();
       UI.toast('Kit guardado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._guardandoKit = false; }
+    finally { this._guardandoKit = false; if (btn) UI.spinIcon(btn, false); }
   },
 
   // ──────────────────────────────────────────
@@ -788,13 +797,14 @@ const OFERTAS = {
   // ──────────────────────────────────────────
   //  GUARDAR BORRADOR
   // ──────────────────────────────────────────
-  async guardarBorrador() {
+  async guardarBorrador(btn) {
     if (this._guardandoBorrador) return;
     const datos = this.recuperarFormulario();
     if (!datos) { UI.toast('Seleccione un cliente', 'warn'); return; }
     const consec = document.getElementById('of-consecutivo').value.trim();
     if (!consec) { UI.toast('Ingrese el N° de oferta', 'warn'); return; }
     this._guardandoBorrador = true;
+    if (btn) UI.spin(btn, true);
     try {
       const res = await API.call('guardarHistorial', {
         idOferta: consec, clienteNombre: datos.cliente.EMPRESA_NOMBRE || datos.cliente.EMPRESA,
@@ -806,7 +816,7 @@ const OFERTAS = {
       UI.toast('Borrador guardado', 'ok');
       this.tab('historial');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._guardandoBorrador = false; }
+    finally { this._guardandoBorrador = false; if (btn) UI.spin(btn, false); }
   },
 
   // ──────────────────────────────────────────
@@ -832,17 +842,22 @@ const OFERTAS = {
   // ──────────────────────────────────────────
   //  CARGAR / CLONAR DESDE HISTORIAL
   // ──────────────────────────────────────────
-  async gestionarOferta(id, accion) {
+  async gestionarOferta(id, accion, btn) {
+    if (this._gestionandoOferta) return;
     const oferta = this.DB.historial.find(h => String(h.ID_OFERTA) === String(id));
     if (!oferta) { UI.toast('Oferta no encontrada', 'err'); return; }
-    const dataJson = await this.resolverDataJson(oferta);
-    if (!dataJson) return;
-    if (accion === 'CARGAR') this.cargarDesdeHistorial({ ...oferta, DATA_JSON: dataJson });
-    else if (accion === 'CLONAR') {
-      const tipoOriginal = this.tipoDeOferta(oferta.ID_OFERTA); // se pierde en cuanto se vacíe ID_OFERTA
-      const clon = { ...oferta, DATA_JSON: dataJson, ID_OFERTA: '' };
-      this.cargarDesdeHistorial(clon, true, tipoOriginal);
-    }
+    this._gestionandoOferta = true;
+    if (btn) UI.spinIcon(btn, true);
+    try {
+      const dataJson = await this.resolverDataJson(oferta);
+      if (!dataJson) return;
+      if (accion === 'CARGAR') this.cargarDesdeHistorial({ ...oferta, DATA_JSON: dataJson });
+      else if (accion === 'CLONAR') {
+        const tipoOriginal = this.tipoDeOferta(oferta.ID_OFERTA); // se pierde en cuanto se vacíe ID_OFERTA
+        const clon = { ...oferta, DATA_JSON: dataJson, ID_OFERTA: '' };
+        this.cargarDesdeHistorial(clon, true, tipoOriginal);
+      }
+    } finally { this._gestionandoOferta = false; if (btn) UI.spinIcon(btn, false); }
   },
 
   cargarDesdeHistorial(h, esClon = false, tipoOriginal = null) {
@@ -950,18 +965,19 @@ const OFERTAS = {
     finally { this._guardandoCliente = false; if (btn) UI.spin(btn, false); }
   },
 
-  async eliminarClienteUI(c) {
+  async eliminarClienteUI(c, btn) {
     if (this._eliminandoCliente) return;
     if (!UI.confirmar('¿Eliminar este cliente?')) return;
     if (this._eliminandoCliente) return;
     this._eliminandoCliente = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('eliminarCliente', { rowIndex: c._rowIndex, id: c.ID_CLIENTE });
       Store.remove(this.DB.clientes, res.rowIndex);
       this.renderSelectClientes(); this.renderTablaClientes();
       UI.toast('Cliente eliminado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._eliminandoCliente = false; }
+    finally { this._eliminandoCliente = false; if (btn) UI.spinIcon(btn, false); }
   },
 
   // ──────────────────────────────────────────
@@ -1012,18 +1028,19 @@ const OFERTAS = {
     finally { this._guardandoServicio = false; if (btn) UI.spin(btn, false); }
   },
 
-  async eliminarServicioUI(i) {
+  async eliminarServicioUI(i, btn) {
     if (this._eliminandoServicio) return;
     if (!UI.confirmar('¿Eliminar este servicio?')) return;
     if (this._eliminandoServicio) return;
     this._eliminandoServicio = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('eliminarServicio', { rowIndex: i._rowIndex, id: i.ID_SERVICIO });
       Store.remove(this.DB.items, res.rowIndex);
       this.renderTablaServicios(); this.poblarCatalogo();
       UI.toast('Servicio eliminado', 'ok');
     } catch(e) { UI.toast(e.message, 'err'); }
-    finally { this._eliminandoServicio = false; }
+    finally { this._eliminandoServicio = false; if (btn) UI.spinIcon(btn, false); }
   },
 
   async migrarHistorial() {

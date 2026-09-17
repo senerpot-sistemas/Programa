@@ -124,7 +124,7 @@ const AUTH = {
     this.rol = ''; this.nombre = ''; this.usuario = '';
   },
 
-  async cambiarPasswordPropia() {
+  async cambiarPasswordPropia(btn) {
     if (this._cambiandoPassword) return;
     const actual  = document.getElementById('pwd-actual')?.value;
     const nueva   = document.getElementById('pwd-nueva')?.value;
@@ -132,6 +132,7 @@ const AUTH = {
     if (!nueva || nueva.length < 6) { UI.toast('La contraseña nueva debe tener al menos 6 caracteres', 'warn'); return; }
     if (nueva !== repetir) { UI.toast('Las contraseñas nuevas no coinciden', 'warn'); return; }
     this._cambiandoPassword = true;
+    if (btn) UI.spin(btn, true);
     // Verificamos la contraseña actual re-logueando contra ella antes de
     // cambiarla — así no se puede cambiar la clave desde una sesión
     // abierta que alguien dejó sin cerrar en un equipo compartido.
@@ -144,7 +145,7 @@ const AUTH = {
       this.cerrarModal('modal-cambiar-password');
       ['pwd-actual','pwd-nueva','pwd-repetir'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     } catch (e) { UI.toast(e.message, 'err'); }
-    finally { this._cambiandoPassword = false; }
+    finally { this._cambiandoPassword = false; if (btn) UI.spin(btn, false); }
   },
 
   abrirModalCambiarPassword() {
@@ -186,7 +187,7 @@ const USUARIOS = {
         <td><span class="badge ${activo ? 'badge-green' : 'badge-red'}">${activo ? 'Activo' : 'Deshabilitado'}</span></td>
         <td>
           <button class="btn-icon btn-icon-edit" onclick='USUARIOS.abrirModal(${JSON.stringify(u).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
-          <button class="btn-icon btn-icon-del" onclick="USUARIOS.eliminarUI('${u.USUARIO}')" title="Eliminar">🗑️</button>
+          <button class="btn-icon btn-icon-del" onclick="USUARIOS.eliminarUI('${u.USUARIO}',this)" title="Eliminar">🗑️</button>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -254,12 +255,13 @@ const USUARIOS = {
 
   cerrarModal() { document.getElementById('usr-modal')?.classList.remove('open'); },
 
-  async eliminarUI(usuario) {
+  async eliminarUI(usuario, btn) {
     if (this._eliminandoUsuario) return;
     if (usuario === AUTH.usuario) { UI.toast('No puedes eliminar tu propio usuario mientras tienes la sesión abierta', 'warn'); return; }
     if (!UI.confirmar(`¿Eliminar el usuario "${usuario}"? Esta acción no se puede deshacer.`)) return;
     if (this._eliminandoUsuario) return;
     this._eliminandoUsuario = true;
+    if (btn) UI.spinIcon(btn, true);
     try {
       const res = await API.call('eliminarUsuario', { usuario });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
@@ -267,6 +269,6 @@ const USUARIOS = {
       this.render();
       UI.toast('Usuario eliminado', 'ok');
     } catch (e) { UI.toast(e.message, 'err'); }
-    finally { this._eliminandoUsuario = false; }
+    finally { this._eliminandoUsuario = false; if (btn) UI.spinIcon(btn, false); }
   }
 };

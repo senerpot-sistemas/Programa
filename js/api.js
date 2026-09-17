@@ -218,6 +218,17 @@ const UI = {
     else    { btn.disabled = false; btn.innerHTML = btn._txt || 'Listo'; }
   },
 
+  // Como spin(), pero para botones de solo ícono en columnas angostas de
+  // tabla (filas de Ofertas/Proyectos/Clientes/etc.) — no agrega texto
+  // "Procesando...", solo cambia el ícono a un reloj de arena, para no
+  // volver a recortar esas columnas de ancho fijo (mismo bug que ya se
+  // arregló antes en esta app con las columnas de acción).
+  spinIcon(btn, on) {
+    if (!btn) return;
+    if (on) { btn._txt = btn.innerHTML; btn.disabled = true; btn.innerHTML = '⏳'; }
+    else    { btn.disabled = false; btn.innerHTML = btn._txt || ''; }
+  },
+
   confirmar(msg) { return window.confirm(msg); },
 
   // Botón del ojo en campos de contraseña — el input es el hermano
