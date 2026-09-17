@@ -296,19 +296,10 @@ const OFERTAS = {
         if (numActual !== null) anterior = numActual;
 
         const tr = document.createElement('tr');
-        const botonesDecision = h.ESTADO === 'GENERADA' ? `
-            <button class="btn-icon" style="color:#009E60" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','APROBADA',this)" title="Aprobar">✓</button>
-            <button class="btn-icon" style="color:#D32F2F" onclick="OFERTAS.actualizarEstadoOfertaUI('${h.ID_OFERTA}','RECHAZADA',this)" title="Rechazar">✕</button>` : '';
-        // "Ver": prioriza el documento real generado (URL_DOC); si no hay
-        // (ofertas de antes de este cambio, o históricas cargadas a mano),
-        // cae al resumen leído de DATA_JSON; si tampoco hay eso, no muestra
-        // nada — no hay ningún detalle guardado que mostrar.
-        let botonVer = '';
-        if (h.URL_DOC) {
-          botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="window.open('${h.URL_DOC}','_blank')" title="Ver documento">📄</button>`;
-        } else if (h.TIENE_DATA_JSON || h.DATA_JSON) {
-          botonVer = `<button class="btn-icon" style="color:#8B5CF6" onclick="OFERTAS.verResumenOferta('${h.ID_OFERTA}',this)" title="Ver resumen">👁️</button>`;
-        }
+        // Antes: hasta 6 íconos amontonados horizontalmente por fila.
+        // Ahora: una sola acción principal en texto ("Editar") + "Más" que
+        // abre un menú con el resto (Ver, Clonar, Aprobar/Rechazar, Enviar,
+        // Eliminar) también en texto — ver abrirMenuAccionesOferta().
         tr.innerHTML = `
           <td>${h.ID_OFERTA}</td>
           <td><span class="badge ${this.TIPO_BADGE[tipo]}" style="font-size:10px;">${tipo}</span></td>
@@ -316,10 +307,9 @@ const OFERTAS = {
           <td>${h.CLIENTE}</td>
           <td>${h.TOTAL}</td>
           <td><span class="badge ${badgeClass[h.ESTADO] || 'badge-gray'}">${h.ESTADO}</span></td>
-          <td style="white-space:nowrap;">${botonVer}
-            <button class="btn-icon btn-icon-edit" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CARGAR',this)" title="Editar">✏️</button>
-            <button class="btn-icon" style="color:#1976D2" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CLONAR',this)" title="Clonar">📋</button>${botonesDecision}
-            <button class="btn-icon btn-icon-del" onclick="OFERTAS.eliminarOfertaUI('${h.ID_OFERTA}',this)" title="Eliminar">🗑️</button>
+          <td style="white-space:nowrap;">
+            <button class="btn-row-action" onclick="OFERTAS.gestionarOferta('${h.ID_OFERTA}','CARGAR',this)">Editar</button>
+            <button class="btn-row-more" onclick="OFERTAS.abrirMenuAccionesOferta('${h.ID_OFERTA}')">⋯ Más</button>
           </td>`;
         tbody.appendChild(tr);
       });
@@ -328,6 +318,114 @@ const OFERTAS = {
     if (!huboFilas) {
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">Sin ofertas registradas.</td></tr>';
     }
+  },
+
+  // Reemplaza la fila de íconos: junta todas las acciones de una oferta
+  // (Ver, Editar, Clonar, Aprobar/Rechazar, Enviar, Eliminar) como botones
+  // de texto dentro de un solo modal, en vez de íconos amontonados. Cada
+  // opción llama a la misma función de siempre (con sus mismas protecciones
+  // contra doble clic) — esto solo cambia CÓMO se dispara, no la lógica.
+  abrirMenuAccionesOferta(id) {
+    const h = (this.DB.historial || []).find(x => String(x.ID_OFERTA) === String(id));
+    if (!h) { UI.toast('Oferta no encontrada', 'err'); return; }
+
+    const titulo = document.getElementById('of-acciones-titulo');
+    if (titulo) titulo.textContent = 'Oferta ' + id;
+
+    const acciones = [];
+    if (h.URL_DOC) {
+      acciones.push({ texto: 'Ver documento', fn: () => window.open(h.URL_DOC, '_blank') });
+    } else if (h.TIENE_DATA_JSON || h.DATA_JSON) {
+      acciones.push({ texto: 'Ver resumen', fn: () => this.verResumenOferta(id) });
+    }
+    acciones.push({ texto: 'Editar',  fn: () => this.gestionarOferta(id, 'CARGAR') });
+    acciones.push({ texto: 'Clonar',  fn: () => this.gestionarOferta(id, 'CLONAR') });
+    if (h.ESTADO === 'GENERADA') {
+      acciones.push({ texto: 'Aprobar',  fn: () => this.actualizarEstadoOfertaUI(id, 'APROBADA') });
+      acciones.push({ texto: 'Rechazar', fn: () => this.actualizarEstadoOfertaUI(id, 'RECHAZADA') });
+    }
+    if (h.URL_DOC) {
+      acciones.push({ texto: 'Enviar', fn: () => this.abrirModalEnvio(id) });
+    }
+    acciones.push({ texto: 'Eliminar', fn: () => this.eliminarOfertaUI(id), danger: true });
+
+    const lista = document.getElementById('of-acciones-lista');
+    lista.innerHTML = '';
+    acciones.forEach(a => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-accion-menu' + (a.danger ? ' btn-accion-menu-danger' : '');
+      btn.textContent = a.texto;
+      btn.onclick = () => { this.cerrarModal('of-modal-acciones'); a.fn(); };
+      lista.appendChild(btn);
+    });
+    document.getElementById('of-modal-acciones')?.classList.add('open');
+  },
+
+  // ──────────────────────────────────────────
+  //  ENVIAR OFERTA (correo / WhatsApp)
+  // ──────────────────────────────────────────
+  // No hay forma de adjuntar el archivo automáticamente desde un sitio
+  // web — ningún navegador lo permite, por seguridad (si un sitio pudiera
+  // adjuntar archivos solo con que entres, cualquier página podría
+  // "enviar" cosas en tu nombre sin que te dieras cuenta). Lo que SÍ se
+  // puede hacer, y es lo que hace esto: abrir el correo/WhatsApp de la
+  // persona con el destinatario, asunto y mensaje ya escritos —
+  // incluyendo el enlace al documento — para que solo falte revisar y
+  // darle enviar. La cuenta desde la que se envía la elige la persona en
+  // su propio Outlook/WhatsApp, igual que si lo escribiera a mano.
+  abrirModalEnvio(id) {
+    const h = (this.DB.historial || []).find(x => String(x.ID_OFERTA) === String(id));
+    if (!h || !h.URL_DOC) { UI.toast('Esta oferta no tiene documento generado para enviar', 'warn'); return; }
+
+    const clienteInfo = (this.DB.clientes || []).find(c => (c.EMPRESA_NOMBRE || c.EMPRESA) === h.CLIENTE);
+    this._envioActual   = { id, urlDoc: h.URL_DOC, cliente: h.CLIENTE || 'estimado cliente' };
+    this._envioTelefono = clienteInfo?.TELEFONO || '';
+
+    document.getElementById('of-envio-medio').value = 'EMAIL';
+    document.getElementById('of-envio-destino').value = clienteInfo?.EMAIL || '';
+    this.cambiarMedioEnvio();
+    document.getElementById('of-modal-envio')?.classList.add('open');
+  },
+
+  cambiarMedioEnvio() {
+    const esEmail = document.getElementById('of-envio-medio').value === 'EMAIL';
+    const wrapAsunto = document.getElementById('of-envio-asunto-wrap');
+    if (wrapAsunto) wrapAsunto.style.display = esEmail ? '' : 'none';
+    document.getElementById('of-envio-destino-label').textContent = esEmail
+      ? 'Correo del destinatario' : 'WhatsApp del destinatario (con indicativo, ej: 573001234567)';
+
+    const destinoInput = document.getElementById('of-envio-destino');
+    if (!esEmail && !destinoInput.value) destinoInput.value = this._envioTelefono || '';
+
+    const cliente = this._envioActual?.cliente || 'estimado cliente';
+    const urlDoc  = this._envioActual?.urlDoc || '';
+    const idOf    = this._envioActual?.id || '';
+    document.getElementById('of-envio-asunto').value = 'Oferta comercial SENERPOT — ' + idOf;
+    document.getElementById('of-envio-mensaje').value = esEmail
+      ? `Estimados ${cliente},\n\nNos permitimos enviar la siguiente oferta comercial para su consideración:\n\n${urlDoc}\n\nQuedamos atentos a cualquier duda o comentario al respecto.\n\nCordialmente,\nSENERPOT S.A.S.\nServicios de Energía y Potencia`
+      : `¡Hola! Desde SENERPOT nos permitimos enviarle la siguiente oferta comercial para su consideración:\n\n${urlDoc}\n\nQuedamos atentos a cualquier duda o comentario. En SENERPOT, siempre es un gusto ponerle energía a sus proyectos. ⚡\n\nSaludos cordiales.`;
+  },
+
+  confirmarEnvio() {
+    const medio   = document.getElementById('of-envio-medio').value;
+    const destino = document.getElementById('of-envio-destino').value.trim();
+    const mensaje = document.getElementById('of-envio-mensaje').value;
+
+    if (medio === 'EMAIL') {
+      if (!destino) { UI.toast('Ingresa el correo del destinatario', 'warn'); return; }
+      const asunto = document.getElementById('of-envio-asunto').value;
+      // No navega la página — el navegador reconoce "mailto:" y abre el
+      // programa de correo predeterminado (Outlook, si está configurado
+      // así en el equipo) con todo ya escrito.
+      window.location.href = 'mailto:' + encodeURIComponent(destino) + '?subject=' + encodeURIComponent(asunto) + '&body=' + encodeURIComponent(mensaje);
+    } else {
+      const soloNumeros = destino.replace(/[^0-9]/g, '');
+      const url = soloNumeros
+        ? 'https://wa.me/' + soloNumeros + '?text=' + encodeURIComponent(mensaje)
+        : 'https://wa.me/?text=' + encodeURIComponent(mensaje);
+      window.open(url, '_blank');
+    }
+    this.cerrarModal('of-modal-envio');
   },
 
   // DATA_JSON ya no viene en el listado masivo (this.DB.historial) — se
