@@ -690,6 +690,18 @@ const OFERTAS = {
       </td>`;
     tbody.appendChild(tr);
     this.calcularTotales();
+    this.renumerarItems();
+  },
+
+  // El campo "Ítem" se renumera solo cada vez que se agrega, borra o
+  // reordena una fila — antes había que escribirlo a mano, y si se
+  // borraba un ítem del medio, los que quedaban abajo se quedaban con el
+  // número viejo (perdían el consecutivo) hasta corregirlos uno por uno.
+  renumerarItems() {
+    document.querySelectorAll('#of-tbody-items tr').forEach((tr, i) => {
+      const inp = tr.querySelector('.inp-cod');
+      if (inp) inp.value = i + 1;
+    });
   },
 
   addItemDesdeCat() {
@@ -709,6 +721,7 @@ const OFERTAS = {
     const row = btn.closest('tr');
     if (dir === -1 && row.previousElementSibling) row.parentNode.insertBefore(row, row.previousElementSibling);
     else if (dir === 1 && row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling, row);
+    if (row.parentNode?.id === 'of-tbody-items') this.renumerarItems();
   },
 
   calcFila(input) {
@@ -719,7 +732,7 @@ const OFERTAS = {
     this.calcularTotales();
   },
 
-  borrarFila(btn) { btn.closest('tr').remove(); this.calcularTotales(); },
+  borrarFila(btn) { btn.closest('tr').remove(); this.calcularTotales(); this.renumerarItems(); },
 
   toggleAIU() {
     const on = document.getElementById('of-aiu-check').checked;
@@ -776,6 +789,10 @@ const OFERTAS = {
     if (!jsonData) return;
     const data = JSON.parse(jsonData);
     if (tipo === 'TEXTOS') {
+      const hayAlgoQuePerder = document.getElementById('of-objeto').value.trim()
+        || document.getElementById('of-alcance-gral').value.trim()
+        || document.querySelectorAll('#of-tbody-alcance tr').length > 0;
+      if (hayAlgoQuePerder && !UI.confirmar('Este kit va a reemplazar el objeto y el alcance que ya tienes escritos. ¿Continuar?')) return;
       document.getElementById('of-objeto').value      = data.objeto || '';
       document.getElementById('of-alcance-gral').value = data.alcance_gral || '';
       document.getElementById('of-tbody-alcance').innerHTML = '';
@@ -783,6 +800,8 @@ const OFERTAS = {
                     (data.alcance_act || '').split('\n').filter(l => l.trim());
       lista.forEach(l => this.addAlcance(l));
     } else if (tipo === 'ITEMS') {
+      const hayItemsQuePerder = document.querySelectorAll('#of-tbody-items tr').length > 0;
+      if (hayItemsQuePerder && !UI.confirmar('Este kit va a reemplazar los ítems que ya tienes agregados. ¿Continuar?')) return;
       document.getElementById('of-tbody-items').innerHTML = '';
       data.forEach(k => this.addFila(k));
     }
