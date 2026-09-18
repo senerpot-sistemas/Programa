@@ -43,11 +43,12 @@ const API = {
     // ellos y devuelve una página de error HTML en vez de JSON (el fetch
     // falla, o res.json() truena con "Unexpected token '<'") — confirmado
     // que es intermitente y del lado de Google (se reprodujo igual en dos
-    // deployments distintos, sin relación con nuestro código). Reintentar
-    // una vez con una pausa corta suele resolverlo solo. Nunca reintenta
-    // errores de negocio reales (permiso denegado, validación, etc.) —
-    // esos ya llegan como JSON válido con json.ok===false, no entran aquí.
-    const MAX_INTENTOS = 2;
+    // deployments distintos, con y sin cuentas de Google activas en el
+    // navegador, sin relación con nuestro código). Reintentar con una
+    // pausa corta suele resolverlo solo. Nunca reintenta errores de
+    // negocio reales (permiso denegado, validación, etc.) — esos ya
+    // llegan como JSON válido con json.ok===false, no entran aquí.
+    const MAX_INTENTOS = 3;
     let ultimoError;
 
     for (let intento = 1; intento <= MAX_INTENTOS; intento++) {
@@ -77,11 +78,17 @@ const API = {
         var esFalloTransitorioDeGoogle = err instanceof SyntaxError || err.name === 'TypeError';
         if (intento < MAX_INTENTOS && esFalloTransitorioDeGoogle) {
           console.warn(`[API] ${action} falló (intento ${intento}/${MAX_INTENTOS}) — reintentando:`, err.message);
-          UI.toast('Google tardó en responder, reintentando...', 'warn');
-          await new Promise(r => setTimeout(r, 1200));
+          UI.toast('Conexión lenta, reintentando...', 'warn');
+          await new Promise(r => setTimeout(r, 1500 * intento));
           continue;
         }
         console.error('[API]', action, err.message);
+        // "Unexpected token" / errores de red crudos no significan nada
+        // para alguien que no programa — se cambia por un mensaje que sí
+        // se entiende antes de que cualquier pantalla lo muestre.
+        if (esFalloTransitorioDeGoogle) {
+          throw new Error('No se pudo conectar con el servidor después de varios intentos. Revisa tu conexión a internet y vuelve a intentarlo en un momento.');
+        }
         throw err;
       }
     }
