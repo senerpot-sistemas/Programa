@@ -161,6 +161,7 @@ const PROYECTOS = {
       // No hace falta poblarSelectOfertas()/poblarSelectClientes(): esta
       // acción no toca DB.historial ni DB.clientes.
       const res = await API.call('crearProyecto', { nombre, cliente, idOferta, valor, tecnico, notas });
+      DatosERP.invalidar();
       Store.upsert(this.DB.proyectos, res.data);
       this.renderTabla(document.getElementById('pry-filtro-estado')?.value || '');
       // Limpiar formulario
@@ -567,6 +568,7 @@ const PROYECTOS = {
     try {
       const res = await API.call('actualizarEstadoProyecto', { id, estado: nuevoEstado, refFacturaSigo });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      DatosERP.invalidar(); // el conteo de "Proyectos activos" del Panel depende del estado
       Store.upsert(this.DB.proyectos, res.data);
       this.renderTabla(document.getElementById('pry-filtro-estado')?.value || '');
       UI.toast('Estado actualizado: ' + nuevoEstado, 'ok');
@@ -585,6 +587,7 @@ const PROYECTOS = {
     try {
       const res = await API.call('eliminarProyecto', { idProyecto: id });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      DatosERP.invalidar();
       Store.remove(this.DB.proyectos, res.rowIndex);
       this.renderTabla(document.getElementById('pry-filtro-estado')?.value || '');
       this.cerrarModal('pry-modal-detalle');
@@ -949,7 +952,14 @@ const PANEL = {
   // responde a "¿cómo va el negocio en general?", no "¿cómo va este mes?".
   renderHero(erp) {
     const hist = erp.historial || [], proy = erp.proyectos || [], cli = erp.clientes || [];
-    const pipelineTotal = hist.reduce((s,h) => s + OFERTAS.parseTotalOferta(h.TOTAL), 0);
+    // "Cotizado" excluye BORRADOR (nunca se le mostró al cliente, no es
+    // actividad comercial real — mismo criterio que ya usa el dashboard
+    // de Ofertas) y ERROR_GENERACION (quedó marcado así justamente porque
+    // el documento nunca se llegó a generar — no hay nada real detrás de
+    // ese número). Sin este filtro, el número grande que ve la junta
+    // quedaba inflado con borradores sueltos y generaciones fallidas.
+    const histCotizado = hist.filter(h => ['GENERADA','APROBADA','RECHAZADA'].includes(h.ESTADO));
+    const pipelineTotal = histCotizado.reduce((s,h) => s + OFERTAS.parseTotalOferta(h.TOTAL), 0);
     const aprobadas  = hist.filter(h => h.ESTADO === 'APROBADA').length;
     const rechazadas = hist.filter(h => h.ESTADO === 'RECHAZADA').length;
     const decididas  = aprobadas + rechazadas;
@@ -958,7 +968,7 @@ const PANEL = {
 
     this._animar(document.getElementById('panel-hero-pipeline'), pipelineTotal, v => UI.moneda(v));
     const sub = document.getElementById('panel-hero-sub');
-    if (sub) sub.textContent = `${hist.length} oferta${hist.length===1?'':'s'} registrada${hist.length===1?'':'s'} desde el inicio`;
+    if (sub) sub.textContent = `${histCotizado.length} oferta${histCotizado.length===1?'':'s'} registrada${histCotizado.length===1?'':'s'} desde el inicio`;
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('panel-hero-winrate', decididas > 0 ? winRate.toFixed(0) + '%' : '—');
     set('panel-hero-proyectos', proyectosActivos);

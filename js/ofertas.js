@@ -166,6 +166,7 @@ const OFERTAS = {
     try {
       const res = await API.call('actualizarEstadoOferta', { id, estado: nuevoEstado });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      DatosERP.invalidar(); // que Panel/Proyectos no se queden con el pipeline/forecast viejo
       Store.upsert(this.DB.historial, res.data);
       this.renderTablaHistorial();
       this.renderDashboardOfertas();
@@ -495,6 +496,7 @@ const OFERTAS = {
     try {
       const res = await API.call('eliminarOferta', { id });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      DatosERP.invalidar();
       this.DB.historial = this.DB.historial.filter(h => String(h.ID_OFERTA) !== String(id));
       this.renderTablaHistorial();
       this.renderDashboardOfertas();
@@ -542,6 +544,7 @@ const OFERTAS = {
         idOferta, cliente, fecha, estado, total: UI.moneda(total)
       });
       if (!res.exito) { UI.toast(res.error, 'err'); return; }
+      DatosERP.invalidar();
       Store.upsert(this.DB.historial, res.data);
       this.renderTablaHistorial();
       this.renderDashboardOfertas();
@@ -908,6 +911,7 @@ const OFERTAS = {
         idOferta: consec, clienteNombre: datos.cliente.EMPRESA_NOMBRE || datos.cliente.EMPRESA,
         total: document.getElementById('of-total').textContent, estado: 'BORRADOR', datos
       });
+      DatosERP.invalidar();
       Store.upsert(this.DB.historial, res.data);
       this.renderTablaHistorial();
       this.renderDashboardOfertas(); // DB.historial mutó — redibujar el dashboard
