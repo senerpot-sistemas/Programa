@@ -56,6 +56,25 @@ const AUTH = {
     if (avatar) avatar.textContent = (this.nombre || this.usuario || '?').charAt(0).toUpperCase();
 
     if (typeof navegarA === 'function') navegarA('home');
+    this._precargarDatos();
+  },
+
+  // Con Home ya visible, pide en segundo plano los datos que usan Ofertas, Proyectos,
+  // Compras y Panel, para que al entrar a esos módulos ya estén (o ya vayan en camino).
+  // Usa la misma DatosERP.obtener(): si la persona entra a un módulo mientras tanto,
+  // comparte esta misma solicitud. Si falla, no se avisa ni se bloquea nada: el módulo
+  // vuelve a pedir los datos con normalidad cuando se abra.
+  _precargarDatos() {
+    const usan = ['ofertas', 'proyectos', 'almacen', 'panel'];
+    const permitidos = this.MODULOS_POR_ROL[this.rol] || [];
+    if (!usan.some(m => permitidos.includes(m))) return;
+    const generacion = this._generacion || 0;
+    setTimeout(() => {
+      if (generacion !== (this._generacion || 0) || !sessionStorage.getItem('senerpot_token')) return; // sesión ya cerrada
+      // silencioso: sin avisos "Conexión lenta..." en Home; el error queda en la promesa y DatosERP
+      // se recupera solo cuando un módulo vuelva a pedir los datos.
+      DatosERP.obtener({ silencioso: true }).catch(() => {});
+    }, 0);
   },
 
   // Muestra/oculta cada elemento marcado con data-modulo="xxx" según el

@@ -34,14 +34,28 @@ const OFERTAS = {
     // solo se agrega la fila vacía inicial si todavía no existe.
     if (!document.querySelector('#of-tbody-activos tr')) this.addActivo();
     if (!document.querySelector('#of-tbody-alcance tr')) this.addAlcance();
+    // Mientras los datos están pendientes se muestra "Cargando datos...". Si ya llegaron
+    // (precarga terminada) el aviso se oculta en la misma tarea y ni siquiera llega a pintarse.
+    const aviso = document.getElementById('of-cargando');
+    const mostrarAviso = (html) => { if (aviso) { aviso.innerHTML = html; aviso.style.display = 'block'; } };
+    mostrarAviso('⏳ Cargando datos...');
     try {
       const data = await DatosERP.obtener();
       this.DB = data;
       this.render();
+      if (aviso) aviso.style.display = 'none';
     } catch(e) {
       UI.toast('Error cargando datos: ' + e.message, 'err');
+      mostrarAviso('⚠️ No se pudieron cargar los datos de Ofertas. ' + String(e.message || '').replace(/</g, '&lt;') + ' <button class="btn-row-action" style="margin-left:8px;" onclick="OFERTAS.reintentarCarga()">Reintentar</button>');
       return false; // el módulo NO queda marcado como inicializado (ver _iniciarModulo en index.html)
     }
+  },
+
+  // Botón "Reintentar" del aviso de error: vuelve a arrancar la carga por el mismo camino
+  // que usa la navegación, así el módulo solo se marca como inicializado si termina bien.
+  reintentarCarga() {
+    if (typeof _iniciarModulo === 'function') _iniciarModulo('ofertas', () => this);
+    else this.init();
   },
 
   render() {

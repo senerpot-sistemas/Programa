@@ -67,7 +67,9 @@ const API = {
   },
 
   // Llamada principal — async/await
-  async call(action, params = {}) {
+  // opciones.silencioso: solo suprime el aviso visual "Conexión lenta, reintentando..." (lo usa la
+  // precarga automática del Home). No cambia timeouts, reintentos ni resultados; sin la opción, todo igual.
+  async call(action, params = {}, opciones = {}) {
     const url = this.url;
 
     if (!url) {
@@ -130,7 +132,7 @@ const API = {
         const transitorio = !err.definitivo && (err.name === 'AbortError' || err instanceof TypeError || err instanceof SyntaxError || err.httpTransitorio === true);
         if (reintentable && transitorio && intento < maxIntentos) {
           console.warn(`[API] ${action} falló (intento ${intento}/${maxIntentos}) — reintentando:`, err.message);
-          UI.toast('Conexión lenta, reintentando...', 'warn');
+          if (!opciones.silencioso) UI.toast('Conexión lenta, reintentando...', 'warn');
           await new Promise(r => setTimeout(r, this.ESPERAS_REINTENTO_MS[intento - 1]));
           continue;
         }
@@ -192,7 +194,7 @@ const API = {
   _enVuelo: {},
 
   // Dos módulos que pidan lo mismo a la vez comparten UNA sola llamada de red.
-  async callCached(action, params = {}, ttlSegundos = 180) {
+  async callCached(action, params = {}, ttlSegundos = 180, opciones = {}) {
     const clave = this._clavesCache(action, params);
     try {
       const raw = localStorage.getItem(clave);
@@ -204,7 +206,7 @@ const API = {
 
     if (this._enVuelo[clave]) return this._enVuelo[clave];
 
-    const promesa = this.call(action, params)
+    const promesa = this.call(action, params, opciones)
       .then(data => {
         // Si mientras esperábamos se invalidó esta consulta (clearCache),
         // este resultado pudo quedar viejo: se entrega pero no se guarda.
@@ -277,13 +279,33 @@ const Store = {
 // ─────────────────────────────────────────────
 const DatosERP = {
   _promesa: null,
-  obtener() {
+  _resuelta: false,
+  _vigenteHasta: 0,
+  VIGENCIA_MS: 180000, // igual que el TTL de callCached: pasado este tiempo los datos dejan de considerarse vigentes
+
+  obtener(opciones = {}) {
+    // Una promesa YA resuelta que superó su vigencia no se reutiliza: la siguiente
+    // solicitud vuelve a la red. No hay refrescos automáticos; el vencimiento solo
+    // se evalúa cuando alguien pide los datos. Una carga todavía en vuelo se comparte siempre.
+    if (this._promesa && this._resuelta && Date.now() > this._vigenteHasta) this._promesa = null;
     if (!this._promesa) {
-      const p = API.callCached('obtenerDatos', {}, 180);
+      const p = API.callCached('obtenerDatos', {}, 180, opciones);
       this._promesa = p;
-      // Si falla, no se conserva la promesa rechazada: la próxima vez que alguien
-      // pida los datos se intenta de nuevo en vez de repetir el mismo error.
-      p.catch(() => { if (this._promesa === p) this._promesa = null; });
+      this._resuelta = false;
+      p.then(() => {
+        if (this._promesa !== p) return; // se invalidó mientras cargaba: este resultado ya no cuenta
+        this._resuelta = true;
+        // La vigencia se cuenta desde que el servidor entregó los datos (marca de tiempo de la
+        // misma entrada de localStorage que usa callCached), no desde que se leyeron: así unos
+        // datos servidos desde esa copia nunca viven más de 180 s en total.
+        let t = Date.now();
+        try { const raw = localStorage.getItem(API._clavesCache('obtenerDatos', {})); if (raw) t = JSON.parse(raw).t || t; } catch (e) {}
+        this._vigenteHasta = t + this.VIGENCIA_MS;
+      }, () => {
+        // Si falla, no se conserva la promesa rechazada: la próxima vez que alguien
+        // pida los datos se intenta de nuevo en vez de repetir el mismo error.
+        if (this._promesa === p) this._promesa = null;
+      });
     }
     return this._promesa;
   },
