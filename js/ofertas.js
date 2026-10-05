@@ -30,14 +30,17 @@ const OFERTAS = {
   // ──────────────────────────────────────────
   async init() {
     this.mostrarFecha();
-    this.addActivo();
-    this.addAlcance();
+    // init() puede volver a ejecutarse (reintento tras un fallo, o nueva sesión):
+    // solo se agrega la fila vacía inicial si todavía no existe.
+    if (!document.querySelector('#of-tbody-activos tr')) this.addActivo();
+    if (!document.querySelector('#of-tbody-alcance tr')) this.addAlcance();
     try {
       const data = await DatosERP.obtener();
       this.DB = data;
       this.render();
     } catch(e) {
       UI.toast('Error cargando datos: ' + e.message, 'err');
+      return false; // el módulo NO queda marcado como inicializado (ver _iniciarModulo en index.html)
     }
   },
 

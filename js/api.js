@@ -27,6 +27,45 @@ const API = {
     return sessionStorage.getItem('senerpot_token') || '';
   },
 
+  // ── CLASIFICACIÓN DE ACCIONES ─────────────────────────────
+  // Lista blanca de acciones de SOLO LECTURA: son las únicas que se pueden
+  // volver a pedir sin riesgo si la respuesta no llega. Cualquier acción
+  // que NO esté aquí (incluida una nueva que alguien agregue y olvide
+  // registrar) se trata como ESCRITURA: se envía UNA sola vez y nunca se
+  // reintenta sola — el servidor pudo haberla ejecutado aunque el navegador
+  // no haya recibido la respuesta (el script de Apps Script termina bien
+  // incluso cuando la entrega de Google falla con 404).
+  ACCIONES_LECTURA: [
+    'obtenerDatos', 'obtenerDatosERP', 'getDashboard', 'obtenerDetalleOferta',
+    'obtenerDetalleNCR', 'obtenerPresupuestoProyecto', 'obtenerComentariosProyecto',
+    'consultarHistorial', 'obtenerBancos', 'generarReporte', 'listarUsuarios',
+    'obtenerProyectos', 'obtenerDetalleProyecto', 'obtenerAlmacen',
+    'cargarDocEdicion', 'calcularIVA', 'calcularRenta'
+  ],
+
+  // login es la única "escritura" que sí se reintenta: lo único que hace en
+  // el servidor es agregar una fila de sesión, así que repetirlo no duplica
+  // ningún dato de negocio (a lo sumo queda una sesión sin usar que vence sola).
+  esReintentable(action) {
+    return this.ACCIONES_LECTURA.indexOf(action) !== -1 || action === 'login';
+  },
+
+  TIMEOUT_LECTURA_MS:       30000,        // por intento
+  TIMEOUT_ESCRITURA_MS:     120000,       // una sola vez; cortar solo libera al navegador, no cancela al servidor
+  ESPERAS_REINTENTO_MS:     [1500, 3000], // entre intento 1→2 y 2→3 (3 intentos en total)
+  BLOQUEO_NO_CONFIRMADA_MS: 30000,        // tras un resultado desconocido, no se acepta el mismo envío idéntico
+  MSG_NO_CONFIRMADO: 'Resultado no confirmado. La operación pudo haberse realizado en el servidor. Verifica el estado antes de volver a intentarlo.',
+  MSG_SIN_CONEXION:  'No se pudo conectar con el servidor después de varios intentos. Revisa tu conexión a internet y vuelve a intentarlo en un momento.',
+
+  // Escrituras con resultado desconocido: "acción|parámetros" -> hasta cuándo se bloquea.
+  _noConfirmadas: {},
+
+  _errorNoConfirmado(extra) {
+    const e = new Error(this.MSG_NO_CONFIRMADO + (extra || ''));
+    e.resultadoNoConfirmado = true;
+    return e;
+  },
+
   // Llamada principal — async/await
   async call(action, params = {}) {
     const url = this.url;
@@ -39,60 +78,95 @@ const API = {
       UI.toast('⚠️ Falta CONFIG.apiKey — la API rechazará la petición', 'warn');
     }
 
-    // Google a veces falla al abrir el archivo de Sheets del lado de
-    // ellos y devuelve una página de error HTML en vez de JSON (el fetch
-    // falla, o res.json() truena con "Unexpected token '<'") — confirmado
-    // que es intermitente y del lado de Google (se reprodujo igual en dos
-    // deployments distintos, con y sin cuentas de Google activas en el
-    // navegador, sin relación con nuestro código). Reintentar con una
-    // pausa corta suele resolverlo solo. Nunca reintenta errores de
-    // negocio reales (permiso denegado, validación, etc.) — esos ya
-    // llegan como JSON válido con json.ok===false, no entran aquí.
-    const MAX_INTENTOS = 3;
-    let ultimoError;
+    const reintentable = this.esReintentable(action);
+    const tokenUsado   = this.token; // con qué sesión se envió esta petición
 
-    for (let intento = 1; intento <= MAX_INTENTOS; intento++) {
+    // Una escritura que ya terminó sin confirmación no se vuelve a aceptar
+    // idéntica de inmediato: da tiempo a verificar el estado real (actualizar
+    // la lista, revisar el historial) antes de repetirla a ciegas.
+    const claveNoConf = reintentable ? null : action + '|' + JSON.stringify(params);
+    if (claveNoConf) {
+      const hasta = this._noConfirmadas[claveNoConf];
+      if (hasta && Date.now() < hasta) {
+        throw this._errorNoConfirmado(' (espera ' + Math.ceil((hasta - Date.now()) / 1000) + ' s)');
+      }
+      delete this._noConfirmadas[claveNoConf];
+    }
+
+    // GET con parámetros en URL — evita problemas de CORS con GAS
+    const paramsStr = encodeURIComponent(JSON.stringify(params));
+    const fullUrl   = `${url}?action=${encodeURIComponent(action)}&params=${paramsStr}&key=${encodeURIComponent(this.key)}&token=${encodeURIComponent(this.token)}`;
+
+    // Google a veces responde 404 / HTML / 500 o se queda colgado en la capa
+    // de entrega de Apps Script, intermitente y ajeno a nuestro código.
+    // Lecturas: hasta 3 intentos de 30 s cada uno. Escrituras: un solo
+    // intento. Los errores de negocio (ok:false, 401, 403) son respuestas
+    // válidas del servidor y NUNCA se reintentan.
+    const maxIntentos = reintentable ? this.ESPERAS_REINTENTO_MS.length + 1 : 1;
+    const timeoutMs   = reintentable ? this.TIMEOUT_LECTURA_MS : this.TIMEOUT_ESCRITURA_MS;
+    let json = null, fallo = null;
+
+    for (let intento = 1; intento <= maxIntentos; intento++) {
+      const ctrl  = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
       try {
-        // GET con parámetros en URL — evita problemas de CORS con GAS
-        const paramsStr = encodeURIComponent(JSON.stringify(params));
-        const fullUrl   = `${url}?action=${encodeURIComponent(action)}&params=${paramsStr}&key=${encodeURIComponent(this.key)}&token=${encodeURIComponent(this.token)}`;
-
-        const res  = await fetch(fullUrl, { redirect: 'follow' });
-        const json = await res.json();
-
-        if (!json.ok) {
-          if (json.codigo === 401 && action !== 'login') {
-            // Sesión inválida/expirada: forzar de vuelta a la pantalla de
-            // login en vez de dejar la app en un estado a medias.
-            if (typeof AUTH !== 'undefined') AUTH.sesionExpirada();
-          }
-          // codigo 403 (permiso denegado) no se maneja aquí a propósito:
-          // cada función que llama a la API ya tiene su propio catch que
-          // muestra el mensaje — duplicar el toast aquí solo lo repetiría.
-          throw new Error(json.error || 'Error en el servidor');
+        const res = await fetch(fullUrl, { redirect: 'follow', signal: ctrl.signal });
+        if (res.status === 401 || res.status === 403) {
+          const e = new Error('Acceso denegado (HTTP ' + res.status + ')');
+          e.definitivo = true;
+          throw e;
         }
-        return json.data;
-
+        if (res.status === 404 || res.status >= 500) {
+          const e = new Error('HTTP ' + res.status);
+          e.httpTransitorio = true;
+          throw e;
+        }
+        json = await res.json();
+        if (json === null || typeof json !== 'object') throw new SyntaxError('La respuesta no es un objeto JSON');
+        fallo = null;
+        break;
       } catch (err) {
-        ultimoError = err;
-        var esFalloTransitorioDeGoogle = err instanceof SyntaxError || err.name === 'TypeError';
-        if (intento < MAX_INTENTOS && esFalloTransitorioDeGoogle) {
-          console.warn(`[API] ${action} falló (intento ${intento}/${MAX_INTENTOS}) — reintentando:`, err.message);
+        fallo = err;
+        const transitorio = !err.definitivo && (err.name === 'AbortError' || err instanceof TypeError || err instanceof SyntaxError || err.httpTransitorio === true);
+        if (reintentable && transitorio && intento < maxIntentos) {
+          console.warn(`[API] ${action} falló (intento ${intento}/${maxIntentos}) — reintentando:`, err.message);
           UI.toast('Conexión lenta, reintentando...', 'warn');
-          await new Promise(r => setTimeout(r, 1500 * intento));
+          await new Promise(r => setTimeout(r, this.ESPERAS_REINTENTO_MS[intento - 1]));
           continue;
         }
-        console.error('[API]', action, err.message);
-        // "Unexpected token" / errores de red crudos no significan nada
-        // para alguien que no programa — se cambia por un mensaje que sí
-        // se entiende antes de que cualquier pantalla lo muestre.
-        if (esFalloTransitorioDeGoogle) {
-          throw new Error('No se pudo conectar con el servidor después de varios intentos. Revisa tu conexión a internet y vuelve a intentarlo en un momento.');
-        }
-        throw err;
+        break;
+      } finally {
+        clearTimeout(timer);
       }
     }
-    throw ultimoError;
+
+    if (fallo) {
+      console.error('[API]', action, fallo.message);
+      if (fallo.definitivo) throw fallo;
+      if (!reintentable) {
+        // No se sabe si el servidor llegó a ejecutarla: NO se repite sola.
+        this._noConfirmadas[claveNoConf] = Date.now() + this.BLOQUEO_NO_CONFIRMADA_MS;
+        throw this._errorNoConfirmado();
+      }
+      // "Unexpected token" / errores de red crudos no significan nada para
+      // alguien que no programa — se cambia por un mensaje que sí se entiende.
+      throw new Error(this.MSG_SIN_CONEXION);
+    }
+
+    if (!json.ok) {
+      if (json.codigo === 401 && action !== 'login') {
+        // Sesión inválida/expirada: forzar de vuelta a la pantalla de
+        // login en vez de dejar la app en un estado a medias. Solo si la
+        // sesión sigue siendo la misma con la que se envió: una respuesta
+        // tardía de una sesión ya cerrada no debe sacar a quien entró después.
+        if (typeof AUTH !== 'undefined' && tokenUsado === this.token) AUTH.sesionExpirada();
+      }
+      // codigo 403 (permiso denegado) no se maneja aquí a propósito:
+      // cada función que llama a la API ya tiene su propio catch que
+      // muestra el mensaje — duplicar el toast aquí solo lo repetiría.
+      throw new Error(json.error || 'Error en el servidor');
+    }
+    return json.data;
   },
 
   // ── CACHÉ LOCAL, solo para lecturas pesadas ──────────────
@@ -105,10 +179,19 @@ const API = {
   // se guarda para la próxima. NUNCA se usa para acciones que escriben
   // datos (guardar, anular, crear, eliminar...) — esas siempre van
   // directo al servidor, sin caché de por medio.
+  // La clave incluye al usuario: dos personas que usen el mismo navegador
+  // nunca comparten una copia (ver también AUTH._limpiarSesionLocal, que
+  // borra todas las claves senerpot_cache_* al cerrar sesión).
   _clavesCache(action, params) {
-    return 'senerpot_cache_' + action + ':' + JSON.stringify(params || {});
+    let usuario = '';
+    try { usuario = sessionStorage.getItem('senerpot_usuario') || ''; } catch(e) {}
+    return 'senerpot_cache_' + usuario + '|' + action + ':' + JSON.stringify(params || {});
   },
 
+  // Peticiones idénticas en vuelo: clave -> promesa compartida.
+  _enVuelo: {},
+
+  // Dos módulos que pidan lo mismo a la vez comparten UNA sola llamada de red.
   async callCached(action, params = {}, ttlSegundos = 180) {
     const clave = this._clavesCache(action, params);
     try {
@@ -118,16 +201,30 @@ const API = {
         if (Date.now() - t < ttlSegundos * 1000) return data;
       }
     } catch(e) {}
-    const data = await this.call(action, params);
-    try { localStorage.setItem(clave, JSON.stringify({ t: Date.now(), data })); } catch(e) {}
-    return data;
+
+    if (this._enVuelo[clave]) return this._enVuelo[clave];
+
+    const promesa = this.call(action, params)
+      .then(data => {
+        // Si mientras esperábamos se invalidó esta consulta (clearCache),
+        // este resultado pudo quedar viejo: se entrega pero no se guarda.
+        if (this._enVuelo[clave] === promesa) {
+          try { localStorage.setItem(clave, JSON.stringify({ t: Date.now(), data })); } catch(e) {}
+        }
+        return data;
+      })
+      .finally(() => { if (this._enVuelo[clave] === promesa) delete this._enVuelo[clave]; });
+    this._enVuelo[clave] = promesa;
+    return promesa;
   },
 
   // Borra una entrada específica de la caché — usar después de cualquier
   // acción que cambie los datos que esa consulta trae, para que la
   // próxima vez que se pida no devuelva algo desactualizado.
   clearCache(action, params = {}) {
-    try { localStorage.removeItem(this._clavesCache(action, params)); } catch(e) {}
+    const clave = this._clavesCache(action, params);
+    delete this._enVuelo[clave];
+    try { localStorage.removeItem(clave); } catch(e) {}
   }
 };
 
@@ -181,7 +278,13 @@ const Store = {
 const DatosERP = {
   _promesa: null,
   obtener() {
-    if (!this._promesa) this._promesa = API.callCached('obtenerDatos', {}, 180);
+    if (!this._promesa) {
+      const p = API.callCached('obtenerDatos', {}, 180);
+      this._promesa = p;
+      // Si falla, no se conserva la promesa rechazada: la próxima vez que alguien
+      // pida los datos se intenta de nuevo en vez de repetir el mismo error.
+      p.catch(() => { if (this._promesa === p) this._promesa = null; });
+    }
     return this._promesa;
   },
   // Para recargas explícitas (p. ej. OFERTAS.recargar()) — el próximo
@@ -216,7 +319,8 @@ const UI = {
     el.innerText         = msg;
     el.style.opacity     = '1';
     clearTimeout(el._t);
-    el._t = setTimeout(() => el.style.opacity = '0', 3500);
+    // los mensajes largos (p. ej. 'Resultado no confirmado...') necesitan más tiempo de lectura
+    el._t = setTimeout(() => el.style.opacity = '0', String(msg).length > 80 ? 9000 : 3500);
   },
 
   spin(btn, on) {

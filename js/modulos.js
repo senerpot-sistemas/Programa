@@ -20,7 +20,7 @@ const PROYECTOS = {
       const data = await DatosERP.obtener();
       this.DB = data;
       this.render();
-    } catch(e) { UI.toast('Error cargando proyectos: ' + e.message, 'err'); }
+    } catch(e) { UI.toast('Error cargando proyectos: ' + e.message, 'err'); return false; }
   },
 
   render() {
@@ -627,7 +627,7 @@ const ALMACEN = {
       this.DB = data.almacen || [];
       this._proyectos = data.proyectos || [];
       this.render();
-    } catch(e) { UI.toast('Error cargando compras', 'err'); }
+    } catch(e) { UI.toast('Error cargando compras', 'err'); return false; }
   },
 
   render() {
@@ -803,7 +803,12 @@ const PANEL = {
 
   async init() {
     const el = document.getElementById('panel-loader');
-    if (el) el.style.display = 'flex';
+    if (el) {
+      // Si un intento anterior falló, el cargador quedó con el texto del error:
+      // se restaura su contenido original (indicador de carga) antes de reintentar.
+      if (el._htmlOriginal === undefined) el._htmlOriginal = el.innerHTML; else el.innerHTML = el._htmlOriginal;
+      el.style.display = 'flex';
+    }
     try {
       // getDashboard (Contabilidad) y DatosERP (Ofertas/Proyectos) son
       // fuentes independientes — se piden en paralelo, no una tras otra.
@@ -824,6 +829,7 @@ const PANEL = {
       this.renderProyectosPorEstado(erp.proyectos || []);
     } catch(e) {
       if (el) el.innerHTML = '<div style="color:#D32F2F">Error: ' + e.message + '</div>';
+      return false;
     }
   },
 

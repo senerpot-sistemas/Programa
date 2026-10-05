@@ -20,7 +20,7 @@ const CONTABILIDAD = {
       const data = await API.callCached('obtenerDatosERP', {}, 180);
       this.DB = data;
       this.renderUI();
-    } catch(e) { UI.toast('Error cargando datos: ' + e.message, 'err'); }
+    } catch(e) { UI.toast('Error cargando datos: ' + e.message, 'err'); return false; }
   },
 
   renderUI() {

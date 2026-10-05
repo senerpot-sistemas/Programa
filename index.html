@@ -1426,7 +1426,7 @@
 <!-- ?v=YYYYMMDD en cada script local — cuando se sube un cambio, se sube
      también un número nuevo aquí, así el navegador de todo el equipo
      trae el archivo nuevo en vez de reusar uno guardado de antes. -->
-<script src="js/config.js?v=20260918c"></script>
+<script src="js/config.js?v=20261005a"></script>
 
 <script>
   // CONFIG (apiUrl / apiKey) ahora vive en js/config.js, un archivo local
@@ -1495,27 +1495,49 @@
   };
 
   // ── NAVEGAR + inicializar módulo ─────────────────────────
+  // Un módulo solo se marca como inicializado cuando su init() TERMINÓ bien
+  // (cada init devuelve false si falló). Antes se marcaba al empezar, así
+  // que un fallo de red dejaba el módulo vacío hasta recargar con F5.
+  // _modIniciando evita arrancar dos veces el mismo módulo si la persona
+  // sale y vuelve mientras su primera carga sigue en curso.
   const _modInited = {};
+  const _modIniciando = {};
+  function _iniciarModulo(nombre, obtenerModulo) {
+    if (_modInited[nombre] || _modIniciando[nombre]) return;
+    const mod = obtenerModulo();
+    if (!mod) return;
+    const marca = {};
+    const generacion = (typeof AUTH !== 'undefined' && AUTH._generacion) || 0;
+    _modIniciando[nombre] = marca;
+    Promise.resolve(mod.init())
+      .then(ok => {
+        // Si la sesión se cerró mientras cargaba, ese resultado ya no vale.
+        const mismaSesion = generacion === ((typeof AUTH !== 'undefined' && AUTH._generacion) || 0);
+        if (ok !== false && mismaSesion) _modInited[nombre] = true;
+      })
+      .catch(() => {})
+      .finally(() => { if (_modIniciando[nombre] === marca) delete _modIniciando[nombre]; });
+  }
   const _navOriginal = navegarA;
   navegarA = function(modulo) {
     _navOriginal(modulo);
-    if (modulo === 'ofertas'      && !_modInited.ofertas      && typeof OFERTAS      !== 'undefined') { OFERTAS.init();      _modInited.ofertas = true; }
-    if (modulo === 'contabilidad' && !_modInited.contabilidad && typeof CONTABILIDAD !== 'undefined') { CONTABILIDAD.init(); _modInited.contabilidad = true; }
-    if (modulo === 'proyectos'    && !_modInited.proyectos    && typeof PROYECTOS    !== 'undefined') { PROYECTOS.init();    _modInited.proyectos = true; }
-    if (modulo === 'almacen'      && !_modInited.almacen      && typeof ALMACEN      !== 'undefined') { ALMACEN.init();      _modInited.almacen = true; }
-    if (modulo === 'panel'        && !_modInited.panel        && typeof PANEL        !== 'undefined') { PANEL.init();        _modInited.panel = true; }
-    if (modulo === 'usuarios'     && !_modInited.usuarios     && typeof USUARIOS     !== 'undefined') { USUARIOS.init();     _modInited.usuarios = true; }
+    if (modulo === 'ofertas')      _iniciarModulo('ofertas',      () => typeof OFERTAS      !== 'undefined' ? OFERTAS      : null);
+    if (modulo === 'contabilidad') _iniciarModulo('contabilidad', () => typeof CONTABILIDAD !== 'undefined' ? CONTABILIDAD : null);
+    if (modulo === 'proyectos')    _iniciarModulo('proyectos',    () => typeof PROYECTOS    !== 'undefined' ? PROYECTOS    : null);
+    if (modulo === 'almacen')      _iniciarModulo('almacen',      () => typeof ALMACEN      !== 'undefined' ? ALMACEN      : null);
+    if (modulo === 'panel')        _iniciarModulo('panel',        () => typeof PANEL        !== 'undefined' ? PANEL        : null);
+    if (modulo === 'usuarios')     _iniciarModulo('usuarios',     () => typeof USUARIOS     !== 'undefined' ? USUARIOS     : null);
   };
 </script>
 
 <!-- Chart.js para el dashboard -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-<script src="js/api.js?v=20260918c"></script>
-<script src="js/auth.js?v=20260918c"></script>
-<script src="js/ofertas.js?v=20260918c"></script>
-<script src="js/contabilidad.js?v=20260918c"></script>
-<script src="js/modulos.js?v=20260918c"></script>
+<script src="js/api.js?v=20261005a"></script>
+<script src="js/auth.js?v=20261005a"></script>
+<script src="js/ofertas.js?v=20261005a"></script>
+<script src="js/contabilidad.js?v=20261005a"></script>
+<script src="js/modulos.js?v=20261005a"></script>
 
 <style>
   /* KPI cards */

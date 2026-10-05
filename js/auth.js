@@ -92,6 +92,12 @@ const AUTH = {
       sessionStorage.setItem('senerpot_nombre', res.nombre || usuario);
       sessionStorage.setItem('senerpot_usuario', usuario);
       this.rol = res.rol; this.nombre = res.nombre || usuario; this.usuario = usuario;
+      // Si entra OTRA persona en la misma pestaña, se recarga: así no queda en pantalla
+      // nada (tablas, formularios a medias) de quien estuvo antes. La sesión nueva ya
+      // quedó en sessionStorage, así que al recargar entra directo a la app.
+      const anterior = this._usuarioAnterior;
+      this._usuarioAnterior = null;
+      if (anterior && anterior.toLowerCase() !== usuario.toLowerCase()) { location.reload(); return; }
       this.mostrarApp();
     } catch (e) {
       if (errorEl) { errorEl.textContent = e.message; errorEl.style.display = 'block'; }
@@ -101,7 +107,9 @@ const AUTH = {
   },
 
   async logout() {
-    try { await API.call('logout', {}); } catch (e) { /* si ya no hay sesión válida, no importa */ }
+    // El aviso al servidor se manda con el token actual (API.call lo lee de inmediato)
+    // y NO se espera: si Google tarda, la persona no debe quedarse sin poder salir.
+    API.call('logout', {}).catch(() => { /* si ya no hay sesión válida, no importa */ });
     this._limpiarSesionLocal();
     this.mostrarLogin();
   },
@@ -116,12 +124,40 @@ const AUTH = {
     this.mostrarLogin();
   },
 
+  // Cierra TODO lo que pertenece a la sesión en este navegador. No toca nada del
+  // servidor (hojas, datos, configuración): solo copias locales de quien estuvo.
   _limpiarSesionLocal() {
+    if (this.usuario) this._usuarioAnterior = this.usuario;
+    this._generacion = (this._generacion || 0) + 1; // invalida cargas de módulos que sigan en curso
+
     sessionStorage.removeItem('senerpot_token');
     sessionStorage.removeItem('senerpot_rol');
     sessionStorage.removeItem('senerpot_nombre');
     sessionStorage.removeItem('senerpot_usuario');
     this.rol = ''; this.nombre = ''; this.usuario = '';
+
+    // Copias en el navegador con datos del usuario anterior (obtenerDatos, ERP, dashboard...)
+    try {
+      const claves = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf('senerpot_cache_') === 0) claves.push(k);
+      }
+      claves.forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
+
+    // Estado en memoria: peticiones compartidas, bloqueos y datos de cada módulo
+    API._enVuelo = {};
+    API._noConfirmadas = {};
+    DatosERP._promesa = null;
+    if (typeof _modInited !== 'undefined')    Object.keys(_modInited).forEach(k => delete _modInited[k]);
+    if (typeof _modIniciando !== 'undefined') Object.keys(_modIniciando).forEach(k => delete _modIniciando[k]);
+    if (typeof OFERTAS      !== 'undefined') OFERTAS.DB      = { clientes: [], items: [], kits: [], activos: [], historial: [] };
+    if (typeof PROYECTOS    !== 'undefined') PROYECTOS.DB    = { proyectos: [], historial: [], clientes: [] };
+    if (typeof ALMACEN      !== 'undefined') { ALMACEN.DB = []; ALMACEN._proyectos = []; }
+    if (typeof CONTABILIDAD !== 'undefined') CONTABILIDAD.DB = { config: {}, puc: [], terceros: [], productos: [], cartera: [], memoria: [] };
+    if (typeof PANEL        !== 'undefined') PANEL._erp      = null;
+    if (typeof USUARIOS     !== 'undefined') USUARIOS.DB     = [];
   },
 
   async cambiarPasswordPropia(btn) {
@@ -169,7 +205,7 @@ const USUARIOS = {
     try {
       this.DB = await API.call('listarUsuarios');
       this.render();
-    } catch (e) { UI.toast('Error cargando usuarios: ' + e.message, 'err'); }
+    } catch (e) { UI.toast('Error cargando usuarios: ' + e.message, 'err'); return false; }
   },
 
   render() {
