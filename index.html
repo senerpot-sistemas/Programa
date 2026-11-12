@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <!-- Tipografía oficial NODIA (Montserrat para títulos, Source Sans 3 para texto), alojada en el propio sitio:
        ya no depende del CDN de Google Fonts. -->
-  <link rel="stylesheet" href="css/fonts.css?v=20261113a">
+  <link rel="stylesheet" href="css/fonts.css?v=20261113b">
   <!-- Fuente de íconos Tabler retirada — fallaba en algunos equipos (antivirus/
        firewall bloqueando el CDN) y dejaba botones sin ícono visible. Todos
        los íconos de la app ahora son emoji, que dependen del sistema
@@ -277,6 +277,7 @@
     .paper { background:var(--surface); padding:24px; border-radius:var(--radius); box-shadow:var(--shadow); }
 
     /* Section title bar */
+    .nd-only { display:none; } body.fmt-nodia th.nd-only, body.fmt-nodia td.nd-only { display:table-cell; }
     .section-title-bar { background:var(--primary); color:white; padding:8px 14px; font-size:13px; font-weight:500; border-radius:5px; margin:20px 0 10px; display:flex; justify-content:space-between; align-items:center; }
 
     /* Client grid */
@@ -765,6 +766,11 @@
               <input type="text" id="of-fecha" class="fecha-display" readonly>
             </div>
 
+            <div class="field-group" style="margin:10px 0 4px;max-width:340px;">
+              <label>Formato del documento</label>
+              <select id="of-formato" onchange="OFERTAS_NODIA.cambiarFormato()"><option value="DOC">Documento (actual)</option><option value="NODIA">PDF NODIA (nuevo)</option></select>
+            </div>
+
             <div class="section-title-bar">
               Cliente
               <button class="btn-save-kit" onclick="OFERTAS.modalCliente()">+ Nuevo</button>
@@ -807,6 +813,53 @@
               <button class="btn-add-row" onclick="OFERTAS.addAlcance()">+ Agregar actividad</button>
             </div>
 
+            <!-- ═══ Formato PDF NODIA (opcional) ═══ -->
+            <div id="of-nodia-panel" style="display:none;">
+              <div class="section-title-bar">Datos del PDF NODIA</div>
+              <div style="font-size:12px;color:#5B6675;margin-bottom:10px;">Todo es editable y opcional: solo se imprime lo que escribas aquí. No se agregan pruebas, actividades ni repuestos por elegir un tipo de equipo, y las pruebas y repuestos solo deben figurar si están contemplados en el alcance contratado.</div>
+              <div class="conditions-grid" style="margin-bottom:10px;">
+                <div class="field-group"><label>Tipo de servicio</label>
+                  <select id="of-nd-servicio"><option value="MANTENIMIENTO">Mantenimiento eléctrico</option><option value="TDR">Consultoría — Términos de Referencia</option><option value="SOLAR" disabled>Solar fotovoltaica (requiere datos del Simulador: pendiente)</option></select></div>
+                <div class="field-group"><label>Título del servicio</label><input type="text" id="of-nd-titulo" placeholder="Ej.: Mantenimiento preventivo y correctivo de transformador en aceite"></div>
+                <div class="field-group"><label>Ubicación</label><input type="text" id="of-nd-ubicacion" placeholder="Ciudad o dirección de la obra"></div>
+                <div class="field-group"><label>Vigencia de la oferta (días)</label><input type="number" id="of-nd-vigencia" min="1" max="365" value="15" oninput="OFERTAS_NODIA.sincronizarVigencia()"></div>
+                <div class="field-group"><label>Foto de portada</label>
+                  <select id="of-nd-foto"><option value="NINGUNA">Sin foto (panel de marca)</option><option value="TRANSFORMADOR_ACEITE">Imagen institucional: transformador en aceite</option><option value="PANELES_SOLARES">Imagen institucional: paneles solares</option></select></div>
+                <div class="field-group"><label style="text-transform:none;font-weight:600;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="of-nd-firmar" style="width:auto;"> Incluir la firma de Cristian Chamorro G. (Director de Operaciones)</label></div>
+              </div>
+              <div class="field-group" style="margin-bottom:10px;"><label>Resumen de la portada (opcional)</label><textarea id="of-nd-resumen" rows="2"></textarea></div>
+
+              <div class="field-group"><label>Ficha técnica del equipo (todos los campos son opcionales)</label></div>
+              <div class="conditions-grid" style="margin-bottom:10px;">
+                <div class="field-group"><label>Tipo de equipo</label><input type="text" id="of-nd-eq-tipo" placeholder="Transformador de distribución en aceite"></div>
+                <div class="field-group"><label>Marca</label><input type="text" id="of-nd-eq-marca"></div>
+                <div class="field-group"><label>Modelo</label><input type="text" id="of-nd-eq-modelo"></div>
+                <div class="field-group"><label>N.° de serie</label><input type="text" id="of-nd-eq-serie"></div>
+                <div class="field-group"><label>Capacidad (kVA)</label><input type="number" id="of-nd-eq-kva" step="any"></div>
+                <div class="field-group"><label>Tensión primaria (V)</label><input type="number" id="of-nd-eq-vp" step="any"></div>
+                <div class="field-group"><label>Tensión secundaria (V)</label><input type="number" id="of-nd-eq-vs" step="any"></div>
+                <div class="field-group"><label>Refrigeración</label><input type="text" id="of-nd-eq-refrig" placeholder="Ej.: ONAN"></div>
+                <div class="field-group"><label>Fases</label><input type="text" id="of-nd-eq-fases" placeholder="Trifásico / Monofásico"></div>
+                <div class="field-group"><label>Año de fabricación</label><input type="number" id="of-nd-eq-anio" min="1900" max="2100"></div>
+                <div class="field-group"><label>Ubicación del equipo</label><input type="text" id="of-nd-eq-ubic"></div>
+              </div>
+
+              <div class="field-group" style="margin-bottom:10px;"><label>Pruebas contempladas en el alcance (una por línea)</label><textarea id="of-nd-pruebas" rows="3"></textarea></div>
+              <div class="conditions-grid" style="margin-bottom:10px;">
+                <div class="field-group"><label>Materiales (uno por línea)</label><textarea id="of-nd-materiales" rows="3"></textarea></div>
+                <div class="field-group"><label>Repuestos contemplados (uno por línea)</label><textarea id="of-nd-repuestos" rows="3"></textarea></div>
+                <div class="field-group"><label>Entregables (uno por línea)</label><textarea id="of-nd-entregables" rows="3"></textarea></div>
+                <div class="field-group"><label>Exclusiones particulares (una por línea)</label><textarea id="of-nd-exclusiones" rows="3"></textarea></div>
+              </div>
+              <div class="field-group" style="margin-bottom:10px;"><label>Garantías (una por línea; evita prometer resultados absolutos)</label><textarea id="of-nd-garantias" rows="2"></textarea></div>
+
+              <div class="field-group"><label>Condiciones de pago (los porcentajes deben sumar 100 %)</label>
+                <table class="data-tbl" style="margin-top:4px;"><thead><tr><th style="width:90px">%</th><th>Concepto</th><th style="width:130px;text-align:right">Valor</th><th style="width:50px"></th></tr></thead><tbody id="of-nd-tbody-pagos"></tbody></table>
+                <button class="btn-add-row" onclick="OFERTAS_NODIA.agregarPago()">+ Agregar pago</button>
+                <div id="of-nd-pagos-resumen" style="font-size:12px;margin-top:4px;"></div>
+              </div>
+            </div>
+
             <div class="section-title-bar">
               Tabla Económica
               <div style="display:flex;gap:6px;">
@@ -823,13 +876,14 @@
               <thead><tr>
                 <th style="width:70px">Ítem</th><th>Descripción</th>
                 <th style="width:45px">UN</th><th style="width:55px">Cant</th>
-                <th style="width:100px">Vr. Unit</th><th style="width:100px">Total</th>
+                <th style="width:100px">Vr. Unit</th><th class="nd-only" style="width:90px">IVA</th><th style="width:100px">Total</th>
                 <th style="width:150px"></th>
               </tr></thead>
               <tbody id="of-tbody-items"></tbody>
             </table>
             </div>
             <button class="btn-add-row" onclick="OFERTAS.addFila()">+ Fila en blanco</button>
+            <div id="of-nd-soporte" style="display:none;margin:10px 0;padding:10px;background:#F4F7FA;border:1px solid var(--border);border-radius:8px;"></div>
 
             <div class="field-group" style="margin:14px 0 6px;">
               <label style="display:flex;align-items:center;gap:6px;margin:0;font-weight:600;">
@@ -850,6 +904,7 @@
                 <span class="aiu-line" id="of-aiu-row-i" style="display:none;">Imprevistos:</span><span class="aiu-line" id="of-aiu-val-i" style="display:none;">$ 0</span>
                 <span class="aiu-line" id="of-aiu-row-u" style="display:none;">Utilidad:</span><span class="aiu-line" id="of-aiu-val-u" style="display:none;">$ 0</span>
                 <span class="aiu-line" id="of-aiu-row-sub" style="display:none;">Subtotal AIU:</span><span class="aiu-line" id="of-aiu-val-sub" style="display:none;">$ 0</span>
+                <span id="of-nd-row-ng" style="display:none;">Excluido o exento:</span><span id="of-nd-val-ng" style="display:none;">$ 0</span>
                 <span id="of-iva-label">IVA 19%:</span><span id="of-iva">$ 0</span>
                 <span class="total-label">Total:</span><span class="total-value" id="of-total">$ 0</span>
               </div>
@@ -868,7 +923,7 @@
 
             <div class="action-row" style="margin-top:28px;">
               <button class="btn-draft" onclick="OFERTAS.guardarBorrador(this)">Guardar borrador</button>
-              <button class="btn-generate" onclick="OFERTAS.generarDocumento(this)">Generar oferta (Doc)</button>
+              <button class="btn-generate" id="of-btn-generar" onclick="OFERTAS.generarDocumento(this)">Generar oferta (Doc)</button>
             </div>
           </div>
         </div>
@@ -1443,7 +1498,7 @@
 <!-- ?v=YYYYMMDD en cada script local — cuando se sube un cambio, se sube
      también un número nuevo aquí, así el navegador de todo el equipo
      trae el archivo nuevo en vez de reusar uno guardado de antes. -->
-<script src="js/config.js?v=20261113a"></script>
+<script src="js/config.js?v=20261113b"></script>
 
 <script>
   // CONFIG (apiUrl / apiKey) ahora vive en js/config.js, un archivo local
@@ -1550,11 +1605,12 @@
 <!-- Chart.js para el dashboard -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-<script src="js/api.js?v=20261113a"></script>
-<script src="js/auth.js?v=20261113a"></script>
-<script src="js/ofertas.js?v=20261113a"></script>
-<script src="js/contabilidad.js?v=20261113a"></script>
-<script src="js/modulos.js?v=20261113a"></script>
+<script src="js/api.js?v=20261113b"></script>
+<script src="js/auth.js?v=20261113b"></script>
+<script src="js/ofertas.js?v=20261113b"></script>
+<script src="js/ofertas_nodia.js?v=20261113b"></script>
+<script src="js/contabilidad.js?v=20261113b"></script>
+<script src="js/modulos.js?v=20261113b"></script>
 
 <style>
   /* KPI cards */

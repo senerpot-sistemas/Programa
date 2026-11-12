@@ -692,12 +692,16 @@ const OFERTAS = {
     const cant  = datos?.cant || 1;
     const unit  = datos?.val  || 0;
     const tot   = Number(cant) * Number(unit);
+    if (datos?.fundamento) tr.dataset.fundamento = datos.fundamento;
+    if (datos?.soporte) tr.dataset.soporte = datos.soporte;
+    if (datos?.hasta) tr.dataset.hasta = datos.hasta;
     tr.innerHTML = `
       <td><input type="text"   class="inp-cod"   value="${cod}"></td>
       <td><input type="text"   class="inp-desc"  value="${desc}" placeholder="Descripción..."></td>
       <td><input type="text"   class="inp-un"    value="UN" style="text-align:center;"></td>
       <td><input type="number" class="inp-cant"  value="${cant}" onchange="OFERTAS.calcFila(this)"></td>
       <td><input type="number" class="inp-val"   value="${unit}" onchange="OFERTAS.calcFila(this)"></td>
+      ${typeof OFERTAS_NODIA !== 'undefined' ? OFERTAS_NODIA.celdaIva(datos?.iva || '19') : ''}
       <td><input type="text"   class="inp-total" value="${tot}"  readonly style="background:#f5f5f5;"></td>
       <td style="text-align:center;white-space:nowrap;">
         <button class="btn-icon" style="color:#888" onclick="OFERTAS.moverFila(this,-1)">↑</button>
@@ -738,7 +742,7 @@ const OFERTAS = {
     const row = btn.closest('tr');
     if (dir === -1 && row.previousElementSibling) row.parentNode.insertBefore(row, row.previousElementSibling);
     else if (dir === 1 && row.nextElementSibling) row.parentNode.insertBefore(row.nextElementSibling, row);
-    if (row.parentNode?.id === 'of-tbody-items') this.renumerarItems();
+    if (row.parentNode?.id === 'of-tbody-items') { this.renumerarItems(); if (typeof OFERTAS_NODIA !== 'undefined') OFERTAS_NODIA.refrescarSoporte(); }
   },
 
   calcFila(input) {
@@ -749,7 +753,7 @@ const OFERTAS = {
     this.calcularTotales();
   },
 
-  borrarFila(btn) { btn.closest('tr').remove(); this.calcularTotales(); this.renumerarItems(); },
+  borrarFila(btn) { btn.closest('tr').remove(); this.calcularTotales(); this.renumerarItems(); if (typeof OFERTAS_NODIA !== 'undefined') OFERTAS_NODIA.refrescarSoporte(); },
 
   toggleAIU() {
     const on = document.getElementById('of-aiu-check').checked;
@@ -765,6 +769,7 @@ const OFERTAS = {
   // quedaron ya las cuentas del PUC (41652001/02/03 y 24080211 "IVA 19%
   // AIU"), este cálculo solo refleja ese mismo criterio en la oferta.
   calcularTotales() {
+    if (typeof OFERTAS_NODIA !== 'undefined' && OFERTAS_NODIA.activo()) { OFERTAS_NODIA.totales(); return; }
     let sub = 0;
     document.querySelectorAll('.inp-total').forEach(i => sub += parseFloat(i.value || 0));
     document.getElementById('of-subtotal').textContent = UI.moneda(sub);
@@ -904,7 +909,7 @@ const OFERTAS = {
         total:       tr.querySelector('.inp-total').value
       });
     });
-    return {
+    const datos = {
       fechaHeader:  document.getElementById('of-fecha').value,
       consecutivo:  document.getElementById('of-consecutivo').value,
       cliente,
@@ -929,6 +934,7 @@ const OFERTAS = {
         pctUtilidad:    document.getElementById('of-aiu-u')?.value || 0
       }
     };
+    return (typeof OFERTAS_NODIA !== 'undefined') ? OFERTAS_NODIA.recolectar(datos) : datos;
   },
 
   // ──────────────────────────────────────────
@@ -965,14 +971,22 @@ const OFERTAS = {
     const datos = this.recuperarFormulario();
     if (!datos) { UI.toast('Seleccione un cliente', 'warn'); return; }
     if (!datos.consecutivo) { UI.toast('Ingrese el N° de oferta', 'warn'); return; }
+    if (typeof OFERTAS_NODIA !== 'undefined') {
+      const errores = OFERTAS_NODIA.validar();
+      if (errores.length) { UI.toast(errores[0], 'warn'); return; }
+    }
     datos.total = document.getElementById('of-total').textContent;
     this._generandoDocumento = true;
     UI.spin(btn, true);
     try {
-      const url = await API.call('procesarOferta', datos);
-      window.open(url, '_blank');
+      const res = await API.call('procesarOferta', datos);
+      const url = (res && typeof res === 'object') ? res.url : res;
+      if (url) window.open(url, '_blank');
       await this.recargar();
-      UI.toast('Oferta generada exitosamente', 'ok');
+      if (res && typeof res === 'object' && res.nodia) {
+        UI.toast('Oferta NODIA generada (versión ' + res.version + ', vigente hasta ' + res.vigenciaHasta + ').', 'ok');
+        if (res.avisos && res.avisos.length) UI.toast('Revisar: ' + res.avisos[0], 'warn');
+      } else UI.toast('Oferta generada exitosamente', 'ok');
     } catch(e) { UI.toast('Error: ' + e.message, 'err'); }
     finally { this._generandoDocumento = false; UI.spin(btn, false); }
   },
@@ -1037,7 +1051,8 @@ const OFERTAS = {
     document.getElementById('of-tbody-alcance').innerHTML = '';
     data.textos.alcance_act_lista?.forEach(t => this.addAlcance(t));
     document.getElementById('of-tbody-items').innerHTML = '';
-    data.items?.forEach(it => this.addFila({ cod: it.codigo, desc: it.descripcion, val: it.unitario, cant: it.cantidad }));
+    data.items?.forEach(it => this.addFila({ cod: it.codigo, desc: it.descripcion, val: it.unitario, cant: it.cantidad,
+      iva: it.tratamiento === 'EXCLUIDO' || it.tratamiento === 'EXENTO' ? it.tratamiento : String(it.tarifaIva || 19), fundamento: it.fundamento, soporte: it.soporte, hasta: it.soporteVigenteHasta }));
 
     const aiu = data.aiu || {};
     document.getElementById('of-aiu-check').checked = !!aiu.activo;
@@ -1045,6 +1060,7 @@ const OFERTAS = {
     set('of-aiu-i', aiu.pctImprevistos ?? 6);
     set('of-aiu-u', aiu.pctUtilidad    ?? 4);
     this.toggleAIU();
+    if (typeof OFERTAS_NODIA !== 'undefined') OFERTAS_NODIA.restaurar(data);
   },
 
   // ──────────────────────────────────────────

@@ -112,7 +112,12 @@ const API = {
       const ctrl  = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), timeoutMs);
       try {
-        const res = await fetch(fullUrl, { redirect: 'follow', signal: ctrl.signal });
+        // Google rechaza URL de ~10 KB o más (HTTP 400). Solo en ese caso se envía por POST (doPost del backend aplica la misma
+        // clave, sesión y permisos). Text/plain evita la petición previa de CORS. Las llamadas normales siguen yendo por GET igual que siempre.
+        const res = fullUrl.length > 7000
+          ? await fetch(url, { method: 'POST', redirect: 'follow', signal: ctrl.signal, headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify({ action: action, params: params, key: this.key, token: this.token }) })
+          : await fetch(fullUrl, { redirect: 'follow', signal: ctrl.signal });
         if (res.status === 401 || res.status === 403) {
           const e = new Error('Acceso denegado (HTTP ' + res.status + ')');
           e.definitivo = true;
