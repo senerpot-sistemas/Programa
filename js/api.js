@@ -330,7 +330,7 @@ const UI = {
       document.body.appendChild(el);
     }
     const colores = {
-      ok:   { bg: '#009E60', txt: '#fff' },
+      ok:   { bg: '#4C9F2E', txt: '#fff' },
       err:  { bg: '#EF4444', txt: '#fff' },
       warn: { bg: '#F59E0B', txt: '#fff' },
       info: { bg: '#3B82F6', txt: '#fff' }

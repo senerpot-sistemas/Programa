@@ -9,6 +9,6 @@
 const CONFIG = {
   apiUrl:  'https://script.google.com/macros/s/TU_ID_DE_DESPLIEGUE/exec',
   apiKey:  'TU_API_KEY_AQUI', // debe coincidir con API_KEY en Appscript/Api.gs.txt
-  empresa: 'SENERPOT',
+  empresa: 'NODIA',
   version: '1.0'
 };

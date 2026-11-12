@@ -505,7 +505,7 @@ const CONTABILIDAD = {
         document.getElementById('ct-res-nombre').textContent = nombre;
         document.getElementById('ct-res-nit').textContent    = 'NIT: ' + nit;
         document.getElementById('ct-res-saldo').textContent  = UI.moneda(res.saldo);
-        document.getElementById('ct-res-saldo').style.color  = res.saldo >= 0 ? '#D32F2F' : '#009E60';
+        document.getElementById('ct-res-saldo').style.color  = res.saldo >= 0 ? '#D32F2F' : '#4C9F2E';
         document.getElementById('ct-res-estado').textContent = res.saldo === 0 ? 'PAZ Y SALVO' : res.saldo > 0 ? 'DEUDOR' : 'A FAVOR';
       } else if (header) {
         header.style.display = 'none';

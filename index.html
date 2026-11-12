@@ -12,27 +12,33 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>SENERPOT — Sistema Integral</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <title>NODIA — Sistema Integral</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+  <link rel="apple-touch-icon" href="img/favicon-180.png">
   <!-- Cada llamada al backend abre conexión a estos dos hosts (script.google.com y, tras la
        redirección, script.googleusercontent.com): abrirlas mientras la persona escribe su
        usuario ahorra ~0,3 s en el login y en la primera lectura. crossorigin = mismo tipo de
        conexión que usa fetch() entre dominios. -->
   <link rel="preconnect" href="https://script.google.com" crossorigin>
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Tipografía oficial NODIA (Montserrat para títulos, Source Sans 3 para texto), alojada en el propio sitio:
+       ya no depende del CDN de Google Fonts. -->
+  <link rel="stylesheet" href="css/fonts.css?v=20261113a">
   <!-- Fuente de íconos Tabler retirada — fallaba en algunos equipos (antivirus/
        firewall bloqueando el CDN) y dejaba botones sin ícono visible. Todos
        los íconos de la app ahora son emoji, que dependen del sistema
        operativo, no de un archivo externo. -->
   <style>
     :root {
-      --primary:       #009E60;
-      --primary-dark:  #00593E;
-      --primary-light: #E8F5EE;
-      --bg:            #F0F4F8;
+      --primary:       #0077B6;
+      --primary-dark:  #0B3D62;
+      --primary-light: #E3F0F8;
+      --accent:        #6DBE45;   /* verde energía */
+      --ok:            #4C9F2E;   /* verde de éxito: tono más oscuro del verde energía, legible sobre blanco */
+      --ok-light:      #EAF5E4;
+      --bg:            #F3F5F9;
       --surface:       #FFFFFF;
-      --text:          #1E293B;
+      --text:          #374151;
       --text-muted:    #64748B;
       --border:        #E2E8F0;
       --shadow:        0 1px 3px rgba(0,0,0,0.08);
@@ -42,9 +48,11 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    h1, h2, h3, h4, .page-title, .section-title-bar, .brand-name { font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif; }
+    button, input, select, textarea { font-family: inherit; }
 
     body {
-      font-family: 'Roboto', sans-serif;
+      font-family: 'Source Sans 3', 'Segoe UI', Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
       height: 100vh;
@@ -106,7 +114,7 @@
     }
     .nav-item i { font-size: 18px; flex-shrink: 0; }
     .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
-    .nav-item.active { background: var(--primary); color: #fff; }
+    .nav-item.active { background: var(--primary); color: #fff; box-shadow: inset 3px 0 0 var(--accent); }
 
     .nav-badge {
       margin-left: auto;
@@ -457,11 +465,11 @@
 <body>
 
 <!-- ═══ LOGIN ═══ -->
-<div id="login-screen" style="display:flex;min-height:100vh;align-items:center;justify-content:center;background:linear-gradient(135deg,#00593E,#009E60);">
-  <div style="background:#fff;border-radius:12px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,0.25);">
+<div id="login-screen" style="display:flex;min-height:100vh;align-items:center;justify-content:center;background:linear-gradient(135deg,#0B3D62,#0077B6);">
+  <div style="background:#fff;border-radius:12px;padding:36px 32px;border-bottom:4px solid #6DBE45;width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,0.25);">
     <div style="text-align:center;margin-bottom:24px;">
-      <div style="font-size:24px;font-weight:700;color:#00593E;letter-spacing:1px;">SENER<span style="font-weight:400;opacity:.6;">POT</span></div>
-      <div style="font-size:12px;color:#64748B;margin-top:4px;">Sistema Integral</div>
+      <img src="img/nodia-logo.png" alt="NODIA — Energía, Potencia, Mantenimiento" style="width:230px;max-width:100%;height:auto;">
+      <div style="font-size:12px;color:#64748B;margin-top:10px;letter-spacing:.5px;">Sistema Integral</div>
     </div>
     <div id="login-error" style="display:none;background:#FEE2E2;color:#B91C1C;padding:9px 12px;border-radius:6px;font-size:12.5px;margin-bottom:14px;"></div>
     <div class="field-group mb15">
@@ -486,7 +494,7 @@
   <div class="sidebar" id="sidebar">
 
     <div class="sidebar-brand" onclick="navegarA('home')">
-      <div class="brand-name">SENER<span>POT</span></div>
+      <img src="img/nodia-logo-blanco.png" alt="NODIA" style="width:150px;max-width:100%;height:auto;display:block;">
       <div class="brand-sub">Sistema Integral v1.0</div>
     </div>
 
@@ -556,7 +564,7 @@
         </div>
         <div class="modules-grid">
 
-          <div class="module-card" data-modulo="panel" style="--accent:#1D9E75" onclick="navegarA('panel')">
+          <div class="module-card" data-modulo="panel" style="--accent:#0077B6" onclick="navegarA('panel')">
             <div class="module-icon">📊</div>
             <div class="module-name">Panel</div>
             <div class="module-desc">KPIs, cartera pendiente y resumen del mes</div>
@@ -566,7 +574,7 @@
             </div>
           </div>
 
-          <div class="module-card" data-modulo="ofertas" style="--accent:#639922" onclick="navegarA('ofertas')">
+          <div class="module-card" data-modulo="ofertas" style="--accent:#6DBE45" onclick="navegarA('ofertas')">
             <div class="module-icon">📝</div>
             <div class="module-name">Ofertas</div>
             <div class="module-desc">Crear y gestionar propuestas comerciales</div>
@@ -576,7 +584,7 @@
             </div>
           </div>
 
-          <div class="module-card" data-modulo="proyectos" style="--accent:#185FA5" onclick="navegarA('proyectos')">
+          <div class="module-card" data-modulo="proyectos" style="--accent:#0B3D62" onclick="navegarA('proyectos')">
             <div class="module-icon">💼</div>
             <div class="module-name">Proyectos</div>
             <div class="module-desc">Órdenes de trabajo y seguimiento de servicios</div>
@@ -616,7 +624,7 @@
             </div>
           </div>
 
-          <div class="module-card" data-modulo="usuarios" style="--accent:#334155" onclick="navegarA('usuarios')">
+          <div class="module-card" data-modulo="usuarios" style="--accent:#374151" onclick="navegarA('usuarios')">
             <div class="module-icon">👥</div>
             <div class="module-name">Usuarios</div>
             <div class="module-desc">Cuentas de acceso y roles del equipo</div>
@@ -673,17 +681,17 @@
           </div>
           <div class="metric-grid">
             <div class="metric-card" style="--mc:#64748B;--mc-soft:#EDF1F5;"><div class="metric-icon">📄</div><div class="metric-label">Ofertas creadas</div><div class="metric-val" id="panel-of-total">0</div><div id="panel-of-total-trend"></div></div>
-            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon">⏱️</div><div class="metric-label">Generadas (pendientes)</div><div class="metric-val" id="panel-of-generadas">0</div></div>
-            <div class="metric-card" style="--mc:#009E60;--mc-soft:var(--primary-light);"><div class="metric-icon">✅</div><div class="metric-label">Aprobadas</div><div class="metric-val" id="panel-of-aprobadas">0</div><div id="panel-of-aprobadas-trend"></div></div>
+            <div class="metric-card" style="--mc:#0077B6;--mc-soft:#E3F0F8;"><div class="metric-icon">⏱️</div><div class="metric-label">Generadas (pendientes)</div><div class="metric-val" id="panel-of-generadas">0</div></div>
+            <div class="metric-card" style="--mc:#4C9F2E;--mc-soft:var(--ok-light);"><div class="metric-icon">✅</div><div class="metric-label">Aprobadas</div><div class="metric-val" id="panel-of-aprobadas">0</div><div id="panel-of-aprobadas-trend"></div></div>
             <div class="metric-card" style="--mc:#D32F2F;--mc-soft:#FBEAEA;"><div class="metric-icon">❌</div><div class="metric-label">Rechazadas</div><div class="metric-val" id="panel-of-rechazadas">0</div></div>
             <div class="metric-card" style="--mc:#8B5CF6;--mc-soft:#F1EBFC;"><div class="metric-icon">🪙</div><div class="metric-label">Valor cotizado</div><div class="metric-val" id="panel-of-valor">$ 0</div><div id="panel-of-valor-trend"></div></div>
           </div>
 
           <div class="panel-section-head"><h4><span class="dot"></span>Proyectos creados en el período</h4></div>
           <div class="metric-grid">
-            <div class="metric-card" style="--mc:#1D9E75;--mc-soft:var(--primary-light);"><div class="metric-icon">💼</div><div class="metric-label">Proyectos activos</div><div class="metric-val" id="panel-pry-activos">0</div></div>
+            <div class="metric-card" style="--mc:#0077B6;--mc-soft:var(--primary-light);"><div class="metric-icon">💼</div><div class="metric-label">Proyectos activos</div><div class="metric-val" id="panel-pry-activos">0</div></div>
             <div class="metric-card" style="--mc:#64748B;--mc-soft:#EDF1F5;"><div class="metric-icon">⏳</div><div class="metric-label">Por iniciar</div><div class="metric-val" id="panel-pry-porIniciar">0</div></div>
-            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon">⚙️</div><div class="metric-label">En progreso</div><div class="metric-val" id="panel-pry-enProgreso">0</div></div>
+            <div class="metric-card" style="--mc:#0077B6;--mc-soft:#E3F0F8;"><div class="metric-icon">⚙️</div><div class="metric-label">En progreso</div><div class="metric-val" id="panel-pry-enProgreso">0</div></div>
             <div class="metric-card" style="--mc:#F59E0B;--mc-soft:#FEF3E0;"><div class="metric-icon">💵</div><div class="metric-label">Valor proyectos activos</div><div class="metric-val" id="panel-pry-valor">$ 0</div></div>
           </div>
 
@@ -695,9 +703,9 @@
 
           <div class="panel-section-head"><h4><span class="dot"></span>Contabilidad — histórico de documentos</h4></div>
           <div class="metric-grid">
-            <div class="metric-card" style="--mc:#009E60;--mc-soft:var(--primary-light);"><div class="metric-icon">📈</div><div class="metric-label">Ventas</div><div class="metric-val" id="panel-ventas">$ 0</div></div>
+            <div class="metric-card" style="--mc:#4C9F2E;--mc-soft:var(--ok-light);"><div class="metric-icon">📈</div><div class="metric-label">Ventas</div><div class="metric-val" id="panel-ventas">$ 0</div></div>
             <div class="metric-card" style="--mc:#EF4444;--mc-soft:#FDECEC;"><div class="metric-icon">📉</div><div class="metric-label">Gastos</div><div class="metric-val" id="panel-gastos">$ 0</div></div>
-            <div class="metric-card" style="--mc:#3B82F6;--mc-soft:#E9F1FE;"><div class="metric-icon">💰</div><div class="metric-label">Utilidad</div><div class="metric-val" id="panel-utilidad">$ 0</div></div>
+            <div class="metric-card" style="--mc:#0077B6;--mc-soft:#E3F0F8;"><div class="metric-icon">💰</div><div class="metric-label">Utilidad</div><div class="metric-val" id="panel-utilidad">$ 0</div></div>
             <div class="metric-card" style="--mc:#8B5CF6;--mc-soft:#F1EBFC;"><div class="metric-icon">%</div><div class="metric-label">Margen</div><div class="metric-val" id="panel-margen">0%</div></div>
             <div class="metric-card" style="--mc:#F59E0B;--mc-soft:#FEF3E0;"><div class="metric-icon">👛</div><div class="metric-label">Cartera</div><div class="metric-val" id="panel-cartera">$ 0</div></div>
           </div>
@@ -720,11 +728,11 @@
              kpi-label, kpi-val, chart-card) para mantener coherencia visual. -->
         <div id="of-dash" style="margin-bottom:20px;">
           <div class="kpi-grid-5" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px;">
-            <div class="kpi-card" style="border-top-color:#3B82F6"><div class="kpi-label">Oportunidades (pendientes)</div><div class="kpi-val" id="of-dash-oportunidades">0</div></div>
-            <div class="kpi-card" style="border-top-color:#009E60"><div class="kpi-label">Aprobadas</div><div class="kpi-val" id="of-dash-aprobadas">0</div></div>
+            <div class="kpi-card" style="border-top-color:#0077B6"><div class="kpi-label">Oportunidades (pendientes)</div><div class="kpi-val" id="of-dash-oportunidades">0</div></div>
+            <div class="kpi-card" style="border-top-color:#4C9F2E"><div class="kpi-label">Aprobadas</div><div class="kpi-val" id="of-dash-aprobadas">0</div></div>
             <div class="kpi-card" style="border-top-color:#F59E0B"><div class="kpi-label">Pipeline abierto</div><div class="kpi-val" id="of-dash-pipeline">$ 0</div></div>
             <div class="kpi-card" style="border-top-color:#8B5CF6"><div class="kpi-label">Forecast</div><div class="kpi-val" id="of-dash-forecast">$ 0</div></div>
-            <div class="kpi-card" style="border-top-color:#1D9E75"><div class="kpi-label">Valor cerrado (con IVA)</div><div class="kpi-val" id="of-dash-ganado">$ 0</div></div>
+            <div class="kpi-card" style="border-top-color:#0077B6"><div class="kpi-label">Valor cerrado (con IVA)</div><div class="kpi-val" id="of-dash-ganado">$ 0</div></div>
           </div>
           <div class="chart-card"><div class="kpi-label" style="margin-bottom:10px;">Embudo de ofertas</div><div style="height:200px;"><canvas id="of-dash-chart"></canvas></div></div>
         </div>
@@ -1207,7 +1215,7 @@
           </div>
           <div style="font-size:11px;color:#888;margin-bottom:16px;">💡 Tres formas de buscar: escribe un <b>N° de Documento</b> exacto para ir directo a ese documento (sin importar el tercero) — o deja ese campo vacío y busca por <b>Tercero</b> (te trae todo su historial con saldo), o por <b>Tipo de documento</b> solo, para ver todos los de ese tipo (por ejemplo, todas las Notas Débito).</div>
           <div id="ct-result-cons" style="display:none;">
-            <div id="ct-res-header" style="background:linear-gradient(135deg,#00593E,#009E60);color:white;padding:18px 22px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div id="ct-res-header" style="background:linear-gradient(135deg,#0B3D62,#0077B6);color:white;padding:18px 22px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
               <div><div id="ct-res-nombre" style="font-size:18px;font-weight:700;">CLIENTE</div><div id="ct-res-nit" style="font-size:12px;opacity:0.8;">NIT: 000</div></div>
               <div style="text-align:right;"><div style="font-size:11px;opacity:0.8;">Saldo pendiente</div><div id="ct-res-saldo" style="font-size:24px;font-weight:700;">$ 0</div><div id="ct-res-estado" style="font-size:11px;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:10px;display:inline-block;">—</div></div>
             </div>
@@ -1435,7 +1443,7 @@
 <!-- ?v=YYYYMMDD en cada script local — cuando se sube un cambio, se sube
      también un número nuevo aquí, así el navegador de todo el equipo
      trae el archivo nuevo en vez de reusar uno guardado de antes. -->
-<script src="js/config.js?v=20261005b"></script>
+<script src="js/config.js?v=20261113a"></script>
 
 <script>
   // CONFIG (apiUrl / apiKey) ahora vive en js/config.js, un archivo local
@@ -1542,11 +1550,11 @@
 <!-- Chart.js para el dashboard -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-<script src="js/api.js?v=20261005b"></script>
-<script src="js/auth.js?v=20261005b"></script>
-<script src="js/ofertas.js?v=20261005b"></script>
-<script src="js/contabilidad.js?v=20261005b"></script>
-<script src="js/modulos.js?v=20261005b"></script>
+<script src="js/api.js?v=20261113a"></script>
+<script src="js/auth.js?v=20261113a"></script>
+<script src="js/ofertas.js?v=20261113a"></script>
+<script src="js/contabilidad.js?v=20261113a"></script>
+<script src="js/modulos.js?v=20261113a"></script>
 
 <style>
   /* KPI cards */
@@ -1556,7 +1564,7 @@
   .chart-card{background:var(--surface);padding:18px;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);}
 
   /* ── Panel ejecutivo ── */
-  .panel-hero{background:linear-gradient(135deg,var(--primary-dark) 0%,#02714A 55%,var(--primary) 100%);border-radius:18px;padding:30px 32px;color:#fff;margin-bottom:26px;position:relative;overflow:hidden;box-shadow:var(--shadow-md);}
+  .panel-hero{background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 62%,var(--accent) 100%);border-radius:18px;padding:30px 32px;color:#fff;margin-bottom:26px;position:relative;overflow:hidden;box-shadow:var(--shadow-md);}
   .panel-hero::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 88% -15%,rgba(255,255,255,.18),transparent 55%);pointer-events:none;}
   .panel-hero-grid{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-end;position:relative;z-index:1;}
   .panel-hero-main .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.78;margin-bottom:8px;font-weight:700;}

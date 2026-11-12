@@ -156,7 +156,7 @@ const OFERTAS = {
         labels: ['Oportunidades (pendientes)', 'Aprobadas', 'Rechazadas'],
         datasets: [{
           label: 'Ofertas', data: [nOportunidades, nAprobadas, nRechazadas],
-          backgroundColor: ['#3B82F6', '#009E60', '#D32F2F'], borderRadius: 4
+          backgroundColor: ['#0077B6', '#4C9F2E', '#D32F2F'], borderRadius: 4
         }]
       },
       options: {
@@ -418,10 +418,10 @@ const OFERTAS = {
     const cliente = this._envioActual?.cliente || 'estimado cliente';
     const urlDoc  = this._envioActual?.urlDoc || '';
     const idOf    = this._envioActual?.id || '';
-    document.getElementById('of-envio-asunto').value = 'Oferta comercial SENERPOT — ' + idOf;
+    document.getElementById('of-envio-asunto').value = 'Oferta comercial NODIA — ' + idOf;
     document.getElementById('of-envio-mensaje').value = esEmail
-      ? `Estimados ${cliente},\n\nNos permitimos enviar la siguiente oferta comercial para su consideración:\n\n${urlDoc}\n\nQuedamos atentos a cualquier duda o comentario al respecto.\n\nCordialmente,\nSENERPOT S.A.S.\nServicios de Energía y Potencia`
-      : `¡Hola! Desde SENERPOT nos permitimos enviarle la siguiente oferta comercial para su consideración:\n\n${urlDoc}\n\nQuedamos atentos a cualquier duda o comentario. En SENERPOT, siempre es un gusto ponerle energía a sus proyectos. ⚡\n\nSaludos cordiales.`;
+      ? `Estimados ${cliente},\n\nNos permitimos enviar la siguiente oferta comercial para su consideración:\n\n${urlDoc}\n\nQuedamos atentos a cualquier duda o comentario al respecto.\n\nCordialmente,\nNODIA S.A.S.\nEnergía · Potencia · Mantenimiento`
+      : `¡Hola! Desde NODIA nos permitimos enviarle la siguiente oferta comercial para su consideración:\n\n${urlDoc}\n\nQuedamos atentos a cualquier duda o comentario. En NODIA, siempre es un gusto ponerle energía a sus proyectos. ⚡\n\nSaludos cordiales.`;
   },
 
   confirmarEnvio() {

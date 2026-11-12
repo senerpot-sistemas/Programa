@@ -8,6 +8,6 @@
 const CONFIG = {
   apiUrl:  'https://script.google.com/macros/s/AKfycbxfrMfQfEE0LKHv6vLa8jwpQ6uvkjWx6rFxR85kZXxH2iZiTIRxcxtAjHUR_3LxK0LL/exec',
   apiKey:  '4589c62d-ea74-4dcd-88ef-0946039489ad', // debe coincidir con API_KEY en Appscript/Api.gs.txt
-  empresa: 'SENERPOT',
+  empresa: 'NODIA',
   version: '1.0'
 };

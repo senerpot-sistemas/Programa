@@ -400,7 +400,7 @@ const PROYECTOS = {
     if (!resumen) return;
     const totalReal = this.totalComprasProyecto(id);
     const diferencia = totalPresupuestado - totalReal;
-    const colorDif = diferencia >= 0 ? '#009E60' : '#D32F2F';
+    const colorDif = diferencia >= 0 ? '#4C9F2E' : '#D32F2F';
     resumen.innerHTML = `
       <div>Presupuestado: <b>${UI.moneda(totalPresupuestado)}</b>${pendientes.length ? ` <span style="color:#F59E0B;font-weight:400;">(incluye ${pendientes.length} sin guardar)</span>` : ''}</div>
       <div style="color:${colorDif};font-weight:700;">${diferencia >= 0 ? 'Disponible' : 'Excedido'}: ${UI.moneda(Math.abs(diferencia))}</div>`;
@@ -799,7 +799,7 @@ const PANEL = {
   // recargar los datos y volver a pintar no dependa de leer el DOM primero.
   periodo: null,
 
-  ESTADO_HEX: { POR_INICIAR:'#64748B', EN_PROGRESO:'#3B82F6', PAUSADO:'#F59E0B', TERMINADO:'#009E60', FACTURADO:'#1D9E75', COBRADO:'#00593E' },
+  ESTADO_HEX: { POR_INICIAR:'#64748B', EN_PROGRESO:'#0077B6', PAUSADO:'#F59E0B', TERMINADO:'#4C9F2E', FACTURADO:'#0B3D62', COBRADO:'#00593E' },
 
   async init() {
     const el = document.getElementById('panel-loader');
@@ -1012,7 +1012,7 @@ const PANEL = {
     const gCotizado = ctx.getContext('2d').createLinearGradient(0,0,0,260);
     gCotizado.addColorStop(0, 'rgba(139,92,246,.28)'); gCotizado.addColorStop(1, 'rgba(139,92,246,0)');
     const gAprobado = ctx.getContext('2d').createLinearGradient(0,0,0,260);
-    gAprobado.addColorStop(0, 'rgba(0,158,96,.32)'); gAprobado.addColorStop(1, 'rgba(0,158,96,0)');
+    gAprobado.addColorStop(0, 'rgba(76,159,46,.32)'); gAprobado.addColorStop(1, 'rgba(76,159,46,0)');
 
     this.charts.tendenciaOfertas = new Chart(ctx, {
       type: 'line',
@@ -1020,7 +1020,7 @@ const PANEL = {
         labels: MESES,
         datasets: [
           { label: 'Cotizado', data: cotizado, borderColor: '#8B5CF6', backgroundColor: gCotizado, tension: .4, fill: true, pointRadius: 2, pointHoverRadius: 5 },
-          { label: 'Aprobado', data: aprobado, borderColor: '#009E60', backgroundColor: gAprobado, tension: .4, fill: true, pointRadius: 2, pointHoverRadius: 5 }
+          { label: 'Aprobado', data: aprobado, borderColor: '#4C9F2E', backgroundColor: gAprobado, tension: .4, fill: true, pointRadius: 2, pointHoverRadius: 5 }
         ]
       },
       options: {
@@ -1078,7 +1078,7 @@ const PANEL = {
         data: {
           labels: charts.linea.labels,
           datasets: [
-            { label: 'Ventas',  data: charts.linea.ventas, borderColor: '#009E60', backgroundColor: 'rgba(0,158,96,0.08)', tension: 0.4, fill: true },
+            { label: 'Ventas',  data: charts.linea.ventas, borderColor: '#4C9F2E', backgroundColor: 'rgba(76,159,46,0.08)', tension: 0.4, fill: true },
             { label: 'Gastos',  data: charts.linea.gastos, borderColor: '#EF4444', backgroundColor: 'rgba(239,68,68,0.08)', tension: 0.4, fill: true }
           ]
         },
@@ -1093,7 +1093,7 @@ const PANEL = {
         type: 'doughnut',
         data: {
           labels: charts.barras.labels,
-          datasets: [{ data: charts.barras.valores, backgroundColor: ['#009E60','#3B82F6','#8B5CF6','#F59E0B','#EF4444'], borderWidth: 0 }]
+          datasets: [{ data: charts.barras.valores, backgroundColor: ['#4C9F2E','#0077B6','#8B5CF6','#F59E0B','#EF4444'], borderWidth: 0 }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#64748B', boxWidth: 10 } } } }
       });
