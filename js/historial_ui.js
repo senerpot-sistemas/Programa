@@ -128,7 +128,7 @@ const HX = {
   tarjetaHtml(f) { return '<article class="hx-card' + (f.av ? ' conaviso' : '') + '"><div class="hx-card-t"><div><b class="hx-card-id">' + this.esc(f.id) + '</b><div class="hx-mut">' + this.fecha(f.fi) + ' · ' + (f.cl ? this.esc(f.cl) : 'Sin clasificar') + '</div></div><div class="hx-card-tot">' + this.pesos(f.t) + '</div></div>' +
     '<div class="hx-card-cli">' + this.esc(f.c) + '</div><div class="hx-card-pills">' + this.sitHtml(f) + '</div><div class="hx-card-doc">' + this.docHtml(f) + '</div>' + (f.av ? '<div class="hx-card-av">⚠ ' + this.esc(this.AVISO[f.av] || f.av) + '</div>' : (f.ps && this.vivaE(f) ? '<div class="hx-card-prox">Próximo seguimiento: ' + this.fecha(f.ps) + '</div>' : '')) +
     '<div class="hx-card-act"><button type="button" class="hx-btn pri" onclick="HX.acciones(\'' + this.esc(f.id) + '\')">Acciones</button>' + this.accionRapida(f) + '</div></article>'; },
-  accionRapida(f) { if (f.e !== 'GENERADA' || f.ar || f.ci) return ''; return f.en === 'N' ? '<button type="button" class="hx-btn sec" onclick="HX.dlgEnvio(\'' + this.esc(f.id) + '\')">Registrar envío</button>' : '<button type="button" class="hx-btn sec" onclick="HX.dlgSeguimiento(\'' + this.esc(f.id) + '\')">Seguimiento</button>'; },
+  accionRapida(f) { if (f.e === 'BORRADOR') return '<button type="button" class="hx-btn sec" onclick="HX.editarBorrador(\'' + this.esc(f.id) + '\')">Editar borrador</button>'; if (f.e !== 'GENERADA' || f.ar || f.ci) return ''; return f.en === 'N' ? '<button type="button" class="hx-btn sec" onclick="HX.dlgEnvio(\'' + this.esc(f.id) + '\')">Registrar envío</button>' : '<button type="button" class="hx-btn sec" onclick="HX.dlgSeguimiento(\'' + this.esc(f.id) + '\')">Seguimiento</button>'; },
   fila(id) { return this.est.filas.find(f => f.id === id) || (this._extra || {})[id]; },
 
   // ───────────────────────── Avisos al ingresar ─────────────────────────
@@ -146,10 +146,13 @@ const HX = {
     this.$('hx-modal-t').textContent = titulo; this.$('hx-modal-c').innerHTML = html; m.classList.add('open');
   },
   cerrar() { const m = this.$('hx-modal'); if (m) m.classList.remove('open'); },
+  /** Un borrador no tiene documento: se abre en el generador para seguir editándolo (mismo consecutivo). */
+  editarBorrador(id) { this.cerrar(); UI.toast('Abriendo el borrador…', 'info'); OFERTAS.gestionarOferta(id, 'CARGAR'); },
   acciones(id) {
     const f = this.fila(id); if (!f) return; const url = ((OFERTAS.DB.historial || []).find(h => String(h.ID_OFERTA) === id) || {}).URL_DOC, priv = this.priv(), gen = f.e === 'GENERADA', libre = gen && !f.ar && !f.ci;
     const b = (t, fn, cls) => '<button type="button" class="hx-btn ' + (cls || 'sec') + ' blk" onclick="' + fn + '">' + t + '</button>', q = this.esc(id);
     let h = '<div class="hx-resumen"><b>' + this.esc(f.c) + '</b><div>' + this.pesos(f.t) + ' · ' + this.sitHtml(f) + '</div></div><div class="hx-acc">';
+    if (f.e === 'BORRADOR') h += b('Editar borrador', `HX.editarBorrador('${q}')`, 'pri') + '<div class="hx-nota">Es un borrador: todavía no tiene documento. Ábralo para seguir editándolo y generarlo.</div>';   // un borrador no tiene documento: se edita siempre
     if (url) h += '<a class="hx-btn pri blk" href="' + this.esc(url) + '" target="_blank" rel="noopener">Abrir documento</a>';
     if (libre && f.en === 'N') h += b('Registrar envío', `HX.dlgEnvio('${q}')`);
     if (libre && f.en === 'E') h += b('Registrar seguimiento', `HX.dlgSeguimiento('${q}')`) + b('Reprogramar seguimiento', `HX.dlgReprogramar('${q}')`);
