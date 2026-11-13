@@ -25,6 +25,7 @@
        ya no depende del CDN de Google Fonts. -->
   <link rel="stylesheet" href="css/fonts.css?v=20261113b">
   <link rel="stylesheet" href="css/oferta_wizard.css?v=w1">
+  <link rel="stylesheet" href="css/oferta_wizard_mejoras.css?v=m1">
   <!-- Fuente de íconos Tabler retirada — fallaba en algunos equipos (antivirus/
        firewall bloqueando el CDN) y dejaba botones sin ícono visible. Todos
        los íconos de la app ahora son emoji, que dependen del sistema
@@ -786,6 +787,16 @@
 
             <!-- ═════════ ETAPA 1 — Cliente, clase, tipo de trabajo y servicio ═════════ -->
             <section class="wz-panel on" data-step="1" aria-label="Cliente y servicio">
+              <div class="wz-card" id="wz-card-inicio">
+                <div class="wz-card-h">¿Cómo quiere empezar?</div>
+                <div class="wz-inicio">
+                  <button type="button" class="wz-btn ghost" onclick="WIZ.enBlanco()">Oferta en blanco</button>
+                  <button type="button" class="wz-btn pri" onclick="WIZ.verPaquetes()">Usar un paquete o kit</button>
+                  <button type="button" class="wz-btn ghost" onclick="WIZ.desdeOfertaAnterior()">Copiar una oferta anterior</button>
+                </div>
+                <small class="wz-hint">Un paquete trae clase, textos, actividades, partidas, pagos y garantías de un trabajo que ya hace con frecuencia. Todo se puede modificar después.</small>
+              </div>
+
               <div class="wz-card">
                 <div class="wz-card-h">Formato del documento</div>
                 <div class="wz-grid">
@@ -858,10 +869,10 @@
               </div>
 
               <div class="wz-card" id="wz-card-activos">
-                <div class="wz-card-h">Equipos o activos del cliente</div>
+                <div class="wz-card-h" id="wz-act-titulo">Equipos o activos del cliente</div>
                 <div class="table-scroll">
                 <table class="data-tbl wz-tbl">
-                  <thead><tr><th>Tipo</th><th>Marca</th><th style="width:70px">kVA</th><th>Serie</th><th>Voltaje</th><th style="width:50px"></th></tr></thead>
+                  <thead><tr><th id="wz-act-th-tipo">Equipo</th><th id="wz-act-th-marca">Marca</th><th id="wz-act-th-kva" style="width:110px">Capacidad (kVA, si aplica)</th><th id="wz-act-th-serie">Serie</th><th id="wz-act-th-volt">Tensión (V)</th><th style="width:50px"></th></tr></thead>
                   <tbody id="of-tbody-activos"></tbody>
                 </table>
                 </div>
@@ -889,13 +900,16 @@
               <div class="wz-card">
                 <div class="wz-card-h">Objeto y alcance
                   <span class="wz-card-tools"><select id="of-sel-kit-textos" onchange="OFERTAS.aplicarKit('TEXTOS',this.value)" class="mem-select"><option value="">Plantilla de textos…</option></select>
-                  <button type="button" class="wz-mini" onclick="OFERTAS.guardarKitUI('TEXTOS',this)">Guardar plantilla</button></span></div>
+                  <button type="button" class="wz-mini" onclick="OFERTAS.guardarKitUI('TEXTOS',this)">Guardar plantilla</button>
+                  <button type="button" class="wz-mini" onclick="WIZ.guardarComoPaquete()" title="Guarda toda la oferta (clase, textos, actividades, partidas, pagos, garantías) para reutilizarla">Guardar toda la oferta como paquete</button></span></div>
                 <div class="field-group wz-mb"><label for="of-objeto">Objeto de la oferta</label><input type="text" id="of-objeto" oninput="WIZ.alCambiar()"></div>
                 <div class="field-group wz-mb"><label for="of-alcance-gral">Alcance general</label><textarea id="of-alcance-gral" rows="3" oninput="WIZ.alCambiar()"></textarea></div>
                 <div class="field-group">
                   <label>Alcance detallado (actividades)</label>
                   <table class="data-tbl wz-tbl" style="margin-top:4px;"><tbody id="of-tbody-alcance"></tbody></table>
                   <button type="button" class="btn-add-row" onclick="OFERTAS.addAlcance()">+ Agregar actividad</button>
+                  <button type="button" class="btn-add-row" onclick="WIZ.pegarActividades()">Pegar varias actividades</button>
+                  <small class="wz-hint">Arrastre ⠿ para mover una actividad a cualquier posición.</small>
                 </div>
               </div>
 
@@ -1724,6 +1738,7 @@
 <script src="js/ofertas.js?v=20261113c"></script>
 <script src="js/ofertas_nodia.js?v=20261113b"></script>
 <script src="js/oferta_wizard.js?v=w1"></script>
+<script src="js/oferta_wizard_mejoras.js?v=m1"></script>
 <script src="js/contabilidad.js?v=20261113b"></script>
 <script src="js/modulos.js?v=20261113b"></script>
 

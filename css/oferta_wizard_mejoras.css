@@ -1,0 +1,67 @@
+/* NODIA — Nueva oferta: mejoras de uso diario (buscador, arrastrar, paquetes, partidas). */
+.wz-inicio { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.wz-inicio .wz-btn { flex: 1 1 200px; }
+
+/* Selector con buscador */
+.wz-combo { position: relative; flex: 1 1 auto; min-width: 0; }
+.wz-combo-in { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font: inherit; font-size: 14px; background: #fff; }
+.wz-combo-in:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 119, 182, .14); outline: none; }
+.wz-combo-lista { display: none; position: absolute; z-index: 60; left: 0; right: 0; top: calc(100% + 4px); max-height: 300px; overflow-y: auto; background: #fff; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(10, 40, 70, .18); }
+.wz-combo-lista.open { display: block; }
+.wz-combo-op { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #EEF2F6; }
+.wz-combo-op:last-child { border-bottom: 0; }
+.wz-combo-op.on, .wz-combo-op:hover { background: var(--primary-light); }
+.wz-combo-op .t { font-size: 13.5px; font-weight: 600; color: var(--primary-dark); line-height: 1.3; }
+.wz-combo-op .s { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+.wz-combo-op.libre .t { color: var(--primary); font-weight: 700; }
+.wz-combo-vacio { padding: 12px; font-size: 13px; color: var(--text-muted); }
+.input-with-btn .wz-combo { flex: 1; }
+.cat-add-row .wz-combo { flex: 1; }
+
+/* Mover arrastrando */
+.wz-grip { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 30px; margin-right: 2px; font-size: 18px; line-height: 1; color: #7B8A99; cursor: grab; border-radius: 6px; user-select: none; touch-action: none; }
+.wz-grip:hover { background: var(--primary-light); color: var(--primary-dark); }
+.wz-grip:active { cursor: grabbing; }
+tr.wz-arrastrando { background: #E8F4FC; outline: 2px dashed var(--primary); outline-offset: -2px; opacity: .92; }
+#of-tbody-alcance td:first-child { width: 34px; text-align: center; }
+
+/* Barra de herramientas de partidas */
+.wz-barra-partidas { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+.wz-dup { color: var(--primary) !important; }
+
+/* Ventana emergente */
+.wz-modal { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(10, 30, 50, .5); align-items: flex-start; justify-content: center; padding: 6vh 12px 12px; overflow-y: auto; }
+.wz-modal.open { display: flex; }
+.wz-modal-box { background: #fff; border-radius: 14px; width: 100%; padding: 16px 18px 18px; box-shadow: 0 20px 60px rgba(0, 0, 0, .3); }
+.wz-modal-h { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 700; color: var(--primary-dark); margin-bottom: 12px; }
+.wz-x { background: transparent; border: 0; font-size: 26px; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 0 6px; }
+.wz-nota { font-size: 12.5px; color: var(--text-muted); margin: 8px 0 12px; line-height: 1.45; }
+.wz-h4 { font-size: 13px; font-weight: 700; color: var(--primary-dark); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .03em; }
+.wz-vacio { font-size: 13px; color: var(--text-muted); padding: 10px 2px; }
+.wz-pq { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 9px 4px; border-bottom: 1px solid #EEF2F6; flex-wrap: wrap; }
+.wz-pq-t { flex: 1 1 260px; min-width: 0; font-size: 13.5px; color: var(--primary-dark); }
+.wz-pq-s { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+.wz-pq-a { display: flex; gap: 6px; flex-wrap: wrap; }
+.wz-btn.sm { padding: 6px 11px; font-size: 12px; border-radius: 7px; }
+.wz-btn.del { background: #fff; color: #B3261E; border-color: #E6B8B4; }
+.wz-ta { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font: inherit; font-size: 13px; }
+.wz-botones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.wz-check { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+#wz-modal-c .wz-grid { margin-top: 4px; }
+
+@media (max-width: 720px) {
+  .wz-modal { padding: 2vh 8px 8px; }
+  .wz-pq-a { width: 100%; }
+}
+
+/* La descripción de la partida nunca se aprieta: la tabla se desplaza hacia el lado en pantallas angostas */
+.wz-items { min-width: 950px; }
+.wz-items th:nth-child(2) { width: 300px; }
+.wz-items td:nth-child(2) { min-width: 300px; }
+.wz-items th:last-child, .wz-items td:last-child { width: 150px !important; min-width: 150px; white-space: nowrap; }
+
+/* El asa para arrastrar va en la primera columna de las partidas (siempre visible, aun con la tabla desplazada) */
+.wz-items th:first-child, .wz-items td:first-child { width: 112px !important; min-width: 112px; }
+.wz-items td:first-child { white-space: nowrap; }
+.wz-items td:first-child input { width: 64px; display: inline-block; vertical-align: middle; }
+.wz-items td:last-child .wz-grip { display: none; }
