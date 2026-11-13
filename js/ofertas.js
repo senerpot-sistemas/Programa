@@ -1045,7 +1045,7 @@ const OFERTAS = {
     set('of-cond-tiempo',      data.textos.cond_tiempo);
     set('of-cond-notas',       data.textos.condiciones_notas);
     set('of-cond-resp',        data.textos.responsabilidades_cliente);
-    set('of-cond-garantia',    data.textos.cond_garantia || 'Garantía integral de doce (12) meses.');
+    set('of-cond-garantia',    data.textos.cond_garantia || '');   // NODIA: la garantía no se rellena sola
     document.getElementById('of-tbody-activos').innerHTML = '';
     (data.activosLista?.length ? data.activosLista : [null]).forEach(a => this.addActivo(a));
     document.getElementById('of-tbody-alcance').innerHTML = '';

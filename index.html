@@ -24,6 +24,7 @@
   <!-- Tipografía oficial NODIA (Montserrat para títulos, Source Sans 3 para texto), alojada en el propio sitio:
        ya no depende del CDN de Google Fonts. -->
   <link rel="stylesheet" href="css/fonts.css?v=20261113b">
+  <link rel="stylesheet" href="css/oferta_wizard.css?v=w1">
   <!-- Fuente de íconos Tabler retirada — fallaba en algunos equipos (antivirus/
        firewall bloqueando el CDN) y dejaba botones sin ícono visible. Todos
        los íconos de la app ahora son emoji, que dependen del sistema
@@ -745,185 +746,298 @@
           <button class="subtab" id="ot-servicios"  onclick="OFERTAS.tab('servicios')">📋 Servicios</button>
         </div>
 
-        <!-- GENERADOR -->
+        <!-- GENERADOR — asistente de 5 etapas (los mismos campos y funciones de siempre, reorganizados) -->
         <div id="ov-generador" class="subview active">
-          <div class="paper">
+          <div class="wz" id="wz">
 
-            <div class="offer-header">
-              <div>
-                <div class="mod-title">Oferta Económica</div>
-                <div class="of-consecutivo-row" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-                  <select id="of-tipo-oferta" onchange="OFERTAS.sugerirConsecutivoPorTipo(true)" style="padding:8px;border:1px solid #ccc;border-radius:4px;font-size:13px;">
+            <!-- Cabecera: identificación de la oferta -->
+            <div class="wz-top">
+              <div class="wz-top-l">
+                <div class="wz-kicker">Oferta económica</div>
+                <h2 class="wz-h">Nueva oferta</h2>
+                <div class="wz-status" id="wz-status">Sin guardar</div>
+              </div>
+              <div class="wz-top-r">
+                <div class="of-consecutivo-row">
+                  <select id="of-tipo-oferta" onchange="OFERTAS.sugerirConsecutivoPorTipo(true)" aria-label="Serie de la oferta">
                     <option value="DIV">DIV</option>
                     <option value="INSP">INSP</option>
                     <option value="MTTO">MTTO</option>
                     <option value="OTROS">OTROS</option>
                   </select>
-                  <input type="text" id="of-consecutivo" class="consecutivo-input" placeholder="N° Oferta (Ej: DIV-26-001)">
+                  <input type="text" id="of-consecutivo" class="consecutivo-input" placeholder="N.º de oferta (ej. DIV-26-001)" aria-label="Número de oferta">
                 </div>
                 <input type="hidden" id="of-current-id">
+                <input type="text" id="of-fecha" class="fecha-display" readonly aria-label="Fecha">
               </div>
-              <input type="text" id="of-fecha" class="fecha-display" readonly>
             </div>
 
-            <div class="field-group" style="margin:10px 0 4px;max-width:340px;">
-              <label>Formato del documento</label>
-              <select id="of-formato" onchange="OFERTAS_NODIA.cambiarFormato()"><option value="DOC">Documento (actual)</option><option value="NODIA">PDF NODIA (nuevo)</option></select>
-            </div>
+            <!-- Etapas -->
+            <ol class="wz-steps" id="wz-steps" role="tablist" aria-label="Etapas de la oferta">
+              <li><button type="button" class="wz-step on" data-step="1" onclick="WIZ.ir(1)"><span class="wz-num">1</span><span class="wz-lbl">Cliente y servicio</span></button></li>
+              <li><button type="button" class="wz-step" data-step="2" onclick="WIZ.ir(2)"><span class="wz-num">2</span><span class="wz-lbl">Equipos y alcance</span></button></li>
+              <li><button type="button" class="wz-step" data-step="3" onclick="WIZ.ir(3)"><span class="wz-num">3</span><span class="wz-lbl">Presupuesto</span></button></li>
+              <li><button type="button" class="wz-step" data-step="4" onclick="WIZ.ir(4)"><span class="wz-num">4</span><span class="wz-lbl">Condiciones</span></button></li>
+              <li><button type="button" class="wz-step" data-step="5" onclick="WIZ.ir(5)"><span class="wz-num">5</span><span class="wz-lbl">Revisión y generación</span></button></li>
+            </ol>
+            <div class="wz-bar"><div class="wz-bar-fill" id="wz-bar-fill"></div></div>
+            <div id="wz-borrador-local" class="wz-banner" style="display:none"></div>
+            <div id="wz-alerta" class="wz-alerta" style="display:none" role="alert"></div>
 
-            <div class="section-title-bar">
-              Cliente
-              <button class="btn-save-kit" onclick="OFERTAS.modalCliente()">+ Nuevo</button>
-            </div>
-            <div class="client-grid">
-              <div class="field-group span-full">
-                <label>Empresa</label>
-                <div class="input-with-btn">
-                  <select id="of-cli-select" onchange="OFERTAS.cargarCliente()"><option value="">-- Seleccionar cliente --</option></select>
-                  <button onclick="OFERTAS.limpiarCliente()">Limpiar</button>
+            <!-- ═════════ ETAPA 1 — Cliente, clase, tipo de trabajo y servicio ═════════ -->
+            <section class="wz-panel on" data-step="1" aria-label="Cliente y servicio">
+              <div class="wz-card">
+                <div class="wz-card-h">Formato del documento</div>
+                <div class="wz-grid">
+                  <div class="field-group"><label for="of-formato">Formato</label>
+                    <select id="of-formato" onchange="OFERTAS_NODIA.cambiarFormato(); WIZ.alCambiarFormato()"><option value="NODIA">PDF NODIA (identidad nueva, con validación por QR)</option><option value="DOC">Documento de Google (formato anterior)</option></select>
+                  </div>
                 </div>
               </div>
-              <div class="field-group"><label>Dirección</label><input type="text" id="of-cli-dir" readonly></div>
-              <div class="field-group"><label>Atención a</label><input type="text" id="of-cli-attn" readonly></div>
-              <div class="field-group"><label>Teléfono</label><input type="text" id="of-cli-tel" readonly></div>
-              <div class="field-group span-full"><label>Email</label><input type="text" id="of-cli-email" readonly></div>
-            </div>
 
-            <div class="section-title-bar">Activos / Equipos</div>
-            <div class="table-scroll">
-            <table class="data-tbl" style="margin-bottom:6px;">
-              <thead><tr><th>Tipo</th><th>Marca</th><th style="width:60px">KVA</th><th>Serie</th><th>Voltaje</th><th style="width:60px"></th></tr></thead>
-              <tbody id="of-tbody-activos"></tbody>
-            </table>
-            </div>
-            <button class="btn-add-row" onclick="OFERTAS.addActivo()">+ Agregar equipo</button>
-
-            <div class="section-title-bar">
-              Alcance y Objeto
-              <div style="display:flex;gap:6px;">
-                <select id="of-sel-kit-textos" onchange="OFERTAS.aplicarKit('TEXTOS',this.value)" class="mem-select"><option value="">Kit de textos...</option></select>
-                <button class="btn-save-kit" onclick="OFERTAS.guardarKitUI('TEXTOS',this)">Guardar</button>
-              </div>
-            </div>
-            <div class="field-group" style="margin-bottom:10px;"><label>Objeto de la oferta</label><input type="text" id="of-objeto"></div>
-            <div class="field-group" style="margin-bottom:10px;"><label>Alcance general</label><textarea id="of-alcance-gral" rows="3"></textarea></div>
-            <div class="field-group">
-              <label>Alcance detallado</label>
-              <table class="data-tbl" style="margin-top:4px;"><tbody id="of-tbody-alcance"></tbody></table>
-              <button class="btn-add-row" onclick="OFERTAS.addAlcance()">+ Agregar actividad</button>
-            </div>
-
-            <!-- ═══ Formato PDF NODIA (opcional) ═══ -->
-            <div id="of-nodia-panel" style="display:none;">
-              <div class="section-title-bar">Datos del PDF NODIA</div>
-              <div style="font-size:12px;color:#5B6675;margin-bottom:10px;">Todo es editable y opcional: solo se imprime lo que escribas aquí. No se agregan pruebas, actividades ni repuestos por elegir un tipo de equipo, y las pruebas y repuestos solo deben figurar si están contemplados en el alcance contratado.</div>
-              <div class="conditions-grid" style="margin-bottom:10px;">
-                <div class="field-group"><label>Tipo de servicio</label>
-                  <select id="of-nd-servicio"><option value="MANTENIMIENTO">Mantenimiento eléctrico</option><option value="TDR">Consultoría — Términos de Referencia</option><option value="SOLAR" disabled>Solar fotovoltaica (requiere datos del Simulador: pendiente)</option></select></div>
-                <div class="field-group"><label>Título del servicio</label><input type="text" id="of-nd-titulo" placeholder="Ej.: Mantenimiento preventivo y correctivo de transformador en aceite"></div>
-                <div class="field-group"><label>Ubicación</label><input type="text" id="of-nd-ubicacion" placeholder="Ciudad o dirección de la obra"></div>
-                <div class="field-group"><label>Vigencia de la oferta (días)</label><input type="number" id="of-nd-vigencia" min="1" max="365" value="15" oninput="OFERTAS_NODIA.sincronizarVigencia()"></div>
-                <div class="field-group"><label>Foto de portada</label>
-                  <select id="of-nd-foto"><option value="NINGUNA">Sin foto (panel de marca)</option><option value="TRANSFORMADOR_ACEITE">Imagen institucional: transformador en aceite</option><option value="PANELES_SOLARES">Imagen institucional: paneles solares</option></select></div>
-                <div class="field-group"><label style="text-transform:none;font-weight:600;display:flex;gap:6px;align-items:center;"><input type="checkbox" id="of-nd-firmar" style="width:auto;"> Incluir la firma de Cristian Chamorro G. (Director de Operaciones)</label></div>
-              </div>
-              <div class="field-group" style="margin-bottom:10px;"><label>Resumen de la portada (opcional)</label><textarea id="of-nd-resumen" rows="2"></textarea></div>
-
-              <div class="field-group"><label>Ficha técnica del equipo (todos los campos son opcionales)</label></div>
-              <div class="conditions-grid" style="margin-bottom:10px;">
-                <div class="field-group"><label>Tipo de equipo</label><input type="text" id="of-nd-eq-tipo" placeholder="Transformador de distribución en aceite"></div>
-                <div class="field-group"><label>Marca</label><input type="text" id="of-nd-eq-marca"></div>
-                <div class="field-group"><label>Modelo</label><input type="text" id="of-nd-eq-modelo"></div>
-                <div class="field-group"><label>N.° de serie</label><input type="text" id="of-nd-eq-serie"></div>
-                <div class="field-group"><label>Capacidad (kVA)</label><input type="number" id="of-nd-eq-kva" step="any"></div>
-                <div class="field-group"><label>Tensión primaria (V)</label><input type="number" id="of-nd-eq-vp" step="any"></div>
-                <div class="field-group"><label>Tensión secundaria (V)</label><input type="number" id="of-nd-eq-vs" step="any"></div>
-                <div class="field-group"><label>Refrigeración</label><input type="text" id="of-nd-eq-refrig" placeholder="Ej.: ONAN"></div>
-                <div class="field-group"><label>Fases</label><input type="text" id="of-nd-eq-fases" placeholder="Trifásico / Monofásico"></div>
-                <div class="field-group"><label>Año de fabricación</label><input type="number" id="of-nd-eq-anio" min="1900" max="2100"></div>
-                <div class="field-group"><label>Ubicación del equipo</label><input type="text" id="of-nd-eq-ubic"></div>
+              <div class="wz-card">
+                <div class="wz-card-h">Cliente <button type="button" class="wz-mini" onclick="OFERTAS.modalCliente()">+ Nuevo cliente</button></div>
+                <div class="client-grid wz-clientgrid">
+                  <div class="field-group span-full">
+                    <label for="of-cli-select">Empresa</label>
+                    <div class="input-with-btn">
+                      <select id="of-cli-select" onchange="OFERTAS.cargarCliente(); WIZ.alCambiar()"><option value="">-- Seleccionar cliente --</option></select>
+                      <button type="button" onclick="OFERTAS.limpiarCliente(); WIZ.alCambiar()">Limpiar</button>
+                    </div>
+                  </div>
+                  <div class="field-group"><label>Dirección</label><input type="text" id="of-cli-dir" readonly></div>
+                  <div class="field-group"><label>Atención a</label><input type="text" id="of-cli-attn" readonly></div>
+                  <div class="field-group"><label>Teléfono</label><input type="text" id="of-cli-tel" readonly></div>
+                  <div class="field-group span-full"><label>Correo electrónico</label><input type="text" id="of-cli-email" readonly></div>
+                </div>
               </div>
 
-              <div class="field-group" style="margin-bottom:10px;"><label>Pruebas contempladas en el alcance (una por línea)</label><textarea id="of-nd-pruebas" rows="3"></textarea></div>
-              <div class="conditions-grid" style="margin-bottom:10px;">
-                <div class="field-group"><label>Materiales (uno por línea)</label><textarea id="of-nd-materiales" rows="3"></textarea></div>
-                <div class="field-group"><label>Repuestos contemplados (uno por línea)</label><textarea id="of-nd-repuestos" rows="3"></textarea></div>
-                <div class="field-group"><label>Entregables (uno por línea)</label><textarea id="of-nd-entregables" rows="3"></textarea></div>
-                <div class="field-group"><label>Exclusiones particulares (una por línea)</label><textarea id="of-nd-exclusiones" rows="3"></textarea></div>
+              <div class="wz-card">
+                <div class="wz-card-h">Servicio a ofertar</div>
+                <div class="wz-grid">
+                  <div class="field-group"><label for="wz-clase">Clase de servicio</label>
+                    <select id="wz-clase" onchange="WIZ.cambiarClase(true)">
+                      <option value="">— Seleccione —</option>
+                      <option value="MANT">Mantenimiento eléctrico</option>
+                      <option value="TRAFO">Transformadores y subestaciones</option>
+                      <option value="PLANTA">Plantas eléctricas</option>
+                      <option value="TABLERO">Tableros, barras y acometidas</option>
+                      <option value="FV">Instalación fotovoltaica</option>
+                      <option value="PRUEBAS">Pruebas y diagnósticos</option>
+                      <option value="TDR">Consultoría — términos de referencia</option>
+                      <option value="OTRO">Otro servicio</option>
+                    </select>
+                  </div>
+                  <div class="field-group"><label for="wz-tipo-trabajo">Tipo de trabajo</label>
+                    <select id="wz-tipo-trabajo" onchange="WIZ.alCambiar()"><option value="">— Seleccione —</option></select>
+                  </div>
+                  <div class="field-group" id="wz-g-subclase" style="display:none"><label for="wz-subclase" id="wz-subclase-lbl">Tipo de equipo</label>
+                    <select id="wz-subclase" onchange="WIZ.cambiarSubclase()"><option value="">— Seleccione —</option></select>
+                  </div>
+                  <div class="field-group wz-nd"><label for="of-nd-servicio">Plantilla del documento</label>
+                    <select id="of-nd-servicio" onchange="WIZ.alCambiarPlantilla()"><option value="MANTENIMIENTO">Mantenimiento eléctrico</option><option value="TDR">Consultoría — Términos de Referencia</option><option value="SOLAR">Instalación fotovoltaica (requiere datos del Simulador)</option></select>
+                    <small class="wz-hint">Se elige sola según la clase de servicio; puede cambiarla si lo necesita.</small>
+                  </div>
+                  <div class="field-group wz-nd wz-span2"><label for="of-nd-titulo">Título del servicio</label><input type="text" id="of-nd-titulo" placeholder="Ej.: Mantenimiento preventivo y correctivo de transformador en aceite" oninput="WIZ.alCambiar()"></div>
+                  <div class="field-group wz-nd"><label for="of-nd-ubicacion">Ubicación del trabajo</label><input type="text" id="of-nd-ubicacion" placeholder="Ciudad o dirección de la obra" oninput="WIZ.alCambiar()"></div>
+                </div>
+                <p class="wz-note" id="wz-nota-clase" style="display:none"></p>
               </div>
-              <div class="field-group" style="margin-bottom:10px;"><label>Garantías (una por línea; evita prometer resultados absolutos)</label><textarea id="of-nd-garantias" rows="2"></textarea></div>
+            </section>
 
-              <div class="field-group"><label>Condiciones de pago (los porcentajes deben sumar 100 %)</label>
-                <table class="data-tbl" style="margin-top:4px;"><thead><tr><th style="width:90px">%</th><th>Concepto</th><th style="width:130px;text-align:right">Valor</th><th style="width:50px"></th></tr></thead><tbody id="of-nd-tbody-pagos"></tbody></table>
-                <button class="btn-add-row" onclick="OFERTAS_NODIA.agregarPago()">+ Agregar pago</button>
-                <div id="of-nd-pagos-resumen" style="font-size:12px;margin-top:4px;"></div>
+            <!-- ═════════ ETAPA 2 — Equipos, objeto y alcance técnico ═════════ -->
+            <section class="wz-panel" data-step="2" aria-label="Equipos y alcance técnico">
+              <div class="wz-card" id="wz-card-solar" style="display:none">
+                <div class="wz-card-h">Datos del Simulador Fotovoltaico</div>
+                <p class="wz-note">La oferta fotovoltaica no se redacta a mano: toma generación, consumo, tarifa y supuestos <b>con su fuente</b> del Simulador. Pegue aquí los datos en formato JSON (el Simulador los entrega así). Nada se estima ni se completa por su cuenta.</p>
+                <div class="field-group"><label for="wz-solar-json">Datos del Simulador (JSON)</label><textarea id="wz-solar-json" rows="6" placeholder='{"proyecto":"…","sistema":{…},"energia":{…},"tarifa":{…},"excedentes":{…},"finanzas":{…},"alcance":[…]}' oninput="WIZ.leerSolar()"></textarea></div>
+                <div class="wz-row">
+                  <button type="button" class="wz-btn ghost" onclick="WIZ.limpiarSolar()">Quitar datos</button>
+                  <span class="wz-solar-estado" id="wz-solar-estado">Sin datos del Simulador</span>
+                </div>
               </div>
-            </div>
 
-            <div class="section-title-bar">
-              Tabla Económica
-              <div style="display:flex;gap:6px;">
-                <select id="of-sel-kit-items" onchange="OFERTAS.aplicarKit('ITEMS',this.value)" class="mem-select"><option value="">Kit de precios...</option></select>
-                <button class="btn-save-kit" onclick="OFERTAS.guardarKitUI('ITEMS',this)">Guardar</button>
+              <div class="wz-card" id="wz-card-activos">
+                <div class="wz-card-h">Equipos o activos del cliente</div>
+                <div class="table-scroll">
+                <table class="data-tbl wz-tbl">
+                  <thead><tr><th>Tipo</th><th>Marca</th><th style="width:70px">kVA</th><th>Serie</th><th>Voltaje</th><th style="width:50px"></th></tr></thead>
+                  <tbody id="of-tbody-activos"></tbody>
+                </table>
+                </div>
+                <button type="button" class="btn-add-row" onclick="OFERTAS.addActivo()">+ Agregar equipo</button>
               </div>
-            </div>
-            <div class="cat-add-row">
-              <select id="of-sel-item-db"><option value="">Buscar servicio del catálogo...</option></select>
-              <button class="btn-primary-sm" onclick="OFERTAS.addItemDesdeCat()">+ Añadir</button>
-            </div>
-            <div class="table-scroll">
-            <table class="data-tbl">
-              <thead><tr>
-                <th style="width:70px">Ítem</th><th>Descripción</th>
-                <th style="width:45px">UN</th><th style="width:55px">Cant</th>
-                <th style="width:100px">Vr. Unit</th><th class="nd-only" style="width:90px">IVA</th><th style="width:100px">Total</th>
-                <th style="width:150px"></th>
-              </tr></thead>
-              <tbody id="of-tbody-items"></tbody>
-            </table>
-            </div>
-            <button class="btn-add-row" onclick="OFERTAS.addFila()">+ Fila en blanco</button>
-            <div id="of-nd-soporte" style="display:none;margin:10px 0;padding:10px;background:#F4F7FA;border:1px solid var(--border);border-radius:8px;"></div>
 
-            <div class="field-group" style="margin:14px 0 6px;">
-              <label style="display:flex;align-items:center;gap:6px;margin:0;font-weight:600;">
-                <input type="checkbox" id="of-aiu-check" onchange="OFERTAS.toggleAIU()" style="width:auto;">
-                Manejar por AIU (Administración, Imprevistos y Utilidad)
-              </label>
-            </div>
-            <div id="of-aiu-fields" class="conditions-grid" style="display:none;margin-bottom:10px;">
-              <div class="field-group"><label>Administración %</label><input type="number" id="of-aiu-a" value="9" step="0.01" onchange="OFERTAS.calcularTotales()"></div>
-              <div class="field-group"><label>Imprevistos %</label><input type="number" id="of-aiu-i" value="6" step="0.01" onchange="OFERTAS.calcularTotales()"></div>
-              <div class="field-group"><label>Utilidad %</label><input type="number" id="of-aiu-u" value="4" step="0.01" onchange="OFERTAS.calcularTotales()"></div>
-            </div>
-
-            <div class="totals-section">
-              <div class="totals-grid">
-                <span id="of-subtotal-label">Subtotal:</span><span id="of-subtotal">$ 0</span>
-                <span class="aiu-line" id="of-aiu-row-a" style="display:none;">Administración:</span><span class="aiu-line" id="of-aiu-val-a" style="display:none;">$ 0</span>
-                <span class="aiu-line" id="of-aiu-row-i" style="display:none;">Imprevistos:</span><span class="aiu-line" id="of-aiu-val-i" style="display:none;">$ 0</span>
-                <span class="aiu-line" id="of-aiu-row-u" style="display:none;">Utilidad:</span><span class="aiu-line" id="of-aiu-val-u" style="display:none;">$ 0</span>
-                <span class="aiu-line" id="of-aiu-row-sub" style="display:none;">Subtotal AIU:</span><span class="aiu-line" id="of-aiu-val-sub" style="display:none;">$ 0</span>
-                <span id="of-nd-row-ng" style="display:none;">Excluido o exento:</span><span id="of-nd-val-ng" style="display:none;">$ 0</span>
-                <span id="of-iva-label">IVA 19%:</span><span id="of-iva">$ 0</span>
-                <span class="total-label">Total:</span><span class="total-value" id="of-total">$ 0</span>
+              <div class="wz-card wz-nd" id="wz-card-ficha">
+                <div class="wz-card-h">Ficha técnica del equipo <span class="wz-opt">opcional</span></div>
+                <p class="wz-note">Solo se imprime lo que usted escriba. Aquí aparecen únicamente los datos propios de la clase de servicio elegida.</p>
+                <div class="wz-grid">
+                  <div class="field-group" data-rel="MANT TRAFO PLANTA TABLERO PRUEBAS OTRO"><label>Tipo de equipo</label><input type="text" id="of-nd-eq-tipo" placeholder="Ej.: Transformador de distribución en aceite"></div>
+                  <div class="field-group" data-rel="MANT TRAFO PLANTA TABLERO PRUEBAS OTRO"><label>Marca</label><input type="text" id="of-nd-eq-marca"></div>
+                  <div class="field-group" data-rel="MANT TRAFO PLANTA TABLERO PRUEBAS OTRO"><label>Modelo</label><input type="text" id="of-nd-eq-modelo"></div>
+                  <div class="field-group" data-rel="MANT TRAFO PLANTA TABLERO PRUEBAS OTRO"><label>N.º de serie</label><input type="text" id="of-nd-eq-serie"></div>
+                  <div class="field-group" data-rel="TRAFO PLANTA"><label>Capacidad (kVA)</label><input type="number" id="of-nd-eq-kva" step="any"></div>
+                  <div class="field-group" data-rel="TRAFO TABLERO"><label>Tensión primaria / nominal (V)</label><input type="number" id="of-nd-eq-vp" step="any"></div>
+                  <div class="field-group" data-rel="TRAFO PLANTA"><label>Tensión secundaria / de salida (V)</label><input type="number" id="of-nd-eq-vs" step="any"></div>
+                  <div class="field-group" data-rel="TRAFO"><label>Refrigeración</label><input type="text" id="of-nd-eq-refrig" placeholder="Ej.: ONAN"></div>
+                  <div class="field-group" data-rel="TRAFO PLANTA TABLERO"><label>Fases</label><input type="text" id="of-nd-eq-fases" placeholder="Trifásico / Monofásico"></div>
+                  <div class="field-group" data-rel="MANT TRAFO PLANTA TABLERO PRUEBAS OTRO"><label>Año de fabricación</label><input type="number" id="of-nd-eq-anio" min="1900" max="2100"></div>
+                  <div class="field-group" data-rel="MANT TRAFO PLANTA TABLERO PRUEBAS OTRO"><label>Ubicación del equipo</label><input type="text" id="of-nd-eq-ubic"></div>
+                </div>
               </div>
-            </div>
 
-            <div class="section-title-bar" style="margin-top:30px;">Condiciones Comerciales</div>
-            <div class="conditions-grid">
-              <div class="field-group"><label>Condiciones de pago</label><input type="text" id="of-cond-pago" list="of-list-pago"><datalist id="of-list-pago"><option value="50% Anticipo, 50% Entrega"><option value="100% Contraentrega"></datalist></div>
-              <div class="field-group"><label>Vigencia</label><input type="text" id="of-cond-vigencia" value="15 días calendario."></div>
-              <div class="field-group"><label>Tiempo de ejecución</label><input type="text" id="of-cond-tiempo"></div>
-              <div class="field-group"><label>Términos financieros</label><input type="text" id="of-cond-financieros" value="Sujeto a condiciones comerciales pactadas."></div>
-            </div>
-            <div class="field-group" style="margin-top:14px;"><label>Notas y condiciones</label><textarea id="of-cond-notas" rows="3"></textarea></div>
-            <div class="field-group" style="margin-top:10px;"><label>Responsabilidades del cliente</label><textarea id="of-cond-resp" rows="3"></textarea></div>
-            <div class="field-group" style="margin-top:10px;"><label>Garantía técnica</label><textarea id="of-cond-garantia" rows="2">Garantía integral de doce (12) meses.</textarea></div>
+              <div class="wz-card">
+                <div class="wz-card-h">Objeto y alcance
+                  <span class="wz-card-tools"><select id="of-sel-kit-textos" onchange="OFERTAS.aplicarKit('TEXTOS',this.value)" class="mem-select"><option value="">Plantilla de textos…</option></select>
+                  <button type="button" class="wz-mini" onclick="OFERTAS.guardarKitUI('TEXTOS',this)">Guardar plantilla</button></span></div>
+                <div class="field-group wz-mb"><label for="of-objeto">Objeto de la oferta</label><input type="text" id="of-objeto" oninput="WIZ.alCambiar()"></div>
+                <div class="field-group wz-mb"><label for="of-alcance-gral">Alcance general</label><textarea id="of-alcance-gral" rows="3" oninput="WIZ.alCambiar()"></textarea></div>
+                <div class="field-group">
+                  <label>Alcance detallado (actividades)</label>
+                  <table class="data-tbl wz-tbl" style="margin-top:4px;"><tbody id="of-tbody-alcance"></tbody></table>
+                  <button type="button" class="btn-add-row" onclick="OFERTAS.addAlcance()">+ Agregar actividad</button>
+                </div>
+              </div>
 
-            <div class="action-row" style="margin-top:28px;">
-              <button class="btn-draft" onclick="OFERTAS.guardarBorrador(this)">Guardar borrador</button>
-              <button class="btn-generate" id="of-btn-generar" onclick="OFERTAS.generarDocumento(this)">Generar oferta (Doc)</button>
+              <div class="wz-card wz-nd" id="wz-card-tecnico">
+                <details class="wz-det" id="wz-det-tecnico">
+                  <summary>Alcance técnico confirmado <span class="wz-opt">opcional</span></summary>
+                  <p class="wz-note"><b>No se agrega nada automáticamente.</b> Pruebas, materiales y repuestos solo aparecen en el documento si usted los escribe aquí, y solo deben figurar si están dentro del alcance contratado.</p>
+                  <div class="wz-grid">
+                    <div class="field-group wz-span2" data-rel="MANT TRAFO PLANTA TABLERO PRUEBAS OTRO"><label>Pruebas contempladas en el alcance (una por línea)</label><textarea id="of-nd-pruebas" rows="3"></textarea></div>
+                    <div class="field-group" data-rel="MANT TRAFO PLANTA TABLERO OTRO"><label>Materiales (uno por línea)</label><textarea id="of-nd-materiales" rows="3"></textarea></div>
+                    <div class="field-group" data-rel="MANT TRAFO PLANTA TABLERO OTRO"><label>Repuestos contemplados (uno por línea)</label><textarea id="of-nd-repuestos" rows="3"></textarea></div>
+                  </div>
+                </details>
+              </div>
+            </section>
+
+            <!-- ═════════ ETAPA 3 — Presupuesto, partidas, IVA y AIU ═════════ -->
+            <section class="wz-panel" data-step="3" aria-label="Presupuesto">
+              <div class="wz-card">
+                <div class="wz-card-h">Partidas del presupuesto
+                  <span class="wz-card-tools"><select id="of-sel-kit-items" onchange="OFERTAS.aplicarKit('ITEMS',this.value)" class="mem-select"><option value="">Plantilla de precios…</option></select>
+                  <button type="button" class="wz-mini" onclick="OFERTAS.guardarKitUI('ITEMS',this)">Guardar plantilla</button></span></div>
+                <div class="cat-add-row">
+                  <select id="of-sel-item-db"><option value="">Buscar servicio del catálogo…</option></select>
+                  <button type="button" class="btn-primary-sm" onclick="OFERTAS.addItemDesdeCat()">+ Añadir</button>
+                </div>
+                <div class="table-scroll">
+                <table class="data-tbl wz-tbl wz-items">
+                  <thead><tr>
+                    <th style="width:70px">Ítem</th><th>Descripción</th>
+                    <th style="width:45px">UN</th><th style="width:55px">Cant</th>
+                    <th style="width:100px">Vr. unit.</th><th class="nd-only" style="width:90px">IVA</th><th style="width:100px">Total</th>
+                    <th style="width:150px"></th>
+                  </tr></thead>
+                  <tbody id="of-tbody-items"></tbody>
+                </table>
+                </div>
+                <button type="button" class="btn-add-row" onclick="OFERTAS.addFila()">+ Partida en blanco</button>
+                <div id="of-nd-soporte" style="display:none;margin:10px 0;padding:10px;background:#F4F7FA;border:1px solid var(--border);border-radius:8px;"></div>
+              </div>
+
+              <div class="wz-card">
+                <div class="wz-card-h">AIU y totales</div>
+                <div class="field-group" style="margin:0 0 6px;">
+                  <label class="wz-check"><input type="checkbox" id="of-aiu-check" onchange="OFERTAS.toggleAIU(); WIZ.alCambiar()"> Manejar por AIU (Administración, Imprevistos y Utilidad)</label>
+                </div>
+                <div id="of-aiu-fields" class="wz-grid wz-grid3" style="display:none;margin-bottom:10px;">
+                  <div class="field-group"><label>Administración %</label><input type="number" id="of-aiu-a" value="9" step="0.01" onchange="OFERTAS.calcularTotales(); WIZ.alCambiar()"></div>
+                  <div class="field-group"><label>Imprevistos %</label><input type="number" id="of-aiu-i" value="6" step="0.01" onchange="OFERTAS.calcularTotales(); WIZ.alCambiar()"></div>
+                  <div class="field-group"><label>Utilidad %</label><input type="number" id="of-aiu-u" value="4" step="0.01" onchange="OFERTAS.calcularTotales(); WIZ.alCambiar()"></div>
+                </div>
+                <div class="totals-section wz-totals">
+                  <div class="totals-grid">
+                    <span id="of-subtotal-label">Subtotal:</span><span id="of-subtotal">$ 0</span>
+                    <span class="aiu-line" id="of-aiu-row-a" style="display:none;">Administración:</span><span class="aiu-line" id="of-aiu-val-a" style="display:none;">$ 0</span>
+                    <span class="aiu-line" id="of-aiu-row-i" style="display:none;">Imprevistos:</span><span class="aiu-line" id="of-aiu-val-i" style="display:none;">$ 0</span>
+                    <span class="aiu-line" id="of-aiu-row-u" style="display:none;">Utilidad:</span><span class="aiu-line" id="of-aiu-val-u" style="display:none;">$ 0</span>
+                    <span class="aiu-line" id="of-aiu-row-sub" style="display:none;">Subtotal AIU:</span><span class="aiu-line" id="of-aiu-val-sub" style="display:none;">$ 0</span>
+                    <span id="of-nd-row-ng" style="display:none;">Excluido o exento:</span><span id="of-nd-val-ng" style="display:none;">$ 0</span>
+                    <span id="of-iva-label">IVA 19%:</span><span id="of-iva">$ 0</span>
+                    <span class="total-label">Total:</span><span class="total-value" id="of-total">$ 0</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ═════════ ETAPA 4 — Condiciones comerciales, responsabilidades, garantías y entregables ═════════ -->
+            <section class="wz-panel" data-step="4" aria-label="Condiciones comerciales">
+              <div class="wz-card">
+                <div class="wz-card-h">Pago, vigencia y plazo</div>
+                <div class="wz-grid">
+                  <div class="field-group wz-nd"><label for="of-nd-vigencia">Vigencia de la oferta (días)</label><input type="number" id="of-nd-vigencia" min="1" max="365" value="15" oninput="OFERTAS_NODIA.sincronizarVigencia(); WIZ.alCambiar()"></div>
+                  <div class="field-group"><label for="of-cond-vigencia">Vigencia (texto del documento)</label><input type="text" id="of-cond-vigencia" value="15 días calendario."></div>
+                  <div class="field-group"><label for="of-cond-tiempo">Tiempo de ejecución</label><input type="text" id="of-cond-tiempo" placeholder="Ej.: 3 días hábiles desde la aceptación" oninput="WIZ.alCambiar()"></div>
+                  <div class="field-group"><label for="of-cond-pago">Condiciones de pago (texto)</label><input type="text" id="of-cond-pago" list="of-list-pago"><datalist id="of-list-pago"><option value="50% Anticipo, 50% Entrega"><option value="100% Contraentrega"></datalist></div>
+                  <div class="field-group wz-span2"><label for="of-cond-financieros">Términos financieros</label><input type="text" id="of-cond-financieros" placeholder="Opcional"></div>
+                </div>
+                <div class="field-group wz-nd wz-mt"><label>Plan de pagos (los porcentajes deben sumar 100 %)</label>
+                  <table class="data-tbl wz-tbl" style="margin-top:4px;"><thead><tr><th style="width:90px">%</th><th>Concepto</th><th style="width:130px;text-align:right">Valor</th><th style="width:50px"></th></tr></thead><tbody id="of-nd-tbody-pagos"></tbody></table>
+                  <button type="button" class="btn-add-row" onclick="OFERTAS_NODIA.agregarPago(); WIZ.alCambiar()">+ Agregar pago</button>
+                  <div id="of-nd-pagos-resumen" style="font-size:12px;margin-top:4px;"></div>
+                </div>
+              </div>
+
+              <div class="wz-card">
+                <div class="wz-card-h">Responsabilidades y garantías</div>
+                <div class="field-group wz-mb"><label for="of-cond-resp">Responsabilidades del cliente</label><textarea id="of-cond-resp" rows="3" oninput="WIZ.alCambiar()"></textarea></div>
+                <div class="field-group wz-mb wz-nd"><label for="of-nd-garantias">Garantías (una por línea; evite prometer resultados absolutos)</label><textarea id="of-nd-garantias" rows="2" oninput="WIZ.alCambiar()"></textarea></div>
+                <div class="field-group wz-mb"><label for="of-cond-garantia">Garantía técnica (texto) <span class="wz-opt">opcional · no se agrega por defecto</span></label><textarea id="of-cond-garantia" rows="2" placeholder="Escriba la garantía que la empresa acepta otorgar" oninput="WIZ.alCambiar()"></textarea></div>
+                <div class="field-group"><label for="of-cond-notas">Notas y condiciones adicionales</label><textarea id="of-cond-notas" rows="3" oninput="WIZ.alCambiar()"></textarea></div>
+              </div>
+
+              <div class="wz-card wz-nd">
+                <div class="wz-card-h">Entregables y exclusiones</div>
+                <div class="wz-grid">
+                  <div class="field-group"><label for="of-nd-entregables">Entregables (uno por línea)</label><textarea id="of-nd-entregables" rows="3" oninput="WIZ.alCambiar()"></textarea></div>
+                  <div class="field-group"><label for="of-nd-exclusiones">Exclusiones particulares (una por línea)</label><textarea id="of-nd-exclusiones" rows="3" oninput="WIZ.alCambiar()"></textarea></div>
+                </div>
+              </div>
+
+              <div class="wz-card wz-conflictos" id="wz-card-conflictos">
+                <div class="wz-card-h">Revisión de condiciones <span class="wz-badge" id="wz-conf-n">0</span></div>
+                <div id="wz-conf-lista" class="wz-conf-lista"></div>
+              </div>
+            </section>
+
+            <!-- ═════════ ETAPA 5 — Vista previa, validación final y generación ═════════ -->
+            <section class="wz-panel" data-step="5" aria-label="Revisión y generación">
+              <div class="wz-card wz-nd">
+                <div class="wz-card-h">Portada del documento</div>
+                <div class="wz-grid">
+                  <div class="field-group"><label for="of-nd-foto">Fotografía de portada</label>
+                    <select id="of-nd-foto" onchange="WIZ.alCambiar()"><option value="NINGUNA">Sin foto (panel de marca)</option><option value="TRANSFORMADOR_ACEITE">Institucional: transformador en aceite</option><option value="TRANSFORMADOR_SECO">Institucional: transformador seco</option><option value="PAD_MOUNTED">Institucional: transformador pad mounted</option><option value="PLANTA_ELECTRICA">Institucional: planta eléctrica</option><option value="TABLERO_CUADROS">Institucional: tableros y cuadros eléctricos</option><option value="BARRAS_ACOMETIDAS">Institucional: barras y acometidas</option><option value="PRUEBAS_ELECTRICAS">Institucional: pruebas eléctricas</option><option value="PANELES_SOLARES">Institucional: paneles solares</option></select>
+                    <small class="wz-hint" id="wz-foto-hint"></small></div>
+                  <div class="field-group"><label class="wz-check" style="margin-top:22px;"><input type="checkbox" id="of-nd-firmar" onchange="WIZ.alCambiar()"> Incluir la firma de Cristian Chamorro G. (Director de Operaciones)</label></div>
+                  <div class="field-group wz-span2"><label for="of-nd-resumen">Resumen de la portada <span class="wz-opt">opcional</span></label><textarea id="of-nd-resumen" rows="2" oninput="WIZ.alCambiar()"></textarea></div>
+                </div>
+              </div>
+
+              <div class="wz-card">
+                <div class="wz-card-h">Lista de verificación final <span class="wz-badge" id="wz-chk-n">0</span></div>
+                <div id="wz-chk-lista" class="wz-conf-lista"></div>
+              </div>
+
+              <div class="wz-card">
+                <div class="wz-card-h">Vista previa real
+                  <span class="wz-card-tools"><button type="button" class="wz-btn sec" id="wz-btn-previa" onclick="WIZ.previsualizar()">Actualizar vista previa</button></span></div>
+                <p class="wz-note">Muestra el documento con el mismo motor que genera el PDF. <b>No consume consecutivo, no crea archivos y no registra nada.</b> La paginación definitiva se confirma al generar.</p>
+                <div id="wz-previa-estado" class="wz-previa-estado">Aún no se ha generado la vista previa.</div>
+                <div id="wz-previa-val" class="wz-previa-val"></div>
+                <div class="wz-previa-marco" id="wz-previa-marco" style="display:none"><iframe id="wz-previa" title="Vista previa de la oferta" sandbox="allow-same-origin"></iframe></div>
+              </div>
+            </section>
+
+            <!-- Barra de acciones -->
+            <div class="wz-foot" id="wz-foot">
+              <button type="button" class="wz-btn ghost" id="wz-atras" onclick="WIZ.atras()">← Atrás</button>
+              <span class="wz-foot-mid">
+                <button type="button" class="btn-draft wz-btn amber" onclick="OFERTAS.guardarBorrador(this)">Guardar borrador</button>
+              </span>
+              <button type="button" class="wz-btn pri" id="wz-siguiente" onclick="WIZ.siguiente()">Siguiente →</button>
+              <button type="button" class="btn-generate wz-btn gen" id="of-btn-generar" onclick="WIZ.generar(this)" style="display:none">Generar oferta (PDF NODIA)</button>
             </div>
           </div>
         </div>
@@ -1607,8 +1721,9 @@
 
 <script src="js/api.js?v=20261113b"></script>
 <script src="js/auth.js?v=20261113b"></script>
-<script src="js/ofertas.js?v=20261113b"></script>
+<script src="js/ofertas.js?v=20261113c"></script>
 <script src="js/ofertas_nodia.js?v=20261113b"></script>
+<script src="js/oferta_wizard.js?v=w1"></script>
 <script src="js/contabilidad.js?v=20261113b"></script>
 <script src="js/modulos.js?v=20261113b"></script>
 
