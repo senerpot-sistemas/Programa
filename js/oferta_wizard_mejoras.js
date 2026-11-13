@@ -170,7 +170,24 @@
   WIZ.usarOferta = async function (id) {
     if (this.hayContenido() && !UI.confirmar('Se reemplazará lo que ya escribiste con los datos de la oferta ' + id + '. ¿Continuar?')) return; this.cerrarModal(); await OFERTAS.gestionarOferta(id, 'CLONAR'); this.ir(1, true); UI.toast('Oferta ' + id + ' cargada como base. Revise todo antes de generar.', 'ok');
   };
-  WIZ.enBlanco = function () { if (this.hayContenido() && !UI.confirmar('Se borrará lo que ya escribiste. ¿Empezar en blanco?')) return; this.descartarLocal(); location.reload(); };
+  /** Deja la oferta en blanco SIN recargar la página (recargar mandaba a la pantalla de inicio de la app). */
+  WIZ.enBlanco = function () {
+    if (this.hayContenido() && !UI.confirmar('Se borrará lo que ya escribiste. ¿Empezar en blanco?')) return;
+    const SALVAR = ['of-consecutivo'];   // formato y serie vuelven a su valor inicial (PDF NODIA, DIV); el consecutivo se vuelve a sugerir
+    document.querySelectorAll('#wz input, #wz textarea, #wz select').forEach(e => {
+      if (!e.id || SALVAR.includes(e.id) || e.closest('#wz-modal') || e.closest('tbody') || e.id === 'wz-nom') return;
+      if (e.type === 'checkbox' || e.type === 'radio') e.checked = e.defaultChecked;
+      else if (e.tagName === 'SELECT') { const d = [...e.options].findIndex(o => o.defaultSelected); e.selectedIndex = d >= 0 ? d : 0; }
+      else e.value = e.defaultValue || '';
+    });
+    OFERTAS.limpiarCliente(); if (this.limpiarSolar) { $('wz-solar-json').value = ''; this.leerSolar(); }
+    ['of-tbody-activos', 'of-tbody-alcance', 'of-tbody-items', 'of-nd-tbody-pagos'].forEach(id => { const t = $(id); if (t) t.innerHTML = ''; });
+    OFERTAS.addActivo(); OFERTAS.addAlcance(); OFERTAS.toggleAIU(); OFERTAS.calcularTotales();
+    if (typeof OFERTAS_NODIA !== 'undefined') { OFERTAS_NODIA.cambiarFormato(); OFERTAS_NODIA.refrescarSoporte && OFERTAS_NODIA.refrescarSoporte(); OFERTAS_NODIA.pintarPagos(); }
+    this.fotoManual = false; this.cambiarClase(true); OFERTAS.sugerirConsecutivoPorTipo(true); this.descartarLocal();
+    this.ir(1, true); this.alCambiar(); UI.toast('Oferta en blanco lista', 'ok');
+    const t = $('wz'); if (t && t.scrollIntoView) t.scrollIntoView({ block: 'start' });
+  };
 
   // ───────────── 6) Partidas: buscador, pegar lista, ajustar precios, duplicar ─────────────
   WIZ._frecuentes = null;
