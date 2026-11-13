@@ -23,7 +23,7 @@ const WIZ = {
                      tipos: ['Suministro e instalación', 'Diseño e ingeniería', 'Mantenimiento de sistema existente', 'Ampliación'],
                      sub: { lbl: 'Configuración del sistema', ops: ['Conectado a red', 'Híbrido con baterías', 'Aislado', 'Otro'] } },
     PRUEBAS: { txt: 'Pruebas y diagnósticos',          plantilla: 'MANTENIMIENTO', foto: 'NINGUNA', nota: 'Liste las pruebas que realmente se contratan (etapa 2, «Alcance técnico confirmado»).',
-                     tipos: ['Pruebas y diagnóstico', 'Termografía', 'Calidad de energía', 'Otro'] },
+                     tipos: ['Pruebas y diagnóstico', 'Análisis de variables eléctricas', 'Calidad de energía', 'Termografía', 'Otro'] },
     TDR:     { txt: 'Consultoría — términos de referencia', plantilla: 'TDR',     foto: 'NINGUNA', nota: 'Documento de consultoría: no lleva ficha de equipo ni fotografía de equipo.',
                      tipos: ['Consultoría o estudio', 'Diseño', 'Interventoría', 'Otro'] },
     OTRO:    { txt: 'Otro servicio',                   plantilla: 'MANTENIMIENTO', foto: 'NINGUNA', nota: 'Servicio no clasificado: se muestran los campos generales.', tipos: ['Otro'] }

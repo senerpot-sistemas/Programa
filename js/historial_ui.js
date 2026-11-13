@@ -148,11 +148,21 @@ const HX = {
   cerrar() { const m = this.$('hx-modal'); if (m) m.classList.remove('open'); },
   /** Un borrador no tiene documento: se abre en el generador para seguir editándolo (mismo consecutivo). */
   editarBorrador(id) { this.cerrar(); UI.toast('Abriendo el borrador…', 'info'); OFERTAS.gestionarOferta(id, 'CARGAR'); },
+  /** Oferta hecha con el diseño anterior: se abre en el generador con el MISMO número y el formato PDF NODIA ya elegido (genera una versión nueva; el documento viejo no se borra). */
+  async rehacerNodia(id) {
+    this.cerrar(); UI.toast('Abriendo la oferta ' + id + ' para rehacerla en formato NODIA…', 'info');
+    await OFERTAS.gestionarOferta(id, 'CARGAR');
+    const f = document.getElementById('of-formato'); if (!f || String(document.getElementById('of-consecutivo').value) !== String(id)) return;
+    f.value = 'NODIA'; f.dispatchEvent(new Event('change', { bubbles: true }));
+    if (typeof WIZ !== 'undefined') WIZ.ir(1, true);
+    UI.toast('Conserva el número ' + id + '. Elija la clase de servicio y el tipo de trabajo, revise la vista previa y genere.', 'warn');
+  },
   acciones(id) {
     const f = this.fila(id); if (!f) return; const url = ((OFERTAS.DB.historial || []).find(h => String(h.ID_OFERTA) === id) || {}).URL_DOC, priv = this.priv(), gen = f.e === 'GENERADA', libre = gen && !f.ar && !f.ci;
     const b = (t, fn, cls) => '<button type="button" class="hx-btn ' + (cls || 'sec') + ' blk" onclick="' + fn + '">' + t + '</button>', q = this.esc(id);
     let h = '<div class="hx-resumen"><b>' + this.esc(f.c) + '</b><div>' + this.pesos(f.t) + ' · ' + this.sitHtml(f) + '</div></div><div class="hx-acc">';
     if (f.e === 'BORRADOR') h += b('Editar borrador', `HX.editarBorrador('${q}')`, 'pri') + '<div class="hx-nota">Es un borrador: todavía no tiene documento. Ábralo para seguir editándolo y generarlo.</div>';   // un borrador no tiene documento: se edita siempre
+    if (f.e !== 'BORRADOR' && f.dt !== 'NODIA' && (f.dt || url)) h += b('Rehacer en formato NODIA', `HX.rehacerNodia('${q}')`, 'pri') + '<div class="hx-nota">Esta oferta se hizo con el diseño anterior. Se abre con el mismo número y el PDF NODIA elegido; el documento viejo no se borra.</div>';
     if (url) h += '<a class="hx-btn pri blk" href="' + this.esc(url) + '" target="_blank" rel="noopener">Abrir documento</a>';
     if (libre && f.en === 'N') h += b('Registrar envío', `HX.dlgEnvio('${q}')`);
     if (libre && f.en === 'E') h += b('Registrar seguimiento', `HX.dlgSeguimiento('${q}')`) + b('Reprogramar seguimiento', `HX.dlgReprogramar('${q}')`);
