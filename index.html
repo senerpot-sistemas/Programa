@@ -1280,6 +1280,7 @@
           <button class="subtab" id="ctt-consultas"  onclick="CONTABILIDAD.tab('consultas')">🔍 Consultas</button>
           <button class="subtab" id="ctt-reportes"   onclick="CONTABILIDAD.tab('reportes')">📈 Reportes</button>
           <button class="subtab" id="ctt-bancos"     onclick="CONTABILIDAD.tab('bancos')">🏦 Bancos</button>
+          <button class="subtab" id="ctt-siigo"      onclick="CONTABILIDAD.tab('siigo');SIIGO_UI.montar()">📥 Importar Siigo</button>
         </div>
 
         <!-- OPERACIÓN -->
@@ -1452,6 +1453,9 @@
           </table>
           </div>
         </div>
+
+        <!-- IMPORTAR FACTURA DE SIIGO -->
+        <div id="ctv-siigo" class="subview"><div id="siigo-root"></div></div>
 
         <!-- Modal: Nuevo Tercero -->
         <div id="ct-modal-tercero" class="modal-overlay">
@@ -1747,6 +1751,8 @@
 <script src="js/oferta_solar.js?v=s6"></script>
 <script src="js/historial_ui.js?v=h3"></script>
 <script src="js/contabilidad.js?v=20261113b"></script>
+<script src="js/siigo_lector.js?v=g1"></script>
+<script src="js/siigo_ui.js?v=g1"></script>
 <script src="js/modulos.js?v=20261113b"></script>
 
 <style>

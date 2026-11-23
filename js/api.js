@@ -40,7 +40,7 @@ const API = {
     'obtenerDetalleNCR', 'obtenerPresupuestoProyecto', 'obtenerComentariosProyecto',
     'consultarHistorial', 'obtenerBancos', 'generarReporte', 'listarUsuarios',
     'obtenerProyectos', 'obtenerDetalleProyecto', 'obtenerAlmacen',
-    'cargarDocEdicion', 'calcularIVA', 'calcularRenta'
+    'cargarDocEdicion', 'calcularIVA', 'calcularRenta', 'siigoPrevisualizar'
   ],
 
   // login es la única "escritura" que sí se reintenta: lo único que hace en
