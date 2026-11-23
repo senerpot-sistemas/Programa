@@ -26,6 +26,7 @@
   <link rel="stylesheet" href="css/fonts.css?v=20261113b">
   <link rel="stylesheet" href="css/oferta_wizard.css?v=w1">
   <link rel="stylesheet" href="css/oferta_wizard_mejoras.css?v=m1">
+  <link rel="stylesheet" href="css/oferta_solar.css?v=s3">
   <link rel="stylesheet" href="css/historial.css?v=h1">
   <!-- Fuente de íconos Tabler retirada — fallaba en algunos equipos (antivirus/
        firewall bloqueando el CDN) y dejaba botones sin ícono visible. Todos
@@ -1026,6 +1027,8 @@
                     <select id="of-nd-foto" onchange="WIZ.alCambiar()"><option value="NINGUNA">Sin foto (panel de marca)</option><option value="TRANSFORMADOR_ACEITE">Institucional: transformador en aceite</option><option value="TRANSFORMADOR_SECO">Institucional: transformador seco</option><option value="PAD_MOUNTED">Institucional: transformador pad mounted</option><option value="PLANTA_ELECTRICA">Institucional: planta eléctrica</option><option value="TABLERO_CUADROS">Institucional: tableros y cuadros eléctricos</option><option value="BARRAS_ACOMETIDAS">Institucional: barras y acometidas</option><option value="PRUEBAS_ELECTRICAS">Institucional: pruebas eléctricas</option><option value="PANELES_SOLARES">Institucional: paneles solares</option></select>
                     <small class="wz-hint" id="wz-foto-hint"></small></div>
                   <div class="field-group"><label class="wz-check" style="margin-top:22px;"><input type="checkbox" id="of-nd-firmar" onchange="WIZ.alCambiar()"> Incluir la firma de Cristian Chamorro G. (Director de Operaciones)</label></div>
+                  <div class="field-group wz-span2" id="wz-muestra-grupo" hidden><label class="wz-check"><input type="checkbox" id="wz-muestra" onchange="WIZ.alCambiarMuestra()"> Documento de MUESTRA con datos ficticios (no es una oferta real)</label>
+                    <small class="wz-hint">Se rotula como muestra en el PDF y en la validación pública. El consecutivo debe empezar por <b>MUESTRA-</b>. Obligatorio si usa los datos de demostración del Simulador.</small></div>
                   <div class="field-group wz-span2"><label for="of-nd-resumen">Resumen de la portada <span class="wz-opt">opcional</span></label><textarea id="of-nd-resumen" rows="2" oninput="WIZ.alCambiar()"></textarea></div>
                 </div>
               </div>
@@ -1738,8 +1741,10 @@
 <script src="js/auth.js?v=20261113b"></script>
 <script src="js/ofertas.js?v=20261113c"></script>
 <script src="js/ofertas_nodia.js?v=20261113b"></script>
-<script src="js/oferta_wizard.js?v=w2"></script>
+<script src="js/oferta_wizard.js?v=w3"></script>
 <script src="js/oferta_wizard_mejoras.js?v=m2"></script>
+<script src="js/pvsyst.js?v=s3"></script>
+<script src="js/oferta_solar.js?v=s6"></script>
 <script src="js/historial_ui.js?v=h3"></script>
 <script src="js/contabilidad.js?v=20261113b"></script>
 <script src="js/modulos.js?v=20261113b"></script>

@@ -43,7 +43,7 @@ const WIZ = {
     const recolectar = OFERTAS_NODIA.recolectar.bind(OFERTAS_NODIA);
     OFERTAS_NODIA.recolectar = (datos) => {
       const d = recolectar(datos);
-      if (d.nodia) { d.nodia.clase = this.clase(); d.nodia.tipoTrabajo = this.val('wz-tipo-trabajo'); d.nodia.subclase = this.val('wz-subclase'); if (this.solar && this.val('of-nd-servicio') === 'SOLAR') d.nodia.solar = this.solar; }
+      if (d.nodia) { d.nodia.clase = this.clase(); d.nodia.tipoTrabajo = this.val('wz-tipo-trabajo'); d.nodia.subclase = this.val('wz-subclase'); d.nodia.muestra = !!(this.$('wz-muestra') && this.$('wz-muestra').checked); if (this.solar && this.val('of-nd-servicio') === 'SOLAR') d.nodia.solar = this.solar; }
       return d;
     };
     const recuperar = OFERTAS.recuperarFormulario.bind(OFERTAS);
@@ -58,6 +58,7 @@ const WIZ = {
     // Barra de «mostrar todos los campos» (etapa 2)
     const p2 = panel.querySelector('.wz-panel[data-step="2"]'), tb = document.createElement('div'); tb.className = 'wz-toolbar'; tb.id = 'wz-toolbar-rel';
     tb.innerHTML = '<span id="wz-rel-txt"></span><button type="button" class="wz-mini" id="wz-vertodo" onclick="WIZ.alternarVerTodo()">Mostrar todos los campos</button>'; p2.insertAdjacentElement('afterbegin', tb);
+    this.alCambiarMuestra(true);
     this.$('of-nd-foto').addEventListener('change', () => { this.fotoManual = true; });   // si la persona elige la foto, no se vuelve a sugerir sola
     OFERTAS_NODIA.cambiarFormato();           // por defecto: PDF NODIA
     this.cambiarClase(false); this.ir(1); this.revisarBorradorLocal();
@@ -103,7 +104,7 @@ const WIZ = {
   },
   cambiarSubclase() { this.fotoManual = false; this.sugerirFoto(); this.alCambiar(); },
   alCambiarPlantilla(silencio) { this.aplicarRelevancia(); if (!silencio) this.alCambiar(); },
-  alCambiarFormato() { this.aplicarRelevancia(); this.alCambiar(); },
+  alCambiarFormato() { this.aplicarRelevancia(); this.alCambiarMuestra(true); this.alCambiar(); },
   /** La fotografía institucional de transformador en aceite solo se sugiere si el transformador ES en aceite; las demás clases, sin foto. */
   /** Fotografía institucional que corresponde a la clase y al tipo elegidos (null = panel de marca). Cada foto solo se sugiere para lo que muestra. */
   fotoSugerida() {
@@ -128,6 +129,15 @@ const WIZ = {
     else if (c) h = 'No hay fotografía institucional para esta clase: se usa el panel de marca.';
     this.$('wz-foto-hint').textContent = h;
   },
+  esMuestra() { const m = this.$('wz-muestra'); return !!(m && m.checked); },
+  /** Muestra con datos ficticios: el consecutivo debe empezar por MUESTRA- (regla del sistema documental) y el botón lo dice. */
+  alCambiarMuestra(silencio) {
+    const c = this.$('of-consecutivo'), b = this.$('of-btn-generar'); if (!c || !b) return;
+    { const g = this.$('wz-muestra-grupo'); if (g) g.hidden = !(typeof AUTH !== 'undefined' && AUTH.rol === 'ADMINISTRADOR'); }
+    if (this.esMuestra()) { if (!/^MUESTRA-/i.test(c.value.trim())) c.value = 'MUESTRA-' + c.value.trim(); b.textContent = 'Generar documento de MUESTRA'; }
+    else { if (/^MUESTRA-/i.test(c.value.trim())) c.value = c.value.trim().replace(/^MUESTRA-/i, ''); b.textContent = this.esNodia() ? 'Generar oferta (PDF NODIA)' : 'Generar oferta (Doc)'; }
+    if (!silencio) this.alCambiar();
+  },
   alternarVerTodo() { this.verTodo = !this.verTodo; this.aplicarRelevancia(); },
   /** Muestra solo los campos propios de la clase elegida (los demás siguen accesibles con «Mostrar todos los campos»). */
   aplicarRelevancia() {
@@ -149,7 +159,7 @@ const WIZ = {
       const o = JSON.parse(t); const falt = ['sistema', 'energia', 'tarifa', 'finanzas'].filter(k => !o[k]);
       if (falt.length) throw new Error('faltan: ' + falt.join(', '));
       this.solar = o; this.solarDemo = !!o._demo;
-      est.textContent = this.solarDemo ? 'Datos marcados como de demostración: no se pueden usar en una oferta real' : 'Datos cargados: ' + ((o.sistema.modulos || {}).cantidad || '?') + ' módulos · fuente: ' + ((o.energia || {}).fuente || 'sin indicar');
+      est.textContent = this.solarDemo ? 'Datos de DEMOSTRACIÓN cargados — sirven para ver la vista previa, no para emitir una oferta real' : 'Datos cargados: ' + ((o.sistema.modulos || {}).cantidad || '?') + ' módulos · fuente: ' + ((o.energia || {}).fuente || 'sin indicar');
       est.className = 'wz-solar-estado ' + (this.solarDemo ? 'err' : 'ok');
     } catch (e) { this.solar = null; est.textContent = 'JSON no válido: ' + e.message; est.className = 'wz-solar-estado err'; }
   },
@@ -182,7 +192,9 @@ const WIZ = {
     // Etapa 2
     if (!this.val('of-objeto')) add(2, 'aviso', 'Falta el objeto de la oferta.');
     if (!this.val('of-alcance-gral') && !this.alcanceActs().length) add(2, 'aviso', 'No hay alcance: escriba el alcance general o al menos una actividad.');
-    if (nd && (c === 'FV' || this.val('of-nd-servicio') === 'SOLAR')) { if (!this.solar) add(2, 'error', 'Faltan los datos del Simulador Fotovoltaico.'); else if (this.solarDemo) add(5, 'error', 'Los datos del Simulador están marcados como de demostración: no se puede generar una oferta real con ellos.'); }
+    if (nd && (c === 'FV' || this.val('of-nd-servicio') === 'SOLAR')) { if (!this.solar) add(2, 'error', 'Faltan los datos del Simulador Fotovoltaico.'); else if (this.solarDemo && !this.esMuestra()) add(5, 'error', 'Los datos del Simulador son de demostración: marque «Documento de MUESTRA con datos ficticios» (etapa 5) o cargue los datos reales.'); }
+    if (nd && this.esMuestra() && !/^MUESTRA-/i.test(this.val('of-consecutivo'))) add(5, 'error', 'Un documento de muestra debe tener un consecutivo que empiece por MUESTRA-.');
+    if (nd && !this.esMuestra() && /^MUESTRA-/i.test(this.val('of-consecutivo'))) add(5, 'error', 'Un consecutivo MUESTRA- solo puede usarse marcando «Documento de MUESTRA con datos ficticios».');
     // Etapa 3
     const ps = this.partidas(), conValor = ps.filter(p => p.desc.trim() && p.cant > 0 && p.unit > 0);
     if (!conValor.length) add(3, 'error', 'Agregue al menos una partida con descripción, cantidad y valor.'); if (ps.some(p => p.desc.trim() && (p.cant <= 0 || p.unit <= 0))) add(3, 'aviso', 'Hay partidas con cantidad o valor en cero.');
@@ -288,8 +300,8 @@ const WIZ = {
   restaurar(data) {
     const cl = (data && (data.clasificacion || (data.nodia && { clase: data.nodia.clase, tipoTrabajo: data.nodia.tipoTrabajo, subclase: data.nodia.subclase }))) || {};
     this.$('wz-clase').value = cl.clase || ''; this.fotoManual = true; this.cambiarClase(false); this.$('wz-tipo-trabajo').value = cl.tipoTrabajo || ''; this.$('wz-subclase').value = cl.subclase || '';
-    const s = data && data.nodia && data.nodia.solar; this.$('wz-solar-json').value = s ? JSON.stringify(s, null, 1) : ''; this.leerSolar();
-    if (data && data.nodia && data.nodia.portadaFoto) this.$('of-nd-foto').value = data.nodia.portadaFoto; this.aplicarRelevancia(); this.sugerirFoto(); this.refrescar();
+    const s = data && data.nodia && data.nodia.solar; this.$('wz-solar-json').value = s ? JSON.stringify(s, null, 1) : ''; this.leerSolar(); if (this.$('wz-muestra')) this.$('wz-muestra').checked = !!(data && data.nodia && data.nodia.muestra);
+    if (data && data.nodia && data.nodia.portadaFoto) this.$('of-nd-foto').value = data.nodia.portadaFoto; this.aplicarRelevancia(); this.sugerirFoto(); this.alCambiarMuestra(true); this.refrescar();
   },
 
   // ───────────────────────── Vista previa real ─────────────────────────
