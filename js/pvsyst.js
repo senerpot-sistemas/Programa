@@ -46,42 +46,59 @@
   function parsear(lineas) {
     const avisos = [], errores = [], d = {}, L = lineas.map(String), T = L.join('\n').replace(/ \| /g, ' ');
     const buscar = (re, g) => { const m = re.exec(T); return m ? (g === undefined ? m : m[g === 0 ? 0 : g]) : null; };
-    if (!/PVsyst/i.test(T) || !/Balances y resultados principales|Main results|Balances et r/i.test(T)) { return { ok: false, datos: null, avisos, errores: ['El archivo no parece un informe de simulación de PVsyst en español.'] }; }
+    if (!/PVsyst/i.test(T) || !/Balances y resultados principales|Main results|Balances et r/i.test(T)) { return { ok: false, datos: null, avisos, errores: ['El archivo no parece un informe de simulación de PVsyst (en español o en inglés).'] }; }
 
     d.version = (buscar(/PVsyst V(\d+\.\d+(?:\.\d+)?)/, 1) || '');
-    d.proyecto = ((L.find(l => /^Proyecto:/.test(l)) || '').replace(/^Proyecto:\s*/, '') || '').trim();
-    d.variante = ((L.find(l => /^Variante:/.test(l)) || '').replace(/^Variante:\s*/, '') || '').trim();
-    { const i = L.findIndex(l => /Fecha de simulaci/.test(l)); const m = i >= 0 ? /(\d\d)\/(\d\d)\/(\d\d)\s+\d\d:\d\d/.exec(L.slice(i, i + 3).join(' ')) : null; d.fechaSimulacion = m ? m[1] + '/' + m[2] + '/20' + m[3] : ''; }
+    d.proyecto = ((L.find(l => /^(?:Proyecto|Project):/.test(l)) || '').replace(/^(?:Proyecto|Project):\s*/, '') || '').trim();
+    d.variante = ((L.find(l => /^(?:Variante|Variant):/.test(l)) || '').replace(/^(?:Variante|Variant):\s*/, '') || '').trim();
+    { const i = L.findIndex(l => /Fecha de simulaci|Simulation date/.test(l)); const m = i >= 0 ? /(\d\d)\/(\d\d)\/(\d\d)\s+\d\d:\d\d/.exec(L.slice(i, i + 3).join(' ')) : null; d.fechaSimulacion = m ? m[1] + '/' + m[2] + '/20' + m[3] : ''; }
 
     // Sitio, coordenadas y datos meteorológicos
-    { const i = L.findIndex(l => /^Sitio geogr/.test(l)); if (i >= 0) {
+    { const i = L.findIndex(l => /^(?:Sitio geogr|Geographical Site)/.test(l)); if (i >= 0) {
         const c1 = celdas(L[i + 1] || ''), c2 = celdas(L[i + 2] || ''), c3 = celdas(L[i + 3] || '');
         d.lugar = c1[0] || ''; d.pais = c2[0] && !/^Altitud/.test(c2[0]) ? c2[0] : '';
-        const la = /Latitud \| (-?[\d.]+) \| °\(([NS])\)/.exec((L[i + 1] || '')); if (la) d.latitud = num(la[1]) * (la[2] === 'S' && num(la[1]) > 0 ? -1 : 1);
-        const lo = /Longitud \| (-?[\d.]+) \| °\(([EW])\)/.exec((L[i + 2] || '')); if (lo) d.longitud = num(lo[1]) * (lo[2] === 'W' && num(lo[1]) > 0 ? -1 : 1);
-        const al = /Altitud \| (-?[\d.]+) \| m/.exec(L.slice(i, i + 5).join('\n')); if (al) d.altitud = num(al[1]);
+        const la = /Latitud(?:e)? \| (-?[\d.]+) \| °\(([NS])\)/.exec((L[i + 1] || '')); if (la) d.latitud = num(la[1]) * (la[2] === 'S' && num(la[1]) > 0 ? -1 : 1);
+        const lo = /Longitud(?:e)? \| (-?[\d.]+) \| °\(([EW])\)/.exec((L[i + 2] || '')); if (lo) d.longitud = num(lo[1]) * (lo[2] === 'W' && num(lo[1]) > 0 ? -1 : 1);
+        const al = /Altitud(?:e)? \| (-?[\d.]+) \| m/.exec(L.slice(i, i + 5).join('\n')); if (al) d.altitud = num(al[1]);
         void c3;
       } }
-    { const i = L.findIndex(l => /^Datos meteo/.test(l)); if (i >= 0) { const raw = (L[i + 2] || '').split(SEP)[0].trim(); d.meteoOriginal = raw; d.meteo = raw ? raw.split(/\s+dll/i)[0].trim() + (/sint[eé]tico/i.test(raw) ? ' (datos sintéticos)' : '') : ''; } }
-    { const m = /Inclinaci[oó]n\/Azimut \| (-?[\d.]+) \/ (-?[\d.]+)\s*°/.exec(L.join('\n')); if (m) { d.inclinacion = num(m[1]); d.azimut = num(m[2]); } }
+    { const i = L.findIndex(l => /^(?:Datos meteo|Weather data)/.test(l)); if (i >= 0) { const raw = ([L[i + 1], L[i + 2]].find(x => /\bdll\b|meteonorm|pvgis|nasa|tmy|satel|solargis|solcast|meteotest|sint[eé]tic|synthetic/i.test(x || '')) || '').split(SEP)[0].trim(); d.meteoOriginal = raw; d.meteo = raw ? raw.split(/\s+dll/i)[0].trim() + (/sint[eé]tico/i.test(raw) ? ' (datos sintéticos)' : '') : ''; } }
+    { const m = /(?:Inclinaci[oó]n\/Azimut|Tilt\/Azimuth) \| (-?[\d.]+) \/ (-?[\d.]+)\s*°/.exec(L.join('\n')); if (m) { d.inclinacion = num(m[1]); d.azimut = num(m[2]); } }
 
     // Necesidades del usuario (carga)
-    { const i = L.findIndex(l => /Necesidades del usuario/.test(l)); const sig = i >= 0 ? celdas(L[i + 1] || '').pop() : ''; d.necesidades = sig || ''; d.cargaIlimitada = /Carga ilimitada/i.test(d.necesidades); }
+    { const i = L.findIndex(l => /Necesidades del usuario|User's needs/.test(l)); const sig = i >= 0 ? celdas(L[i + 1] || '').pop() : ''; d.necesidades = sig || ''; d.cargaIlimitada = /Carga ilimitada|Unlimited load/i.test(d.necesidades); }
 
     // Módulos e inversor
-    { const i = L.findIndex(l => /^Fabricante \|/.test(l));
+    { const i = L.findIndex(l => /^(?:Fabricante|Manufacturer) \|/.test(l));
       if (i >= 0) {
-        const f = celdas(L[i]), m = celdas(L[i + 1] || ''), p = L.slice(i, i + 12).find(l => /^Unidad Nom\. Potencia/.test(l)), n = L.slice(i, i + 12).find(l => /^N[uú]mero de m[oó]dulos FV/.test(l));
+        const f = celdas(L[i]), m = celdas(L[i + 1] || ''), p = L.slice(i, i + 12).find(l => /^(?:Unidad Nom\. Potencia|Unit Nom\. Power)/.test(l)), n = L.slice(i, i + 12).find(l => /^(?:N[uú]mero de m[oó]dulos FV|Number of PV modules)/.test(l));
         d.modulo = { marca: f[1] || '', modelo: m[1] || '' }; d.inversor = { marca: f[3] || '', modelo: m[3] || '' };
         if (p) { const c = celdas(p); d.modulo.wp = num(c[1]); d.inversor.kwacUnidad = num(c[3]); }
         if (n) { const c = celdas(n); d.modulo.cantidad = num(c[1]); d.inversor.cantidad = num(c[4]); }
       } }
-    { const m = /Pnom total \| ([\d.]+) \| kWp/.exec(L.join('\n')); if (m) d.kwp = num(m[1]); const m2 = /Potencia total \| ([\d.]+) \| kWca/.exec(L.join('\n')); if (m2) d.kwacTotal = num(m2[1]); }
-    if (!d.modulo || !d.modulo.cantidad || !d.modulo.wp) avisos.push('No se pudo leer la cantidad o la potencia de los módulos: complételas a mano.');
+    { const m = /Pnom total \| ([\d.]+) \| kWp/.exec(L.join('\n')); if (m) d.kwp = num(m[1]); const m2 = /(?:Potencia total \| ([\d.]+) \| kWca|Total power \| ([\d.]+) \| kWac)/.exec(L.join('\n')); if (m2) d.kwacTotal = num(m2[1] || m2[2]);
+      // Informes con VARIOS subconjuntos: la cantidad TOTAL de módulos e inversores está en el resumen del sistema, no en el primer subconjunto.
+      const tot = L.find(l => /^(?:N[uú]m\. de m[oó]dulos|Nb\. of modules) \|/.test(l));
+      if (tot && d.modulo) { const c = celdas(tot), q = num(c[1]), qi = num(c[4]); if (q) d.modulo.cantidad = q; if (qi && d.inversor) d.inversor.cantidad = qi; } }
+    // Sin resumen del sistema pero con VARIOS subconjuntos: el total es la SUMA de los subconjuntos listados (se declara en los avisos); nunca el primero solo.
+    { const subL = L.filter(l => /^(?:N[uú]mero de m[oó]dulos FV|Number of PV modules) \|/.test(l)).map(celdas);
+      if (!L.some(l => /^(?:N[uú]m\. de m[oó]dulos|Nb\. of modules) \|/.test(l)) && d.modulo && subL.length > 1) {
+        const sm = subL.map(c => num(c[1])).filter(v => v > 0).reduce((a, b) => a + b, 0), si = subL.map(c => num(c[4])).filter(v => v > 0).reduce((a, b) => a + b, 0);
+        if (sm) d.modulo.cantidad = sm; if (si && d.inversor) d.inversor.cantidad = si;
+        avisos.push('El informe no trae el resumen del sistema: la cantidad de módulos e inversores es la suma de sus ' + subL.length + ' subconjuntos.'); } }
+    // DATOS ESENCIALES: sin ellos el informe no se usa (no se completan a mano ni se muestran como «undefined»).
+    if (!d.modulo || !(d.modulo.cantidad > 0) || !(d.modulo.wp > 0)) errores.push('El informe no permite identificar la cantidad y la potencia de los módulos (dato esencial): no se completa a mano. Revise el informe o vuelva a simular.');
     else { const calc = d.modulo.cantidad * d.modulo.wp / 1000; if (d.kwp && Math.abs(calc - d.kwp) > 0.02) errores.push('La potencia del informe (' + d.kwp + ' kWp) no coincide con módulos × potencia (' + calc.toFixed(2) + ' kWp).'); }
+    if (!d.inversor || !(d.inversor.cantidad > 0) || !(d.inversor.kwacUnidad > 0)) errores.push('El informe no permite identificar la cantidad y la potencia de los inversores (dato esencial): no se completa a mano. Revise el informe o vuelva a simular.');
+    if (!(d.kwp > 0)) errores.push('El informe no indica la potencia total instalada en kWp (dato esencial).');
+    // No duplicar: la cantidad total del resumen debe ser la SUMA de los subconjuntos listados (14 + 14 + 14 = 42, por ejemplo).
+    { const filasMod = L.filter(l => /^(?:N[uú]mero de m[oó]dulos FV|Number of PV modules) \|/.test(l)).map(l => num(celdas(l)[1])).filter(v => v > 0);
+      if (filasMod.length && d.modulo && d.modulo.cantidad > 0) { const s = filasMod.reduce((a, b) => a + b, 0); if (s !== d.modulo.cantidad) errores.push('La cantidad de módulos del resumen (' + d.modulo.cantidad + ') no coincide con la suma de sus subconjuntos (' + s + '): el informe es incoherente o se leyó mal.'); d.subconjuntos = filasMod.length; }
+      const filasInv = L.filter(l => /^(?:N[uú]mero de m[oó]dulos FV|Number of PV modules) \|/.test(l)).map(l => num(celdas(l)[4])).filter(v => v > 0);
+      if (filasInv.length && d.inversor && d.inversor.cantidad > 0 && filasInv.reduce((a, b) => a + b, 0) !== d.inversor.cantidad) avisos.push('La cantidad de inversores del resumen (' + d.inversor.cantidad + ') no es la suma de la de cada subconjunto (' + filasInv.reduce((a, b) => a + b, 0) + '): puede haber inversores compartidos; verifíquelo en el informe.'); }
 
     // Resultados anuales
-    { const m = /Energ[ií]a producida (\d+(?:[.,]\d+)?)\s*kWh\/a/.exec(T); if (m) d.energiaAnual = num(m[1]); const p = /Producci[oó]n espec[ií]fica (\d+(?:[.,]\d+)?)/.exec(T); if (p) d.produccionEspecifica = num(p[1]); const r = /Proporci[oó]n rend\. PR (\d+(?:[.,]\d+)?)/.exec(T); if (r) d.pr = num(r[1]); }
+    { const m = /(?:Energ[ií]a producida|Produced Energy) (\d+(?:[.,]\d+)?)\s*kWh\/(?:a|y)/.exec(T); if (m) d.energiaAnual = num(m[1]); const p = /(?:Producci[oó]n espec[ií]fica|Specific production) (\d+(?:[.,]\d+)?)/.exec(T); if (p) d.produccionEspecifica = num(p[1]); const r = /(?:Proporci[oó]n rend\. PR|Perf\. Ratio PR) (\d+(?:[.,]\d+)?)/.exec(T); if (r) d.pr = num(r[1]); }
 
     // Tabla «Balances y resultados principales»: se leen las columnas POR NOMBRE
     { const i = L.findIndex(l => /^GlobHor \| /.test(l));
@@ -114,10 +131,10 @@
       } }
 
     // Envejecimiento (degradación)
-    { const j = L.findIndex(l => /^Lapso de tiempo de la simulaci/.test(l)); const m = j >= 0 ? /(\d+)\s*a[nñ]os/.exec(L[j]) : null; const horizonte = m ? Number(m[1]) : null;
+    { const j = L.findIndex(l => /^(?:Lapso de tiempo de la simulaci|Time span of simulation)/.test(l)); const m = j >= 0 ? /(\d+)\s*(?:a[nñ]os|years)/.exec(L[j]) : null; const horizonte = m ? Number(m[1]) : null;
       const k = L.findIndex(l => /^EUseful \|/.test(l)); const euse = []; if (k >= 0) for (let q = k + 1; q < L.length; q++) { const c = celdas(L[q]); if (/^\d{1,2}$/.test(c[0]) && /^\d+\.\d{2}$/.test(c[1] || '')) euse[Number(c[0])] = num(c[1]); else if (euse.length) break; }
-      const par = /Factor de p[eé]rdida \| ([\d.]+) %\/a[nñ]o/.exec(L.join('\n'));
-      const imp = /Dispersi[oó]n Imp RMS \| ([\d.]+)/.exec(L.join('\n')), vmp = /Dispersi[oó]n Vmp RMS \| ([\d.]+)/.exec(L.join('\n'));
+      const par = /(?:Factor de p[eé]rdida|Loss factor) \| ([\d.]+) %\/(?:a[nñ]o|year)/.exec(L.join('\n'));
+      const imp = /(?:Dispersi[oó]n Imp RMS|Imp RMS dispersion) \| ([\d.]+)/.exec(L.join('\n')), vmp = /(?:Dispersi[oó]n Vmp RMS|Vmp RMS dispersion) \| ([\d.]+)/.exec(L.join('\n'));
       // Serie completa de la tabla: año, energía útil (MWh), PR (%) y pérdida de PR acumulada (%)
       const serie = []; if (k >= 0) for (let q = k + 1; q < L.length; q++) { const c = celdas(L[q]); if (/^\d{1,2}$/.test(c[0]) && /^\d+\.\d{2}$/.test(c[1] || '')) serie.push({ anio: Number(c[0]), euseMWh: num(c[1]), pr: num(c[2]), perdidaPrPct: num(c[3]) }); else if (serie.length) break; }
       // TRES magnitudes distintas (no se mezclan ni se sustituyen entre sí):
@@ -138,7 +155,7 @@
 
     // Procedencia de la CARGA del usuario: nunca se deduce autoconsumo ni excedentes de una simulación con carga ilimitada.
     {
-      const ilimitada = /ilimitad/i.test(d.necesidades || ''), conColumnas = !!(d.mensual && d.mensual.eSolar);
+      const ilimitada = /ilimitad|unlimited/i.test(d.necesidades || ''), conColumnas = !!(d.mensual && d.mensual.eSolar);
       if (ilimitada && conColumnas) errores.push('El informe dice «carga ilimitada» pero trae columnas de autoconsumo (E_Solar): el informe es incoherente; no se usa.');
       d.cargaTipo = ilimitada ? 'ILIMITADA' : (conColumnas ? 'DEFINIDA' : (d.necesidades ? 'DEFINIDA_SIN_BALANCE' : 'NO_DETERMINADA'));
       d.perfilCarga = { tipo: d.cargaTipo, descripcion: d.necesidades || '', consumoAnualKWh: d.mensual && d.mensual.consumo ? d.mensual.consumo.reduce((a, b) => a + b, 0) : null, consumoMensualKWh: d.mensual && d.mensual.consumo ? d.mensual.consumo.slice() : null };
@@ -148,6 +165,12 @@
       if (d.cargaTipo === 'DEFINIDA') avisos.push('El informe trae la carga del usuario («' + d.necesidades + '»): autoconsumo y excedentes salen de las columnas E_Solar y E_Grid del propio informe.');
       if (d.cargaTipo !== 'DEFINIDA' && d.mensual) { d.conCarga = false; d.mensual.autoconsumo = null; d.mensual.excedentes = null; }
     }
+    // Campos NO esenciales que el informe no trae: quedan «pendientes» (no se imprimen ni se inventan).
+    d.pendientes = [['lugar', 'sitio simulado'], ['latitud', 'latitud'], ['longitud', 'longitud'], ['inclinacion', 'inclinación'], ['azimut', 'azimut'], ['meteo', 'datos meteorológicos'], ['pr', 'performance ratio'], ['produccionEspecifica', 'producción específica'], ['fechaSimulacion', 'fecha de la simulación']]
+      .filter(([k]) => d[k] === undefined || d[k] === null || d[k] === '').map(([, n]) => n);
+    if (d.modulo && !(d.modulo.marca || d.modulo.modelo)) d.pendientes.push('marca y modelo de los módulos');
+    if (d.inversor && !(d.inversor.marca || d.inversor.modelo)) d.pendientes.push('marca y modelo de los inversores');
+    if (!d.envejecimiento || (d.envejecimiento.parametroModuloPct === null && !d.envejecimiento.horizonte)) d.pendientes.push('envejecimiento (degradación)');
     return { ok: errores.length === 0, datos: d, avisos, errores };
   }
 

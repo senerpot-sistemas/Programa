@@ -85,6 +85,7 @@ const WIZ = {
   atras() { this.ir(this.paso - 1); },
   mostrarAlerta(titulo, items) {
     const a = this.$('wz-alerta'); a.innerHTML = '<b>' + this.esc(titulo) + '</b><ul>' + items.map(x => '<li>' + this.esc(x.texto) + (x.paso && x.paso !== this.paso ? ' <a onclick="WIZ.ir(' + x.paso + ')">Ir a la etapa ' + x.paso + '</a>' : '') + '</li>').join('') + '</ul>'; a.style.display = 'block';
+    if (a.scrollIntoView) a.scrollIntoView({ block: 'center', behavior: 'smooth' });   // el motivo del bloqueo debe verse aunque la persona esté al final de la página
   },
   ocultarAlerta() { const a = this.$('wz-alerta'); if (a) a.style.display = 'none'; },
 

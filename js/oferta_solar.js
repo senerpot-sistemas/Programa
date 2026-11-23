@@ -18,6 +18,8 @@
   /** Número digitado a la colombiana: «1.234,5» o «854,36»; un punto con 3 dígitos después («1.234») es separador de miles. */
   const pnum = s => { if (s === null || s === undefined) return null; const t = String(s).trim().replace(/[\s$]/g, ''); if (t === '') return null; const miles = /^-?\d{1,3}(\.\d{3})+$/.test(t); const n = parseFloat(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : (miles ? t.replace(/\./g, '') : t)); return isNaN(n) ? null : n; };
   const sum = a => a.reduce((x, y) => x + y, 0);
+  /** Dato que no figura en el informe: se muestra como PENDIENTE (nunca «undefined» ni un valor inventado). */
+  const PEND = t => '<span class="sl-pen" style="color:#9A6B00;font-weight:600">pendiente: ' + esc(t) + '</span>';
   const val = id => { const e = $(id); return e ? e.value : ''; };
   const chk = id => { const e = $(id); return !!(e && e.checked); };
   const CONFIG_NOMBRE = 'SUPUESTOS_SOLAR', CONFIG_TIPO = 'CONFIG_SOLAR', UMBRAL_KM = 10, UMBRAL_DIMENSION = 1.2;
@@ -72,7 +74,8 @@
           ${campo('sl-fsup', 'Fuente de los supuestos financieros', 'De dónde salen el O&M, la variación de la tarifa y la tasa')}
           <div id="sl-ver-info" class="wz-solar-estado"></div>
           ${campo('sl-proy', 'Nombre del proyecto en la oferta', '')}
-          <div class="sl-grid2"><div class="field-group"><label for="sl-alcance">Alcance de suministro e instalación (una línea por punto)</label><textarea id="sl-alcance" rows="5" data-sl="x"></textarea></div>
+          <div class="wz-note"><b>Objeto, alcance, actividades y entregables:</b> se redactan UNA sola vez, en «Objeto y alcance» (más abajo en esta etapa); la oferta los imprime tal como se digitaron. El título del servicio y la ubicación del trabajo (etapa 1) identifican la sede beneficiaria y se imprimen en la portada y en la ficha técnica.</div>
+          <div class="sl-grid2">
             <div class="field-group"><label for="sl-comp">Componentes y protecciones principales (una línea por punto)</label><textarea id="sl-comp" rows="5" data-sl="x"></textarea></div></div>
           <div class="sl-grid2"><div class="field-group"><label for="sl-ben">Beneficios tributarios (texto)</label><textarea id="sl-ben" rows="3" data-sl="x" placeholder="Vacío = la oferta no incluye esta sección"></textarea></div>
             ${campo('sl-ben-ref', 'Referencia normativa de los beneficios', '')}</div>
@@ -80,7 +83,7 @@
         <div class="sl-paso"><div class="sl-h">5 · Dimensionamiento y ubicación (verificación interna)</div>
           <div id="sl-dim-info"></div>
           <div class="field-group"><label for="sl-just">Justificación técnica o comercial del dimensionamiento (interna, no se imprime)</label><textarea id="sl-just" rows="2" data-sl="x" placeholder="Ej.: se prevé venta de excedentes / ampliación de carga / pedido expreso del cliente"></textarea></div>
-          <div class="sl-grid3">${campo('sl-ubic', 'Ubicación real del proyecto (dirección y municipio)', 'Ej.: CR 20 CL 2A-10 MZ 17 CS 297, Sabanilla, Puerto Colombia')}${campo('sl-ulat', 'Latitud real (opcional)', 'Ej.: 10,9878', 'inputmode="decimal"')}${campo('sl-ulon', 'Longitud real (opcional)', 'Ej.: -74,9547', 'inputmode="decimal"')}</div>
+          <div class="sl-grid3">${campo('sl-ubic', 'Ubicación real del proyecto (se toma de la etapa 1: «Ubicación del trabajo»)', 'Se completa sola con la ubicación del trabajo', 'readonly')}${campo('sl-ulat', 'Latitud real (opcional)', 'Ej.: 10,9878', 'inputmode="decimal"')}${campo('sl-ulon', 'Longitud real (opcional)', 'Ej.: -74,9547', 'inputmode="decimal"')}</div>
           <div id="sl-ubic-info"></div>
           ${campo('sl-ujust', 'Justificación si el punto simulado difiere de la ubicación real', 'Obligatoria cuando la distancia supera ' + UMBRAL_KM + ' km')}</div>
         <div class="sl-paso"><div class="sl-h">6 · Determinación tributaria por concepto (IVA)</div>
@@ -94,6 +97,8 @@
           <label class="sl-chk"><input type="checkbox" id="sl-prueba" data-sl="x"> Este documento es de <b>prueba</b>: el cliente, los precios o las condiciones son ficticios (los datos energéticos son reales, del informe y la factura cargados). Se rotula visiblemente como <b>DOCUMENTO DE PRUEBA — no es una oferta para entregar a un cliente</b>, se emite como MUESTRA y conserva todas las validaciones de una oferta real.</label></div>
         <div id="sl-avisos" class="sl-avisos" aria-live="polite"></div>`;
       card.insertBefore(raiz, card.children[1]);
+      { const py = $('sl-proy'); if (py && py.closest('.field-group')) py.closest('.field-group').style.display = 'none'; }   // el título del servicio (etapa 1) es la única fuente del nombre impreso
+      { const bn = document.createElement('div'); bn.id = 'sl-clon'; bn.className = 'sl-warn'; bn.style.display = 'none'; raiz.insertBefore(bn, raiz.firstChild); }
       if (grupo) { const det = document.createElement('details'); det.className = 'sl-avanzado'; det.innerHTML = '<summary>Avanzado: datos en formato JSON</summary>'; grupo.parentNode.insertBefore(det, grupo); det.appendChild(grupo); }
       raiz.addEventListener('input', e => {
         const t = e.target; if (!t || !t.dataset || !t.dataset.sl) return;
@@ -103,7 +108,7 @@
       });
       raiz.addEventListener('change', e => { const t = e.target; if (!t || !t.dataset || !t.dataset.sl) return; if (t.id === 'sl-degmodo') this.aplicarModoDegradacion(); if (t.id === 'sl-prueba') this.alternarPrueba(); this.actualizar(true); });
       { const pr = $('sl-prueba'); if (pr && !(typeof AUTH !== 'undefined' && AUTH.rol === 'ADMINISTRADOR')) { const paso = pr.closest('.sl-paso'); if (paso) paso.style.display = 'none'; } }   // PRODUCCIÓN: documentos de prueba solo para el administrador
-      this.cargarConfig(); this.llenarDesde(WIZ.solar); this.pintarAuto(); this.pintarAvisos();
+      this.cargarConfig(); this.llenarDesde(WIZ.solar); this.pintarAuto(); this.pintarClon(); this.pintarAvisos();
     },
 
     /** Documento de prueba: se emite como MUESTRA (consecutivo MUESTRA-…) pero conserva todas las validaciones de una oferta real. */
@@ -133,15 +138,16 @@
         <div><b>No se sustituye ningún valor:</b> en el punto 4 se elige cuál se aplica y la oferta declara su origen (por omisión, el parámetro del informe).</div>` : ''}` : 'No se encontró en el informe.';
       $('sl-pv').innerHTML = `<div class="sl-pend"><table class="sl-tbl">
         ${fila('Archivo', esc(r.archivo.nombre) + '<br><small>SHA-256 ' + esc(r.archivo.sha256) + '</small>')}
-        ${fila('Punto simulado', `<input type="text" id="sl-lugar" value="${esc([d.lugar, d.pais].filter(Boolean).join(', '))}" aria-label="Sitio"> <small>(${fmt(d.latitud, 4)}°, ${fmt(d.longitud, 4)}°; ${esc(d.meteo)})</small>`)}
-        ${fila('Módulos', `${fmt(m.cantidad)} × ${esc(m.marca)} ${esc(m.modelo)} de ${fmt(m.wp)} Wp = <b>${fmt(d.kwp, 2)} kWp</b>`)}
-        ${fila('Inversor', `${fmt(inv.cantidad)} × ${esc(inv.marca)} ${esc(inv.modelo)} de ${fmt(inv.kwacUnidad, 1)} kWac`)}
-        ${fila('Orientación', `Inclinación ${fmt(d.inclinacion, 1)}° · azimut ${fmt(d.azimut, 1)}°`)}
+        ${fila('Punto simulado', `<input type="text" id="sl-lugar" value="${esc([d.lugar, d.pais].filter(Boolean).join(', '))}" aria-label="Sitio"> ${d.latitud != null && d.longitud != null ? `<small>(${fmt(d.latitud, 4)}°, ${fmt(d.longitud, 4)}°; ${esc(d.meteo || '')})</small>` : PEND('el informe no trae las coordenadas')}`)}
+        ${fila('Módulos', `${fmt(m.cantidad)} × ${[m.marca, m.modelo].filter(Boolean).length ? esc([m.marca, m.modelo].filter(Boolean).join(' ')) : PEND('marca y modelo')} de ${fmt(m.wp)} Wp = <b>${fmt(d.kwp, 2)} kWp</b>${d.subconjuntos > 1 ? ' <small>(suma de ' + d.subconjuntos + ' subconjuntos del informe)</small>' : ''}`)}
+        ${fila('Inversor', `${fmt(inv.cantidad)} × ${[inv.marca, inv.modelo].filter(Boolean).length ? esc([inv.marca, inv.modelo].filter(Boolean).join(' ')) : PEND('marca y modelo')} de ${fmt(inv.kwacUnidad, 1)} kWac`)}
+        ${fila('Orientación', d.inclinacion != null && d.azimut != null ? `Inclinación ${fmt(d.inclinacion, 1)}° · azimut ${fmt(d.azimut, 1)}°` : PEND('el informe no trae la orientación'))}
+        ${(d.pendientes || []).length ? fila('Pendiente', PEND('no figura en el informe: ' + d.pendientes.join(', ') + '. Queda sin completar y no se imprime en la oferta')) : ''}
         ${fila('Producción', `<b>${fmt(d.generacionAnual)} kWh/año</b>${d.produccionEspecifica ? ' · ' + fmt(d.produccionEspecifica) + ' kWh/kWp·año' : ''}${d.pr ? ' · PR ' + fmt(d.pr, 2) + ' %' : ''}`)}
         ${fila('Mes a mes (kWh)', '<div class="sl-mini">' + g.map((v, i) => `<span><i>${M[i]}</i>${fmt(v)}</span>`).join('') + '</div>')}
         ${fila('Carga simulada', carga)}
         ${fila('Degradación', deg)}
-        ${fila('Verificación', `✔ Los 12 meses suman ${fmt(d.generacionAnual)} kWh, igual al total de la tabla` + (d.energiaAnual ? ' y a la energía producida del resumen.' : '.'))}
+        ${fila('Verificación', `✔ Los 12 meses suman ${fmt(d.generacionAnual)} kWh, igual al total de la tabla (con la tolerancia de redondeo de PVsyst)` + (d.energiaAnual ? (Math.abs(d.energiaAnual - d.generacionAnual) < 0.5 ? ' y a la energía producida del resumen.' : ' y, dentro de ese redondeo, a la energía producida del resumen (' + fmt(d.energiaAnual) + ' kWh): la oferta imprime la suma de los 12 meses.') : '.'))}
         ${r.avisos.length ? fila('Avisos', r.avisos.map(esc).join('<br>')) : ''}</table>
         <div class="wz-row"><button type="button" class="wz-btn" onclick="SOLAR.confirmarPendiente()">Confirmar y usar estos datos</button><button type="button" class="wz-btn ghost" onclick="SOLAR.descartarPendiente()">Descartar</button></div></div>`;
     },
@@ -168,7 +174,12 @@
       if (this.PV.horizonte && !pnum(val('sl-hor'))) this.poner('sl-hor', String(this.PV.horizonte));
       const sel = $('sl-degmodo'); if (sel && !pnum(val('sl-deg'))) { sel.value = 'PVSYST_PARAMETRO_MODULO'; this.aplicarModoDegradacion(); }
       if (!val('sl-proy')) this.poner('sl-proy', 'Sistema solar fotovoltaico conectado a red de ' + fmt(d.kwp, 2) + ' kWp');
-      if (!val('sl-comp').trim()) this.poner('sl-comp', [m.cantidad + ' módulos fotovoltaicos ' + m.marca + ' ' + m.modelo + ' de ' + m.wp + ' Wp.', inv.cantidad + ' inversor' + (inv.cantidad > 1 ? 'es' : '') + ' ' + inv.marca + ' ' + inv.modelo + ' de ' + inv.kwacUnidad + ' kWac.'].join('\n'));
+      if (!val('sl-comp').trim()) {
+        const ls = [], ok = (...v) => v.every(x => x !== undefined && x !== null && x !== '' && !(typeof x === 'number' && isNaN(x)));
+        if (ok(m.cantidad, m.wp)) ls.push(m.cantidad + ' módulos fotovoltaicos' + (ok(m.marca) ? ' ' + m.marca : '') + (ok(m.modelo) ? ' ' + m.modelo : '') + ' de ' + m.wp + ' Wp.');
+        if (ok(inv.cantidad, inv.kwacUnidad)) ls.push(inv.cantidad + ' inversor' + (inv.cantidad > 1 ? 'es' : '') + (ok(inv.marca) ? ' ' + inv.marca : '') + (ok(inv.modelo) ? ' ' + inv.modelo : '') + ' de ' + inv.kwacUnidad + ' kWac.');
+        if (ls.length) this.poner('sl-comp', ls.join('\n'));
+      }
       this.pend = null; $('sl-pv').innerHTML = this.resumenPV(); const e = $('sl-pdf-estado'); e.className = 'wz-solar-estado ok'; e.textContent = 'Informe confirmado'; const i = $('sl-pdf'); if (i) i.value = '';
       this.actualizar(true); UI.toast('Datos del informe PVsyst cargados', 'ok');
     },
@@ -181,6 +192,8 @@
 
     // ───────────── 2. Consumo con origen por mes ─────────────
     consumo() { return M.map((_, i) => pnum(val('sl-c' + i))); },
+    /** Meses cuya casilla no es UN número válido (letras, varias cifras separadas por espacio o tabulador, negativos): nunca se toman «a medias». */
+    consumoInvalido() { return M.filter((_, i) => { const t = String(val('sl-c' + i) || '').trim(); if (!t) return false; if (/\d\s+\d/.test(t) || /[^\d.,\s$]/.test(t)) return true; const n = pnum(t); return n === null || n < 0; }); },
     esEstimado(i) { const e = $('sl-c' + i); return !!(e && e.classList.contains('sl-est')); },
     /** Promedio de los meses documentados (los que no están marcados como estimados). */
     promedioDocumentado() { const c = this.consumo().filter((v, i) => v !== null && !this.esEstimado(i)); return c.length ? sum(c) / c.length : null; },
@@ -235,7 +248,10 @@
     },
 
     // ───────────── Armado del JSON ─────────────
+    /** La ubicación del proyecto es UNA sola: la «Ubicación del trabajo» de la etapa 1 (este campo solo la refleja). */
+    sincronizarUbicacion() { const a = $('of-nd-ubicacion'), b = $('sl-ubic'); if (a && b && b.value !== a.value) b.value = a.value; },
     construir() {
+      this.sincronizarUbicacion();
       const p = this.PV; const o = { sistema: p ? JSON.parse(JSON.stringify(p.sistema)) : {}, energia: {}, tarifa: {}, finanzas: {} };
       if (p) o.simulacion = JSON.parse(JSON.stringify(p.simulacion));
       const proy = val('sl-proy').trim(); if (proy) o.proyecto = proy;
@@ -329,7 +345,7 @@
       this.poner('sl-opex', f.opexAnualCOP != null ? fmt(f.opexAnualCOP) : ''); this.poner('sl-esc', f.escalacionTarifaPct != null ? fmt(f.escalacionTarifaPct, 2) : ''); this.poner('sl-deg', f.degradacionAnualPct != null ? fmt(f.degradacionAnualPct, 2) : '');
       if ($('sl-degmodo')) $('sl-degmodo').value = f.degradacionOrigen || (f.degradacionAnualPct != null ? 'MANUAL' : 'PVSYST_PARAMETRO_MODULO');
       this.poner('sl-hor', f.horizonteAnios != null ? f.horizonteAnios : ''); this.poner('sl-tasa', f.tasaDescuentoPct != null ? fmt(f.tasaDescuentoPct, 2) : ''); this.poner('sl-fsup', f.fuenteSupuestos || '');
-      this.poner('sl-proy', s.proyecto || ''); this.poner('sl-alcance', (s.alcance || []).join('\n')); this.poner('sl-comp', (s.componentes || []).join('\n'));
+      this.poner('sl-proy', s.proyecto || ''); /* ofertas guardadas antes: su «alcance» solar pasa a «Objeto y alcance» (única fuente) si ahí aún no hay actividades */ if ((s.alcance || []).length && !WIZ.alcanceActs().length) s.alcance.forEach(t => OFERTAS.addAlcance(t));this.poner('sl-comp', (s.componentes || []).join('\n'));
       this.poner('sl-ben', s.beneficiosTributarios ? s.beneficiosTributarios.texto : ''); this.poner('sl-ben-ref', s.beneficiosTributarios ? (s.beneficiosTributarios.referencia || '') : '');
       this.poner('sl-just', s.dimensionamiento ? s.dimensionamiento.justificacion || '' : ''); const up = sm.ubicacionProyecto || {};
       this.poner('sl-ubic', up.descripcion || ''); this.poner('sl-ulat', up.latitud != null ? fmt(up.latitud, 4) : ''); this.poner('sl-ulon', up.longitud != null ? fmt(up.longitud, 4) : ''); this.poner('sl-ujust', up.justificacion || '');
@@ -409,8 +425,19 @@
       return r;
     },
     problemas() {
-      const r = [], add = (nivel, texto, bloquea) => r.push({ nivel, texto, bloquea: !!bloquea }); const p = this.PV, c = this._cons || { c: this.consumo(), conTodos: false, conAlguno: false };
+      this.sincronizarUbicacion();
+      const r = [], add = (nivel, texto, bloquea, paso) => r.push({ nivel, texto, bloquea: !!bloquea, paso }); const p = this.PV, c = this._cons || { c: this.consumo(), conTodos: false, conAlguno: false };
+      // Etapa 1: la sede beneficiaria se identifica por el título del servicio y la ubicación del trabajo (se imprimen en la portada).
+      if (!val('of-nd-titulo').trim()) add('error', 'Escriba el título del servicio: identifica la sede beneficiaria (por ejemplo, el nombre del colegio) y se imprime bajo «Oferta técnico-económica».', true, 1);
+      if (!val('of-nd-ubicacion').trim()) add('error', 'Indique la ubicación del trabajo (dirección y municipio de la sede beneficiaria).', true, 1);
+      const malos = this.consumoInvalido(); if (malos.length) add('error', 'El consumo de ' + malos.join(', ') + ' no es un número válido: use solo cifras en kWh, un solo número por casilla y sin letras.', true);
+      { const cl = this.problemasClon(); cl.forEach(x => r.push(x)); }
       if (!p) { add('error', 'Cargue y confirme el informe de simulación PVsyst (punto 1).', true); return r.concat(this.problemasTrib()); }
+      { const sx = p.sistema || {}, mo = sx.modulos || {}, iv = sx.inversores || {};   // DATOS ESENCIALES: nunca se emite con el sistema incompleto
+        if (!(mo.cantidad > 0 && mo.potenciaWp > 0)) add('error', 'Faltan la cantidad y la potencia de los módulos (dato esencial del informe PVsyst). Cargue un informe que los incluya.', true);
+        if (!(iv.cantidad > 0 && iv.potenciaKwac > 0)) add('error', 'Faltan la cantidad y la potencia de los inversores (dato esencial del informe PVsyst). Cargue un informe que los incluya.', true);
+        if (!Array.isArray(p.gen) || p.gen.length !== 12) add('error', 'Falta la generación mensual del informe PVsyst (dato esencial).', true);
+        if (!p.simulacion || !p.simulacion.archivoSha256) add('error', 'El informe PVsyst no quedó identificado por su huella: vuelva a cargarlo.', true); }
       if (c.conAlguno && !c.conTodos) add('aviso', 'Consumo incompleto: faltan meses. Complételos o use «Completar meses vacíos con el promedio»; sin los 12 meses no se calcula la cobertura ni se separan créditos y excedentes adicionales.');
       if (!c.conAlguno) add('aviso', 'No se digitó el consumo del cliente: la oferta no mostrará la cobertura ni comparará con el consumo.');
       if (c.conAlguno && !val('sl-fcons').trim()) add('error', 'Falta la fuente de los meses de consumo documentados (por ejemplo, la factura del cliente).', true);
@@ -446,7 +473,54 @@
       const c = $('sl-avisos'); if (!c) return; const r = this.problemas();
       c.innerHTML = r.length ? '<ul>' + r.map(x => `<li class="${x.nivel}">${esc(x.texto)}</li>`).join('') + '</ul>' : '<div class="sl-ok">✔ Datos solares completos para generar la oferta.</div>';
     },
-    revisiones() { return this.problemas().filter(x => x.bloquea || x.nivel === 'aviso').map(x => ({ paso: 2, nivel: x.nivel === 'error' ? 'error' : 'aviso', texto: x.texto, bloquea: x.bloquea })); }
+    // ───────────── Clonación SEGURA: los datos de un proyecto no pasan a otro ─────────────
+    clonDe: null,   // { id, cliente, ubicacion, titulo, mantener, revisado } — se conserva en borradores
+    clienteActual() { try { const o = JSON.parse($('of-cli-select').value); return String(o.EMPRESA_NOMBRE || o.EMPRESA || '').trim(); } catch (e) { return ''; } },
+    normTxt(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim(); },
+    problemasClon() {
+      const c = this.clonDe, r = []; if (!c) return r;
+      if (c.mantener) {
+        const mismoCli = this.normTxt(this.clienteActual()) === this.normTxt(c.cliente), mismaSede = this.normTxt(val('of-nd-ubicacion')) === this.normTxt(c.ubicacion);
+        if (!mismoCli || !mismaSede) r.push({ nivel: 'error', bloquea: true, paso: 1, texto: 'Cambió ' + (!mismoCli && !mismaSede ? 'el cliente y la sede' : !mismoCli ? 'el cliente' : 'la sede') + ' respecto de la oferta ' + c.id + ': los datos energéticos (informe PVsyst, consumos, tarifa) pertenecen a ese proyecto. Vuelva a «' + c.cliente + ' — ' + c.ubicacion + '» o empiece de nuevo («Oferta en blanco» o clone otra vez eligiendo «otro proyecto»).' });
+      } else if (!c.revisado) r.push({ nivel: 'error', bloquea: true, texto: 'Esta oferta se copió de la ' + c.id + ' (otro proyecto): revise las partidas, actividades, entregables y condiciones copiados y marque la casilla de revisión (arriba, en los datos solares).' });
+      return r;
+    },
+    pintarClon() {
+      const b = $('sl-clon'); if (!b) return; const c = this.clonDe;
+      if (!c) { b.style.display = 'none'; b.innerHTML = ''; return; }
+      b.style.display = '';
+      b.innerHTML = c.mantener ? '<b>Nueva versión del MISMO proyecto</b> (copiada de ' + esc(c.id) + '): se conservaron el informe PVsyst, los consumos y la tarifa porque usted confirmó que cliente y sede son los mismos. Si cambia el cliente o la sede, la oferta se bloquea hasta cargar los datos de nuevo. La fecha de emisión es siempre la del momento de emitir.'
+        : '<b>Copiada de ' + esc(c.id) + ' para OTRO proyecto.</b> NO se copiaron: el informe PVsyst y su huella, la configuración energética, los consumos, la tarifa, la ubicación, el título ni el objeto. Cargue los de este proyecto. <label class="sl-chk" style="margin-top:6px"><input type="checkbox" id="sl-clon-rev" ' + (c.revisado ? 'checked' : '') + ' onchange="SOLAR.clonRevisado(this.checked)"> <b>Revisé las partidas, actividades, entregables y condiciones copiados:</b> corresponden a este proyecto.</label>';
+    },
+    clonRevisado(v) { if (this.clonDe) { this.clonDe.revisado = !!v; this.pintarAvisos(); WIZ.alCambiar(); } },
+    /** Se llama al clonar una oferta: por omisión LIMPIA todo lo que es del proyecto original; conservarlo es una excepción confirmada. */
+    alClonar(h) {
+      let data; try { data = JSON.parse(h.DATA_JSON); } catch (e) { return; }
+      const n = data && data.nodia; this.clonDe = null; this._clonDatos = null;
+      if (!n || !(n.servicio === 'SOLAR' || n.solar)) { this.pintarClon(); return; }
+      const o = { id: String(data.consecutivo || ''), cliente: String((data.cliente || {}).EMPRESA_NOMBRE || (data.cliente || {}).EMPRESA || ''), ubicacion: String(n.ubicacion || ''), titulo: String(n.tituloServicio || '') };
+      this._clonDatos = data;
+      this.limpiarParaOtroProyecto(); this.clonDe = { id: o.id, cliente: o.cliente, ubicacion: o.ubicacion, titulo: o.titulo, mantener: false, revisado: false };
+      this.pintarClon(); this.pintarAvisos();
+      WIZ.modal('Oferta solar copiada', '<div class="wz-nota"><b>Los datos energéticos y de ubicación son de UN proyecto.</b> La oferta <b>' + esc(o.id) + '</b> es de «' + esc(o.titulo || 'sin título') + '» (' + esc(o.cliente) + ', ' + esc(o.ubicacion || 'sin ubicación') + '). Por seguridad se dejaron VACÍOS: informe PVsyst y su huella, configuración energética, consumos, tarifa, ubicación, título, objeto y fecha de emisión (la fecha siempre se fija al emitir).</div>' +
+        '<div class="wz-botones"><button type="button" class="wz-btn pri" onclick="WIZ.cerrarModal()">Es otro proyecto: continuar con esos datos vacíos (recomendado)</button></div>' +
+        '<hr><div class="wz-nota">Solo si esta oferta es una <b>nueva versión del MISMO proyecto y la MISMA sede</b>:</div>' +
+        '<label class="sl-chk"><input type="checkbox" id="sl-clon-mismo-chk" onchange="document.getElementById(\'sl-clon-mismo\').disabled=!this.checked"> Confirmo que el cliente («' + esc(o.cliente) + '»), la sede («' + esc(o.ubicacion) + '») y los datos energéticos son los mismos.</label>' +
+        '<div class="wz-botones"><button type="button" id="sl-clon-mismo" class="wz-btn ghost" disabled onclick="SOLAR.clonMismo()">Conservar los datos del proyecto</button></div>', '640px');
+    },
+    limpiarParaOtroProyecto() {
+      WIZ.limpiarSolar();   // informe PVsyst, huella, energía, consumos, tarifa, supuestos, tributario y componentes
+      ['of-nd-titulo', 'of-nd-ubicacion', 'of-objeto'].forEach(id => { const e = $(id); if (e) e.value = ''; });
+      this.sincronizarUbicacion(); WIZ.alCambiar();
+    },
+    clonMismo() {
+      const o = this.clonDe, data = this._clonDatos, k = $('sl-clon-mismo-chk'); if (!o || !data || !k || !k.checked) return;
+      OFERTAS.rellenarFormulario(data);   // vuelve a poner TODO lo del proyecto original (el consecutivo ya es nuevo)
+      this.clonDe = o; o.mantener = true; o.revisado = true; WIZ.cerrarModal(); this.pintarClon(); this.pintarAvisos(); WIZ.alCambiar();
+      UI.toast('Se conservaron los datos del proyecto. Si cambia el cliente o la sede, la oferta se bloquea.', 'warn');
+    },
+
+    revisiones() { return this.problemas().filter(x => x.bloquea || x.nivel === 'aviso').map(x => ({ paso: x.paso || 2, nivel: x.nivel === 'error' ? 'error' : 'aviso', texto: x.texto, bloquea: x.bloquea })); }
   };
   window.SOLAR = SOLAR;
 
@@ -492,5 +566,10 @@
   const lim0 = WIZ.limpiarSolar; WIZ.limpiarSolar = function () { SOLAR.PV = null; SOLAR.pend = null; if (SOLAR.montado) { SOLAR.limpiarCampos(); $('sl-pv').innerHTML = ''; const i = $('sl-pdf'); if (i) i.value = ''; const e = $('sl-pdf-estado'); if (e) { e.className = 'wz-solar-estado'; e.textContent = ''; } } return lim0.apply(this, arguments); };
   const rel0 = WIZ.aplicarRelevancia; WIZ.aplicarRelevancia = function () { const r = rel0.apply(this, arguments); const c = $('wz-card-solar'); if (c && c.style.display !== 'none') { SOLAR.montar(); TRIB.blanquearTodas(); } return r; };
   const rev0 = WIZ.revisar; WIZ.revisar = function () { const r = rev0.apply(this, arguments); const nd = this.esNodia && this.esNodia(); if (nd && (this.clase() === 'FV' || this.val('of-nd-servicio') === 'SOLAR') && SOLAR.montado) { const ya = new Set(r.map(x => x.texto)); SOLAR.revisiones().forEach(x => { if (!ya.has(x.texto)) r.push(x); }); } return r; };
+  // ───────────── Clonación segura: enganches ─────────────
+  { const ch0 = OFERTAS.cargarDesdeHistorial; if (typeof ch0 === 'function') OFERTAS.cargarDesdeHistorial = function (h, esClon) { const r = ch0.apply(this, arguments); if (esClon) { try { SOLAR.alClonar(h); } catch (e) { console.error(e); } } return r; }; }
+  { const rf0 = OFERTAS.recuperarFormulario; if (typeof rf0 === 'function') OFERTAS.recuperarFormulario = function () { const d = rf0.apply(this, arguments); if (d && SOLAR.clonDe) d.clonDe = JSON.parse(JSON.stringify(SOLAR.clonDe)); return d; }; }
+  { const rs1 = WIZ.restaurar; WIZ.restaurar = function (data) { const r = rs1.apply(this, arguments); SOLAR.clonDe = (data && data.clonDe) || null; SOLAR.pintarClon(); return r; }; }
+  { const eb0 = WIZ.enBlanco; if (typeof eb0 === 'function') WIZ.enBlanco = function () { const r = eb0.apply(this, arguments); if (!this.hayContenido()) { SOLAR.clonDe = null; SOLAR._clonDatos = null; SOLAR.pintarClon(); } return r; }; }
   if (document.readyState !== 'loading') { try { WIZ.aplicarRelevancia(); } catch (e) { /* aún no hay formulario */ } }
 })();
