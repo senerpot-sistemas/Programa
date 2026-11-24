@@ -39,7 +39,7 @@ const API = {
     'obtenerDatos', 'obtenerDatosERP', 'getDashboard', 'obtenerDetalleOferta',
     'obtenerDetalleNCR', 'obtenerPresupuestoProyecto', 'obtenerComentariosProyecto',
     'consultarHistorial', 'obtenerBancos', 'generarReporte', 'listarUsuarios',
-    'obtenerProyectos', 'obtenerDetalleProyecto', 'obtenerAlmacen',
+    'obtenerProyectos', 'obtenerDetalleProyecto', 'obtenerAlmacen', 'obtenerResumenCampo', 'listarResponsables',
     'cargarDocEdicion', 'calcularIVA', 'calcularRenta', 'siigoPrevisualizar'
   ],
 

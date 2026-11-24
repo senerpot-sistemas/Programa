@@ -44,6 +44,7 @@ const AUTH = {
   },
 
   mostrarApp() {
+    if (sessionStorage.getItem('senerpot_cambiar') === '1') { this._pedirClaveNueva(); return; }   // clave temporal: primero crea la suya
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-shell').style.display = 'flex';
     this.aplicarRol();
@@ -110,6 +111,7 @@ const AUTH = {
       sessionStorage.setItem('senerpot_rol', res.rol);
       sessionStorage.setItem('senerpot_nombre', res.nombre || usuario);
       sessionStorage.setItem('senerpot_usuario', usuario);
+      if (res.debeCambiarClave) sessionStorage.setItem('senerpot_cambiar', '1'); else sessionStorage.removeItem('senerpot_cambiar');   // clave temporal: debe crear la suya antes de usar la app
       this.rol = res.rol; this.nombre = res.nombre || usuario; this.usuario = usuario;
       // Si entra OTRA persona en la misma pestaña, se recarga: así no queda en pantalla
       // nada (tablas, formularios a medias) de quien estuvo antes. La sesión nueva ya
@@ -153,6 +155,7 @@ const AUTH = {
     sessionStorage.removeItem('senerpot_rol');
     sessionStorage.removeItem('senerpot_nombre');
     sessionStorage.removeItem('senerpot_usuario');
+    sessionStorage.removeItem('senerpot_cambiar');
     this.rol = ''; this.nombre = ''; this.usuario = '';
 
     // Copias en el navegador con datos del usuario anterior (obtenerDatos, ERP, dashboard...)
@@ -177,6 +180,50 @@ const AUTH = {
     if (typeof CONTABILIDAD !== 'undefined') CONTABILIDAD.DB = { config: {}, puc: [], terceros: [], productos: [], cartera: [], memoria: [] };
     if (typeof PANEL        !== 'undefined') PANEL._erp      = null;
     if (typeof USUARIOS     !== 'undefined') USUARIOS.DB     = [];
+  },
+
+  // Clave temporal: pantalla obligatoria «Cree su contraseña». Mientras no la cree, el servidor rechaza todo lo demás (403).
+  _pedirClaveNueva() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-shell').style.display = 'none';
+    if (document.getElementById('modal-clave-temporal')) return;
+    const d = document.createElement('div');
+    d.id = 'modal-clave-temporal'; d.className = 'modal-overlay open';
+    d.innerHTML = '<div class="modal-box"><div class="modal-header"><span>Cree su contraseña</span></div>'
+      + '<p style="font-size:13px;color:#475569;margin:0 0 12px">La contraseña con la que entró es temporal. Cree la suya para continuar: será la misma en NODIA y en NODIA Campo.</p>'
+      + '<div class="field-group mb10"><label>Contraseña nueva</label><div class="password-wrap"><input type="password" id="ct-nueva" placeholder="Mínimo 8 caracteres, con letras y números" autocomplete="new-password"><button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1">👁️</button></div></div>'
+      + '<div class="field-group mb15"><label>Repetir contraseña nueva</label><div class="password-wrap"><input type="password" id="ct-repetir" autocomplete="new-password"><button type="button" class="password-toggle" onclick="UI.togglePassword(this)" tabindex="-1">👁️</button></div></div>'
+      + '<div id="ct-error" style="display:none;color:#D32F2F;font-size:12.5px;margin-bottom:10px"></div>'
+      + '<button class="btn-generate" id="ct-guardar" onclick="AUTH.guardarClaveTemporal(this)">Guardar y entrar</button>'
+      + '<div style="text-align:center;margin-top:10px"><a href="#" style="font-size:12.5px;color:#64748B" onclick="AUTH.cancelarClaveTemporal();return false;">Salir</a></div></div>';
+    document.body.appendChild(d);
+    setTimeout(() => document.getElementById('ct-nueva')?.focus(), 50);
+  },
+
+  async guardarClaveTemporal(btn) {
+    if (this._guardandoClaveTemporal) return;
+    const nueva = document.getElementById('ct-nueva')?.value || '', repetir = document.getElementById('ct-repetir')?.value || '';
+    const err = document.getElementById('ct-error');
+    const falla = m => { if (err) { err.textContent = m; err.style.display = 'block'; } };
+    if (err) err.style.display = 'none';
+    if (nueva.length < 8) return falla('Debe tener al menos 8 caracteres.');
+    if (!/[A-Za-zÁÉÍÓÚáéíóúÑñ]/.test(nueva) || !/[0-9]/.test(nueva)) return falla('Debe tener letras y números.');
+    if (nueva !== repetir) return falla('Las contraseñas no coinciden.');
+    this._guardandoClaveTemporal = true; if (btn) UI.spin(btn, true);
+    try {
+      const res = await API.call('cambiarPasswordPropia', { password: nueva });
+      if (!res.exito) return falla(res.error || 'No se pudo guardar la contraseña.');
+      sessionStorage.removeItem('senerpot_cambiar');
+      document.getElementById('modal-clave-temporal')?.remove();
+      UI.toast('Contraseña creada', 'ok');
+      this.mostrarApp();
+    } catch (e) { falla(e.message); }
+    finally { this._guardandoClaveTemporal = false; if (btn) UI.spin(btn, false); }
+  },
+
+  cancelarClaveTemporal() {
+    document.getElementById('modal-clave-temporal')?.remove();
+    this.logout();
   },
 
   async cambiarPasswordPropia(btn) {
@@ -239,7 +286,7 @@ const USUARIOS = {
         <td>${u.USUARIO}</td>
         <td>${u.NOMBRE || '-'}</td>
         <td><span class="badge ${activo ? 'badge-blue' : 'badge-gray'}">${NOMBRES_ROL[u.ROL] || u.ROL}</span></td>
-        <td><span class="badge ${activo ? 'badge-green' : 'badge-red'}">${activo ? 'Activo' : 'Deshabilitado'}</span></td>
+        <td><span class="badge ${activo ? 'badge-green' : 'badge-red'}">${activo ? 'Activo' : 'Deshabilitado'}</span>${u.DEBE_CAMBIAR_CLAVE === 'SI' ? ' <span class="badge badge-orange" title="La clave que puso el administrador es temporal: la persona debe crear la suya al entrar a NODIA Campo">Clave temporal</span>' : ''}</td>
         <td>
           <button class="btn-icon btn-icon-edit" onclick='USUARIOS.abrirModal(${JSON.stringify(u).replace(/'/g,"&#39;")})' title="Editar">✏️ Editar</button>
           <button class="btn-icon btn-icon-del" onclick="USUARIOS.eliminarUI('${u.USUARIO}',this)" title="Eliminar">🗑️ Eliminar</button>

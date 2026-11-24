@@ -31,6 +31,7 @@ const PROYECTOS = {
 
   // ── TABS ────────────────────────────────────
   tab(id) {
+    if (id === 'nuevo') this.poblarResponsableNuevo();
     document.querySelectorAll('#view-proyectos .subtab').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('#view-proyectos .subview').forEach(v => v.classList.remove('active'));
     document.getElementById('pryt-' + id)?.classList.add('active');
@@ -142,6 +143,31 @@ const PROYECTOS = {
     }
   },
 
+  // ── RESPONSABLE: se elige de la lista de usuarios activos (técnico, ingeniería, administrador); se guarda el NOMBRE DE USUARIO ──
+  // (NODIA Campo asigna los proyectos comparando este campo con el usuario de la persona.)
+  _responsables: null,
+  async cargarResponsables(forzar) {
+    if (this._responsables && !forzar) return this._responsables;
+    try { this._responsables = await API.call('listarResponsables'); } catch (e) { this._responsables = this._responsables || []; }
+    return this._responsables;
+  },
+  _opcionesResponsable(actual) {
+    const lista = this._responsables || [];
+    const act = String(actual || '').trim();
+    const hay = lista.some(u => String(u.usuario).toLowerCase() === act.toLowerCase());
+    const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const NOMBRES = { ADMINISTRADOR: 'Administrador', TECNICO: 'Técnico', INGENIERIA: 'Ingeniería' };
+    return '<option value="">Sin asignar</option>'
+      + (act && !hay ? '<option value="' + esc(act) + '" selected>' + esc(act) + ' (texto antiguo: elija un usuario)</option>' : '')
+      + lista.map(u => '<option value="' + esc(u.usuario) + '"' + (hay && String(u.usuario).toLowerCase() === act.toLowerCase() ? ' selected' : '') + '>' + esc(u.nombre || u.usuario) + ' — ' + esc(NOMBRES[u.rol] || u.rol) + ' (' + esc(u.usuario) + ')</option>').join('');
+  },
+  async poblarResponsableNuevo() {
+    const sel = document.getElementById('pry-tecnico');
+    if (!sel) return;
+    await this.cargarResponsables();
+    sel.innerHTML = this._opcionesResponsable('');
+  },
+
   async crearProyecto() {
     const nombre   = document.getElementById('pry-nombre')?.value?.trim();
     const cliente  = document.getElementById('pry-sel-cliente')?.value;
@@ -183,6 +209,7 @@ const PROYECTOS = {
     if (!panel) return;
     this._abriendoDetalle = true;
     if (btn) UI.spinIcon(btn, true);
+    await this.cargarResponsables();   // lista de usuarios para el selector de Responsable
     // Objeto de la oferta vinculada — se busca en vivo aquí (no depende de
     // que el proyecto ya tenga NOTAS con el objeto guardado), así que esto
     // también sirve para proyectos creados antes de este cambio, donde el
@@ -215,7 +242,7 @@ const PROYECTOS = {
         <div>
           <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;">Responsable</div>
           <div style="display:flex;gap:6px;">
-            <input type="text" id="pry-responsable-input" value="${p.TECNICO||''}" placeholder="Sin asignar" style="flex:1;min-width:0;padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;" onkeydown="if(event.key==='Enter')PROYECTOS.guardarResponsable('${id}')">
+            <select id="pry-responsable-input" style="flex:1;min-width:0;padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;">${PROYECTOS._opcionesResponsable(p.TECNICO)}</select>
             <button class="btn-icon" style="color:var(--primary)" onclick="PROYECTOS.guardarResponsable('${id}',this)" title="Guardar responsable">✓</button>
           </div>
         </div>
@@ -246,6 +273,7 @@ const PROYECTOS = {
         <div id="pry-presupuesto-resumen" style="text-align:right;font-size:13px;margin-top:8px;"></div>
       </div>
       ${this.bloqueComprasProyecto(id)}
+      ${this.bloqueGastosCampo()}
       <div style="border-top:1px solid var(--border);padding-top:14px;">
         <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Bitácora — avances, materiales, novedades</div>
         <div id="pry-comentarios-lista" style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">Cargando…</div>
@@ -258,7 +286,9 @@ const PROYECTOS = {
     document.getElementById('pry-detalle-id').value = id;
     this._presupuestoPendiente = []; // limpio al abrir — no arrastrar líneas sin guardar de otro proyecto
     this.poblarDatalistCompras();
+    this._gastoCampo = null;   // limpio al abrir — no arrastrar el total de campo de otro proyecto
     this.cargarPresupuesto(id);
+    this.cargarGastosCampo(id);
     // El botón de eliminar solo se muestra a ADMINISTRADOR — esto es solo
     // para que la interfaz tenga sentido, la restricción real ya la aplica
     // el servidor (ver eliminarProyecto en PERMISOS, Auth.gs).
@@ -296,6 +326,42 @@ const PROYECTOS = {
       </table>
       <div style="text-align:right;font-weight:700;margin-top:6px;font-size:13px;">Total comprado: ${UI.moneda(total)}</div>
     </div>`;
+  },
+
+  // Gastos de campo — lo que los ingenieros registran en la app NODIA Campo (se compran/gastan al momento, sin aprobación).
+  // El servidor de Campo manda los totales a NODIA (hoja BD_CAMPO_RESUMEN); aquí solo se leen. Valor mostrado = aprobado + pendiente
+  // (lo anulado no cuenta). Roles que ven Compras: los demás ni piden este dato (el servidor igual responde 403 a COMERCIAL).
+  ROLES_GASTOS_CAMPO: ['ADMINISTRADOR', 'ADMINISTRATIVO', 'TECNICO', 'INGENIERIA'],
+  _puedeVerGastosCampo() { return typeof AUTH === 'undefined' || this.ROLES_GASTOS_CAMPO.includes(AUTH.rol); },
+
+  bloqueGastosCampo() {
+    if (!this._puedeVerGastosCampo()) return '';
+    return `<div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;margin-bottom:8px;">Gastos de campo (registrados desde NODIA Campo)</div>
+      <div id="pry-gastos-campo" style="font-size:12.5px;">Cargando…</div>
+    </div>`;
+  },
+
+  async cargarGastosCampo(id) {
+    const el = document.getElementById('pry-gastos-campo');
+    if (!el) return;
+    try {
+      const filas = await API.call('obtenerResumenCampo');
+      if (document.getElementById('pry-detalle-id')?.value !== id) return;   // ya se abrió otro proyecto
+      const f = (filas || []).find(x => String(x.ID_PROYECTO) === String(id));
+      this._gastoCampo = f ? { total: (Number(f.APROBADO) || 0) + (Number(f.PENDIENTE) || 0), pendiente: Number(f.PENDIENTE) || 0, anulado: Number(f.ANULADO) || 0, ultimo: f.ULTIMO_REGISTRO || '', actualizado: f.ACTUALIZADO || '' } : { total: 0, pendiente: 0, anulado: 0, ultimo: '', actualizado: '' };
+      const g = this._gastoCampo;
+      el.innerHTML = !f
+        ? '<div style="color:#888;">Sin gastos de campo registrados todavía. Los registran los ingenieros desde la app NODIA Campo.</div>'
+        : `<div style="font-weight:700;">Total gastos de campo: ${UI.moneda(g.total)}</div>
+           ${g.pendiente ? `<div style="color:#F59E0B;">Incluye ${UI.moneda(g.pendiente)} por aprobar en Campo.</div>` : ''}
+           ${g.anulado ? `<div style="color:#888;">Anulados (no cuentan): ${UI.moneda(g.anulado)}</div>` : ''}
+           <div style="color:#888;font-size:11.5px;margin-top:2px;">${g.ultimo ? 'Último registro: ' + g.ultimo + ' · ' : ''}Actualizado: ${g.actualizado || '—'}</div>`;
+    } catch (e) {
+      this._gastoCampo = null;
+      el.innerHTML = '<div style="color:#D32F2F;">No se pudieron cargar los gastos de campo.</div>';
+    }
+    this.renderPresupuesto(id);   // el resumen «Presupuestado | Compras | Gastos de campo | Real | Diferencia» los incluye
   },
 
   totalComprasProyecto(id) {
@@ -398,12 +464,21 @@ const PROYECTOS = {
     if (countEl) countEl.textContent = pendientes.length;
 
     if (!resumen) return;
-    const totalReal = this.totalComprasProyecto(id);
+    const totalCompras = this.totalComprasProyecto(id);
+    const veCampo = this._puedeVerGastosCampo();
+    const totalCampo = (this._gastoCampo && this._gastoCampo.total) || 0;
+    const totalReal = totalCompras + totalCampo;   // real = compras + gastos de campo
     const diferencia = totalPresupuestado - totalReal;
     const colorDif = diferencia >= 0 ? '#4C9F2E' : '#D32F2F';
+    const fila = (txt, val, extra) => `<tr${extra || ''}><td style="padding:1px 10px 1px 0;text-align:right;">${txt}</td><td style="text-align:right;">${val}</td></tr>`;
     resumen.innerHTML = `
-      <div>Presupuestado: <b>${UI.moneda(totalPresupuestado)}</b>${pendientes.length ? ` <span style="color:#F59E0B;font-weight:400;">(incluye ${pendientes.length} sin guardar)</span>` : ''}</div>
-      <div style="color:${colorDif};font-weight:700;">${diferencia >= 0 ? 'Disponible' : 'Excedido'}: ${UI.moneda(Math.abs(diferencia))}</div>`;
+      <table style="margin-left:auto;font-size:13px;border-collapse:collapse;"><tbody>
+        ${fila('Presupuestado', `<b>${UI.moneda(totalPresupuestado)}</b>${pendientes.length ? ` <span style="color:#F59E0B;font-weight:400;">(incluye ${pendientes.length} sin guardar)</span>` : ''}`)}
+        ${fila('Compras', UI.moneda(totalCompras))}
+        ${veCampo ? fila('Gastos de campo', this._gastoCampo ? UI.moneda(totalCampo) : '…') : ''}
+        ${fila('Real total', `<b>${UI.moneda(totalReal)}</b>`, ' style="border-top:1px solid var(--border);"')}
+        ${fila(diferencia >= 0 ? 'Disponible' : 'Excedido', `<b>${UI.moneda(Math.abs(diferencia))}</b>`, ` style="color:${colorDif};font-weight:700;"`)}
+      </tbody></table>`;
   },
 
   // Agregar a la lista NO llama al servidor — solo mete la línea en un
@@ -539,7 +614,7 @@ const PROYECTOS = {
     if (!p) return;
     const input = document.getElementById('pry-responsable-input');
     const tecnico = input?.value?.trim();
-    if (!tecnico) { UI.toast('Escribe un nombre para el responsable', 'warn'); return; }
+    if (!tecnico) { UI.toast('Elija una persona de la lista como responsable', 'warn'); return; }
     this._guardandoResponsable = true;
     if (btn) UI.spinIcon(btn, true);
     try {
