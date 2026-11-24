@@ -23,7 +23,7 @@ const HX = {
   $(id) { return document.getElementById(id); },
   esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); },
   rol() { return sessionStorage.getItem('senerpot_rol') || ''; },
-  priv() { return ['ADMINISTRADOR', 'INGENIERIA'].includes(this.rol()); },
+  priv() { return ['ADMINISTRADOR', 'GERENTE_ADMINISTRATIVO', 'INGENIERIA'].includes(this.rol()); },
   pesos(n) { return '$ ' + Math.round(Number(n) || 0).toLocaleString('es-CO'); },
   fecha(iso) { if (!iso) return '—'; const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso)); return m ? m[3] + '/' + m[2] + '/' + m[1] : String(iso); },
   uuid() { return (crypto.randomUUID ? crypto.randomUUID() : 'op-' + Date.now() + '-' + Math.random().toString(16).slice(2)); },

@@ -20,7 +20,16 @@ const PROYECTOS = {
       const data = await DatosERP.obtener();
       this.DB = data;
       this.render();
+      this.cargarObjetos();   // el objeto de cada oferta llega aparte (liviano) y se pinta debajo del nombre
     } catch(e) { UI.toast('Error cargando proyectos: ' + e.message, 'err'); return false; }
+  },
+
+  _objetos: null,
+  async cargarObjetos() {
+    try {
+      this._objetos = await API.call('obtenerObjetosProyectos');
+      this.renderTabla(document.getElementById('pry-filtro-estado')?.value || '');
+    } catch (e) { /* sin objeto: la lista funciona igual */ }
   },
 
   render() {
@@ -44,9 +53,20 @@ const PROYECTOS = {
     if (!tbody) return;
     tbody.innerHTML = '';
     let lista = [...(this.DB.proyectos || [])].reverse();
-    if (filtroEstado) lista = lista.filter(p => p.ESTADO === filtroEstado);
+    // Vista por defecto «ACTIVOS»: lo facturado y lo cobrado ya no estorba; se ve con el filtro «Facturados y cobrados» o «Todos los estados».
+    const FUERA = ['FACTURADO', 'COBRADO'];
+    const nFuera = lista.filter(p => FUERA.includes(p.ESTADO)).length;
+    if (filtroEstado === 'ACTIVOS') lista = lista.filter(p => !FUERA.includes(p.ESTADO));
+    else if (filtroEstado === 'FACTURADOS_COBRADOS') lista = lista.filter(p => FUERA.includes(p.ESTADO));
+    else if (filtroEstado) lista = lista.filter(p => p.ESTADO === filtroEstado);
+    const resumen = document.getElementById('pry-resumen-vista');
+    if (resumen) {
+      resumen.innerHTML = filtroEstado === 'ACTIVOS'
+        ? '<b>' + lista.length + '</b> activos' + (nFuera ? ' · ' + nFuera + ' facturados o cobrados fuera de la vista — <a href="#" onclick="PROYECTOS.verFacturados();return false;">verlos</a>' : '')
+        : (filtroEstado === 'FACTURADOS_COBRADOS' ? '<b>' + lista.length + '</b> facturados o cobrados — <a href="#" onclick="PROYECTOS.verActivos();return false;">volver a los activos</a>' : '<b>' + lista.length + '</b> proyectos');
+    }
     if (!lista.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">No hay proyectos. Crea uno nuevo.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">' + (filtroEstado === 'ACTIVOS' ? 'No hay proyectos activos.' : filtroEstado === 'FACTURADOS_COBRADOS' ? 'No hay proyectos facturados ni cobrados.' : 'No hay proyectos. Crea uno nuevo.') + '</td></tr>';
       return;
     }
     lista.forEach(p => {
@@ -54,7 +74,7 @@ const PROYECTOS = {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><b>${p.ID_PROYECTO}</b></td>
-        <td>${p.NOMBRE || '-'}</td>
+        <td>${p.NOMBRE || '-'}${(this._objetos && this._objetos[p.ID_PROYECTO]) ? '<div style="font-size:11.5px;color:#64748B;font-weight:400;margin-top:2px;line-height:1.3;max-width:420px;">' + String(this._objetos[p.ID_PROYECTO]).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>' : ''}</td>
         <td>${p.CLIENTE || '-'}</td>
         <td>${UI.moneda(p.VALOR || 0)}</td>
         <td><span class="badge ${badgeClass}">${p.ESTADO || '-'}</span></td>
@@ -71,6 +91,8 @@ const PROYECTOS = {
     const estado = document.getElementById('pry-filtro-estado')?.value || '';
     this.renderTabla(estado);
   },
+  verFacturados() { const s = document.getElementById('pry-filtro-estado'); if (s) s.value = 'FACTURADOS_COBRADOS'; this.filtrar(); },
+  verActivos() { const s = document.getElementById('pry-filtro-estado'); if (s) s.value = 'ACTIVOS'; this.filtrar(); },
 
   // ── NUEVO PROYECTO ──────────────────────────
   poblarSelectOfertas() {
@@ -156,7 +178,7 @@ const PROYECTOS = {
     const act = String(actual || '').trim();
     const hay = lista.some(u => String(u.usuario).toLowerCase() === act.toLowerCase());
     const esc = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-    const NOMBRES = { ADMINISTRADOR: 'Administrador', TECNICO: 'Técnico', INGENIERIA: 'Ingeniería' };
+    const NOMBRES = { ADMINISTRADOR: 'Administrador', GERENTE_ADMINISTRATIVO: 'Gerente administrativo', TECNICO: 'Técnico', INGENIERIA: 'Ingeniería' };
     return '<option value="">Sin asignar</option>'
       + (act && !hay ? '<option value="' + esc(act) + '" selected>' + esc(act) + ' (texto antiguo: elija un usuario)</option>' : '')
       + lista.map(u => '<option value="' + esc(u.usuario) + '"' + (hay && String(u.usuario).toLowerCase() === act.toLowerCase() ? ' selected' : '') + '>' + esc(u.nombre || u.usuario) + ' — ' + esc(NOMBRES[u.rol] || u.rol) + ' (' + esc(u.usuario) + ')</option>').join('');
@@ -293,7 +315,7 @@ const PROYECTOS = {
     // para que la interfaz tenga sentido, la restricción real ya la aplica
     // el servidor (ver eliminarProyecto en PERMISOS, Auth.gs).
     const btnEliminar = document.getElementById('pry-btn-eliminar');
-    if (btnEliminar) btnEliminar.style.display = (typeof AUTH !== 'undefined' && AUTH.rol === 'ADMINISTRADOR') ? '' : 'none';
+    if (btnEliminar) btnEliminar.style.display = (typeof AUTH !== 'undefined' && (AUTH.rol === 'ADMINISTRADOR' || AUTH.rol === 'GERENTE_ADMINISTRATIVO')) ? '' : 'none';
     this.cargarComentarios(id);
     this._abriendoDetalle = false;
     if (btn) UI.spinIcon(btn, false);
@@ -331,7 +353,7 @@ const PROYECTOS = {
   // Gastos de campo — lo que los ingenieros registran en la app NODIA Campo (se compran/gastan al momento, sin aprobación).
   // El servidor de Campo manda los totales a NODIA (hoja BD_CAMPO_RESUMEN); aquí solo se leen. Valor mostrado = aprobado + pendiente
   // (lo anulado no cuenta). Roles que ven Compras: los demás ni piden este dato (el servidor igual responde 403 a COMERCIAL).
-  ROLES_GASTOS_CAMPO: ['ADMINISTRADOR', 'ADMINISTRATIVO', 'TECNICO', 'INGENIERIA'],
+  ROLES_GASTOS_CAMPO: ['ADMINISTRADOR', 'GERENTE_ADMINISTRATIVO', 'ADMINISTRATIVO', 'TECNICO', 'INGENIERIA'],
   _puedeVerGastosCampo() { return typeof AUTH === 'undefined' || this.ROLES_GASTOS_CAMPO.includes(AUTH.rol); },
 
   bloqueGastosCampo() {

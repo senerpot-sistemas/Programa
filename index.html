@@ -1026,7 +1026,7 @@
                   <div class="field-group"><label for="of-nd-foto">Fotografía de portada</label>
                     <select id="of-nd-foto" onchange="WIZ.alCambiar()"><option value="NINGUNA">Sin foto (panel de marca)</option><option value="TRANSFORMADOR_ACEITE">Institucional: transformador en aceite</option><option value="TRANSFORMADOR_SECO">Institucional: transformador seco</option><option value="PAD_MOUNTED">Institucional: transformador pad mounted</option><option value="PLANTA_ELECTRICA">Institucional: planta eléctrica</option><option value="TABLERO_CUADROS">Institucional: tableros y cuadros eléctricos</option><option value="BARRAS_ACOMETIDAS">Institucional: barras y acometidas</option><option value="PRUEBAS_ELECTRICAS">Institucional: pruebas eléctricas</option><option value="PANELES_SOLARES">Institucional: paneles solares</option></select>
                     <small class="wz-hint" id="wz-foto-hint"></small></div>
-                  <div class="field-group"><label class="wz-check" style="margin-top:22px;"><input type="checkbox" id="of-nd-firmar" onchange="WIZ.alCambiar()"> Incluir la firma de Cristian Chamorro G. (Director de Operaciones)</label></div>
+                  <div class="field-group"><label class="wz-check" style="margin-top:22px;"><input type="checkbox" id="of-nd-firmar" onchange="WIZ.alCambiar()"> Incluir la firma de Cristian Chamorro G. (Gerente de Operaciones)</label></div>
                   <div class="field-group wz-span2" id="wz-muestra-grupo" hidden><label class="wz-check"><input type="checkbox" id="wz-muestra" onchange="WIZ.alCambiarMuestra()"> Documento de MUESTRA con datos ficticios (no es una oferta real)</label>
                     <small class="wz-hint">Se rotula como muestra en el PDF y en la validación pública. El consecutivo debe empezar por <b>MUESTRA-</b>. Obligatorio si usa los datos de demostración del Simulador.</small></div>
                   <div class="field-group wz-span2"><label for="of-nd-resumen">Resumen de la portada <span class="wz-opt">opcional</span></label><textarea id="of-nd-resumen" rows="2" oninput="WIZ.alCambiar()"></textarea></div>
@@ -1235,11 +1235,14 @@
         </div>
         <div id="pryv-lista" class="subview active">
           <div class="module-toolbar">
-            <select id="pry-filtro-estado" onchange="PROYECTOS.filtrar()" class="search-bar" style="flex:0 0 200px;">
+            <select id="pry-filtro-estado" onchange="PROYECTOS.filtrar()" class="search-bar" style="flex:0 0 260px;">
+              <option value="ACTIVOS" selected>Activos (sin facturados ni cobrados)</option>
+              <option value="FACTURADOS_COBRADOS">Facturados y cobrados</option>
               <option value="">Todos los estados</option>
               <option>POR_INICIAR</option><option>EN_PROGRESO</option><option>PAUSADO</option>
               <option>TERMINADO</option><option>FACTURADO</option><option>COBRADO</option>
             </select>
+            <span id="pry-resumen-vista" style="font-size:12.5px;color:#64748B;align-self:center;margin-left:10px;"></span>
           </div>
           <div class="table-scroll">
           <table class="data-tbl">
@@ -1585,6 +1588,7 @@
               <label>Rol</label>
               <select id="usr-rol">
                 <option value="ADMINISTRADOR">Administrador — acceso total</option>
+                <option value="GERENTE_ADMINISTRATIVO">Gerente administrativo — todo menos Usuarios</option>
                 <option value="COMERCIAL">Comercial — Ofertas, ver Proyectos, Panel</option>
                 <option value="ADMINISTRATIVO">Administrativo — Contabilidad, Compras, Panel, Reportes</option>
                 <option value="TECNICO">Técnico — Proyectos (ver/actualizar/comentar), ver Compras</option>

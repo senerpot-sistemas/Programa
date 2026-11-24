@@ -17,6 +17,7 @@ const AUTH = {
   // Qué módulos (data-modulo en el HTML) puede ver cada rol.
   MODULOS_POR_ROL: {
     ADMINISTRADOR:  ['home','panel','ofertas','proyectos','contabilidad','almacen','reportes','usuarios'],
+    GERENTE_ADMINISTRATIVO: ['home','panel','ofertas','proyectos','contabilidad','almacen','reportes'],   // todo menos Usuarios
     COMERCIAL:      ['home','panel','ofertas','proyectos'],
     ADMINISTRATIVO: ['home','panel','contabilidad','almacen','reportes'],
     TECNICO:        ['home','proyectos','almacen'],
@@ -49,7 +50,7 @@ const AUTH = {
     document.getElementById('app-shell').style.display = 'flex';
     this.aplicarRol();
 
-    const NOMBRES_ROL = { ADMINISTRADOR: 'Administrador', COMERCIAL: 'Comercial', ADMINISTRATIVO: 'Administrativo', TECNICO: 'Técnico', INGENIERIA: 'Ingeniería' };
+    const NOMBRES_ROL = { ADMINISTRADOR: 'Administrador', GERENTE_ADMINISTRATIVO: 'Gerente administrativo', COMERCIAL: 'Comercial', ADMINISTRATIVO: 'Administrativo', TECNICO: 'Técnico', INGENIERIA: 'Ingeniería' };
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('user-nombre-actual', this.nombre || this.usuario);
     set('user-rol-actual', NOMBRES_ROL[this.rol] || this.rol);
@@ -278,7 +279,7 @@ const USUARIOS = {
     const tbody = document.getElementById('usr-tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    const NOMBRES_ROL = { ADMINISTRADOR: 'Administrador', COMERCIAL: 'Comercial', ADMINISTRATIVO: 'Administrativo', TECNICO: 'Técnico', INGENIERIA: 'Ingeniería' };
+    const NOMBRES_ROL = { ADMINISTRADOR: 'Administrador', GERENTE_ADMINISTRATIVO: 'Gerente administrativo', COMERCIAL: 'Comercial', ADMINISTRATIVO: 'Administrativo', TECNICO: 'Técnico', INGENIERIA: 'Ingeniería' };
     (this.DB || []).forEach(u => {
       const activo = u.ACTIVO === true || String(u.ACTIVO).toUpperCase() === 'TRUE';
       const tr = document.createElement('tr');
